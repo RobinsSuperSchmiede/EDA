@@ -179,6 +179,7 @@ impl MenuLike for Submenu<Wry> {
 }
 
 /// Context menu for a right-click on the title bar: services + window actions.
+#[cfg(windows)]
 fn titlebar_menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
     let menu = Menu::new(app)?;
     append_services(app, &menu)?;
@@ -202,6 +203,7 @@ fn titlebar_menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
     Ok(menu)
 }
 
+#[cfg(windows)]
 fn dev_mode(app: &AppHandle) -> bool {
     app.state::<AppState>()
         .shell()
@@ -210,6 +212,7 @@ fn dev_mode(app: &AppHandle) -> bool {
 }
 
 /// Show the title bar menu at the cursor.
+#[cfg(windows)]
 pub fn show_titlebar_menu(app: &AppHandle) {
     match (titlebar_menu(app), main_window(app)) {
         (Ok(menu), Ok(w)) => {
