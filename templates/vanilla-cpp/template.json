@@ -1,0 +1,1 @@
+{ "description": "Plain HTML/JS frontend + C++17 backend (sockets only, built with CMake). Needs CMake and a C++ compiler." }

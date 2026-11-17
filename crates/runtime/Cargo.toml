@@ -1,0 +1,32 @@
+[package]
+name = "openshell-runtime"
+description = "Process, service and frontend manager of OpenShell"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+openshell-config.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+axum.workspace = true
+reqwest.workspace = true
+tracing.workspace = true
+chrono.workspace = true
+which.workspace = true
+notify-debouncer-mini.workspace = true
+mime_guess.workspace = true
+sysinfo = { version = "0.37", default-features = false, features = ["system"] }
+
+[target.'cfg(unix)'.dependencies]
+libc.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows-sys.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

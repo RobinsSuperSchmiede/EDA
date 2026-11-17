@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Runtime</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="panel">
+    <main>
+      <header>
+        <h1 id="app">Runtime</h1>
+        <p id="subtitle" class="muted"></p>
+      </header>
+      <section id="error" class="error" hidden></section>
+      <section id="approvals" hidden></section>
+      <ul id="services" class="services"></ul>
+      <details class="agents">
+        <summary>Connect AI agents (MCP)</summary>
+        <p class="muted">Use the app through its own functions (no UI automation):</p>
+        <code id="mcp-app"></code>
+        <p class="muted">Develop the app (runtime, logs, files, UI automation):</p>
+        <code id="mcp-full"></code>
+      </details>
+      <div class="filters">
+        <label>Service <select id="filter"><option value="">all</option></select></label>
+        <label><input type="checkbox" id="errors" /> errors only</label>
+      </div>
+      <pre id="logs" class="logs tall" aria-label="Logs"></pre>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

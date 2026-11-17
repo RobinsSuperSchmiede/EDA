@@ -1,0 +1,23 @@
+{
+  "name": "@openshell/sdk",
+  "version": "0.1.0",
+  "description": "Optional frontend SDK for apps running in OpenShell: runtime status, window control, notifications and agent actions.",
+  "type": "module",
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "types": "src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    }
+  },
+  "files": ["src"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RobinsSuperSchmiede/EDA.git",
+    "directory": "packages/sdk"
+  },
+  "keywords": ["openshell", "desktop", "tauri", "ai-agents", "mcp"]
+}

@@ -1,0 +1,18 @@
+[package]
+name = "openshell-package"
+description = "Builds native installers for OpenShell applications"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+openshell-config.workspace = true
+anyhow.workspace = true
+tauri-bundler = "2"
+editpe = "0.2"
+image = { version = "0.25", default-features = false, features = ["png", "ico"] }
+globset = "0.4"
+
+[dev-dependencies]
+tempfile.workspace = true

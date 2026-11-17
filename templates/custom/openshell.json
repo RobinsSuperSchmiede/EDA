@@ -1,0 +1,16 @@
+{
+  "$schema": "https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/schema/openshell.schema.json",
+  "version": 1,
+  "app": { "name": "{{app_name}}", "id": "{{app_id}}", "version": "0.1.0" },
+  "window": { "width": 1280, "height": 800 },
+  "frontend": {
+    "url": "http://localhost:3000"
+  },
+  "services": [],
+  "agents": {
+    "permissions": {
+      "development": ["read", "ui", "actions", "services", "files", "code"],
+      "production": ["read", "ui", "actions"]
+    }
+  }
+}

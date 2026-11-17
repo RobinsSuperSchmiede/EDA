@@ -1,0 +1,41 @@
+{
+  "$schema": "https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/schema/openshell.schema.json",
+  "version": 1,
+  "app": {
+    "name": "{{app_name}}",
+    "id": "{{app_id}}",
+    "version": "0.1.0",
+    "description": "Todo app – OpenShell starter (plain HTML/JS + Java standard library)"
+  },
+  "window": { "width": 1100, "height": 760, "min_width": 480, "min_height": 400 },
+  "frontend": {
+    "dist": "web",
+    "proxy": { "/api": "${services.backend.url}" },
+    "watch": ["web"],
+    "depends_on": ["backend"]
+  },
+  "services": [
+    {
+      "name": "backend",
+      "kind": "backend",
+      "description": "Todo API (Java, JDK 17+)",
+      "build": ["javac", "-d", "build/classes", "src/Main.java"],
+      "command": ["java", "-cp", "build/classes", "Main"],
+      "cwd": "backend",
+      "port": "auto",
+      "healthcheck": "http://127.0.0.1:${port}/health",
+      "restart": true,
+      "watch": ["backend/src"]
+    }
+  ],
+  "capabilities": [
+    { "name": "list_todos", "description": "List all todos with id, title and done flag", "permission": "read",
+      "http": { "service": "backend", "method": "GET", "path": "/api/todos" } },
+    { "name": "add_todo", "description": "Create a todo", "permission": "actions",
+      "input_schema": { "type": "object", "properties": { "title": { "type": "string" } }, "required": ["title"] },
+      "http": { "service": "backend", "method": "POST", "path": "/api/todos" } },
+    { "name": "todo_stats", "description": "Number of total, done and open todos", "permission": "read",
+      "http": { "service": "backend", "method": "GET", "path": "/api/stats" } }
+  ],
+  "package": { "exclude": ["backend/src"] }
+}

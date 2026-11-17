@@ -1,0 +1,14 @@
+# Normalise line endings in the repository; check out LF everywhere except Windows scripts.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary assets
+*.png binary
+*.ico binary
+*.icns binary
+
+# Generated / vendored files: collapsed in GitHub diffs
+Cargo.lock linguist-generated=true
+schema/openshell.schema.json linguist-generated=true

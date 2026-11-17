@@ -1,0 +1,37 @@
+{
+  "$schema": "https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/schema/openshell.schema.json",
+  "version": 1,
+  "app": { "name": "{{app_name}}", "id": "{{app_id}}", "version": "0.1.0" },
+  "window": { "width": 1100, "height": 760 },
+  "frontend": {
+    "command": "npm run dev -- --host 127.0.0.1 --port ${port} --strictPort",
+    "cwd": "frontend",
+    "port": "auto",
+    "url": "http://127.0.0.1:${port}",
+    "env": { "BACKEND_URL": "${services.backend.url}" },
+    "setup": { "command": "npm install", "creates": "frontend/node_modules" },
+    "build": "npm run build",
+    "dist": "frontend/dist",
+    "proxy": { "/api": "${services.backend.url}" },
+    "depends_on": ["backend"]
+  },
+  "services": [
+    {
+      "name": "backend",
+      "kind": "backend",
+      "command": "go run .",
+      "cwd": "backend",
+      "port": "auto",
+      "healthcheck": "http://127.0.0.1:${port}/health",
+      "restart": true,
+      "watch": ["backend"]
+    }
+  ],
+  "capabilities": [
+    { "name": "list_todos", "description": "List all todos", "permission": "read",
+      "http": { "service": "backend", "method": "GET", "path": "/api/todos" } },
+    { "name": "add_todo", "description": "Create a todo", "permission": "actions",
+      "input_schema": { "type": "object", "properties": { "title": { "type": "string" } }, "required": ["title"] },
+      "http": { "service": "backend", "method": "POST", "path": "/api/todos" } }
+  ]
+}

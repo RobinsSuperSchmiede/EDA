@@ -1,0 +1,1175 @@
+{
+  "$defs": {
+    "AgentsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "approval_required": {
+          "description": "Scopes whose actions need explicit human approval. Default: `[\"system\"]`.",
+          "items": {
+            "$ref": "#/$defs/Permission"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "approval_timeout_ms": {
+          "default": 120000,
+          "description": "How long to wait for a human decision before denying.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "detect_local_providers": {
+          "default": true,
+          "description": "Probe well-known local providers (Ollama, LM Studio).",
+          "type": "boolean"
+        },
+        "enabled": {
+          "default": true,
+          "description": "Enable the Agent Interaction Layer (tools, MCP, UI bridge).",
+          "type": "boolean"
+        },
+        "permissions": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PermissionSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Scopes granted to agents."
+        },
+        "providers": {
+          "description": "AI providers known to this application (for discovery by agents).",
+          "items": {
+            "$ref": "#/$defs/ProviderConfig"
+          },
+          "type": "array"
+        },
+        "sdk_permissions": {
+          "description": "Scopes granted to the frontend through the SDK. Default: `[\"read\", \"ui\"]`.",
+          "items": {
+            "$ref": "#/$defs/Permission"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "AppConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "icon": {
+          "description": "Application icon (PNG, ideally 512x512) used for the window and installers.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "description": "Reverse-DNS identifier, e.g. `com.example.myapp`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "Human readable application name (used as window title by default).",
+          "type": "string"
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "BuildConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "$ref": "#/$defs/CommandSpec"
+        },
+        "cwd": {
+          "description": "Working directory (defaults to the service working directory).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "on_start": {
+          "$ref": "#/$defs/BuildWhen",
+          "default": "development"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    "BuildSpec": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CommandSpec"
+        },
+        {
+          "$ref": "#/$defs/BuildConfig"
+        }
+      ],
+      "description": "A build command (`\"cmake --build build\"`) or a detailed object."
+    },
+    "BuildWhen": {
+      "description": "When a service build step runs automatically before the service starts.",
+      "oneOf": [
+        {
+          "const": "development",
+          "description": "Before every start in development mode (default).",
+          "type": "string"
+        },
+        {
+          "const": "always",
+          "description": "Before every start in all modes.",
+          "type": "string"
+        },
+        {
+          "const": "never",
+          "description": "Only via `openshell build` / `openshell package`.",
+          "type": "string"
+        }
+      ]
+    },
+    "CapabilityConfig": {
+      "additionalProperties": false,
+      "description": "A function of the application that agents can discover and invoke.",
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "http": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HttpTarget"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Invoke by calling an HTTP endpoint."
+        },
+        "input_schema": {
+          "description": "JSON Schema of the input object."
+        },
+        "name": {
+          "description": "Unique name (`[a-z0-9_]`).",
+          "type": "string"
+        },
+        "permission": {
+          "$ref": "#/$defs/Permission",
+          "default": "read",
+          "description": "Required scope. `read` for queries, `actions` (alias `write`) for changes."
+        },
+        "task": {
+          "description": "Invoke by running a declared task.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "description"
+      ],
+      "type": "object"
+    },
+    "CommandSpec": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      ],
+      "description": "A command, either as a shell string (`\"npm run dev\"`, executed through the\nplatform shell) or as an argument vector (`[\"python\", \"main.py\"]`, executed directly)."
+    },
+    "FrontendConfig": {
+      "additionalProperties": false,
+      "description": "The web frontend. Framework-agnostic: OpenShell only needs a URL to load,\na command that serves it (dev server) or a directory of built files.",
+      "properties": {
+        "build": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CommandSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Production build command (`openshell build`)."
+        },
+        "command": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CommandSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Dev server command, e.g. `npm run dev`."
+        },
+        "cwd": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "depends_on": {
+          "description": "Services that must be healthy before the frontend starts.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "dist": {
+          "description": "Directory with built static files (served by OpenShell itself).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "env": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "healthcheck": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HealthCheckSpec"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "port": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PortSpec"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "production": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FrontendOverride"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Overrides used in production mode."
+        },
+        "proxy": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Reverse proxy rules for the static server, e.g. `{\"/api\": \"${services.backend.url}\"}`.",
+          "type": "object"
+        },
+        "setup": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SetupConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "url": {
+          "description": "URL loaded into the WebView (dev server or external URL).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "watch": {
+          "description": "Paths that reload the WebView when changed (development mode, static frontends).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "FrontendOverride": {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CommandSpec"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "dist": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "HealthCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "failure_threshold": {
+          "default": 3,
+          "description": "Consecutive failures before a running service is reported as unhealthy.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "http": {
+          "description": "HTTP URL that must answer with 2xx/3xx.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "interval_ms": {
+          "default": 5000,
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "ready_timeout_ms": {
+          "default": 60000,
+          "description": "How long a starting service may take to become healthy.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "tcp": {
+          "description": "`host:port` that must accept TCP connections.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "timeout_ms": {
+          "default": 2000,
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "HealthCheckSpec": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/HealthCheck"
+        }
+      ],
+      "description": "Health check: either a URL string (HTTP GET, 2xx/3xx is healthy) or a detailed object."
+    },
+    "HttpTarget": {
+      "additionalProperties": false,
+      "properties": {
+        "method": {
+          "default": "POST",
+          "type": "string"
+        },
+        "path": {
+          "default": "",
+          "type": "string"
+        },
+        "service": {
+          "description": "Service whose base URL is used.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "url": {
+          "description": "Absolute URL (alternative to `service` + `path`).",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "Mode": {
+      "description": "Operating mode of the shell.",
+      "oneOf": [
+        {
+          "const": "development",
+          "description": "Project files are used directly, hot reload, broad agent access.",
+          "type": "string"
+        },
+        {
+          "const": "production",
+          "description": "Stable runtime for end users, restricted agent access.",
+          "type": "string"
+        }
+      ]
+    },
+    "OpenApiConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "exclude": {
+          "description": "Skip operations whose operationId or path contains one of these strings.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "include": {
+          "description": "Only import operations whose operationId or path contains one of these strings.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "location": {
+          "description": "Path on the service, absolute URL or project file.",
+          "type": "string"
+        },
+        "prefix": {
+          "description": "Prefix for the generated capability names.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "location"
+      ],
+      "type": "object"
+    },
+    "OpenApiSpec": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/OpenApiConfig"
+        }
+      ],
+      "description": "Where to find an OpenAPI 3 document: a path on the service (`\"/openapi.json\"`),\nan absolute URL, a file in the project, or a detailed object."
+    },
+    "PackageConfig": {
+      "additionalProperties": false,
+      "description": "Settings for `openshell package` (native installers).",
+      "properties": {
+        "copyright": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "exclude": {
+          "description": "Glob patterns to leave out.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "homepage": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "identifier": {
+          "description": "Bundle identifier (default: `app.id`, else `dev.openshell.<name>`).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "include": {
+          "description": "Files/directories (glob patterns, relative to the project) to ship. Default: the whole project\nexcept `.git`, `.openshell`, `node_modules`, `__pycache__` and virtualenvs.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "license_file": {
+          "description": "License file shown by the installer.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "publisher": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "targets": {
+          "description": "Installer formats: `nsis`, `msi` (Windows), `app`, `dmg` (macOS), `deb`, `rpm`, `appimage` (Linux).\nDefault: `nsis` / `dmg` / `deb` + `appimage`.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Permission": {
+      "description": "Permission scopes for agents. Every agent tool requires exactly one scope.",
+      "oneOf": [
+        {
+          "const": "read",
+          "description": "Read state, status, logs, capabilities.",
+          "type": "string"
+        },
+        {
+          "const": "ui",
+          "description": "Inspect and operate the user interface.",
+          "type": "string"
+        },
+        {
+          "const": "actions",
+          "description": "Invoke application capabilities that change data.",
+          "type": "string"
+        },
+        {
+          "const": "services",
+          "description": "Start, stop and restart services.",
+          "type": "string"
+        },
+        {
+          "const": "files",
+          "description": "Read project files.",
+          "type": "string"
+        },
+        {
+          "const": "code",
+          "description": "Modify project files.",
+          "type": "string"
+        },
+        {
+          "const": "system",
+          "description": "Native system access: notifications, declared tasks, script evaluation.",
+          "type": "string"
+        }
+      ]
+    },
+    "PermissionSpec": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/Permission"
+          },
+          "type": "array"
+        },
+        {
+          "properties": {
+            "development": {
+              "items": {
+                "$ref": "#/$defs/Permission"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            },
+            "production": {
+              "items": {
+                "$ref": "#/$defs/Permission"
+              },
+              "type": [
+                "array",
+                "null"
+              ]
+            }
+          },
+          "type": "object"
+        }
+      ],
+      "description": "Either one permission list for all modes or one per mode."
+    },
+    "PortSpec": {
+      "anyOf": [
+        {
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "A port: a fixed number or `\"auto\"` to let OpenShell pick a free port.\nThe chosen port is exposed to the process as `PORT` and as `${port}` /\n`${services.<name>.port}` in the configuration."
+    },
+    "ProviderConfig": {
+      "additionalProperties": false,
+      "description": "An AI provider connection. OpenShell does not run models itself; it only\nmakes providers discoverable to agents and the application.",
+      "properties": {
+        "api_key_env": {
+          "description": "Name of the environment variable holding the API key (the key itself never goes into the config).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kind": {
+          "$ref": "#/$defs/ProviderKind"
+        },
+        "models": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "name": {
+          "type": "string"
+        },
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "ProviderKind": {
+      "enum": [
+        "ollama",
+        "lm-studio",
+        "openai-compatible",
+        "openai",
+        "anthropic",
+        "mcp",
+        "custom"
+      ],
+      "type": "string"
+    },
+    "RestartPolicy": {
+      "description": "When a crashed process is restarted.",
+      "enum": [
+        "never",
+        "on-failure",
+        "always"
+      ],
+      "type": "string"
+    },
+    "RestartSpec": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "$ref": "#/$defs/RestartPolicy"
+        }
+      ],
+      "description": "`true` (= on-failure), `false` (= never) or an explicit policy."
+    },
+    "RuntimeConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "autostart": {
+          "default": true,
+          "description": "Start all services automatically when the shell starts.",
+          "type": "boolean"
+        },
+        "background_mode": {
+          "default": false,
+          "description": "Keep the runtime running in the background when the window is closed.",
+          "type": "boolean"
+        },
+        "control_port": {
+          "description": "Fixed port for the local control API (default: random free port).",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "log_buffer_lines": {
+          "default": 10000,
+          "description": "Number of log lines kept in memory (all services).",
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "shutdown_timeout_ms": {
+          "default": 5000,
+          "description": "Grace period for stopping services before they are killed.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "ServiceConfig": {
+      "additionalProperties": false,
+      "description": "An external component managed (or monitored) by the runtime.",
+      "properties": {
+        "args": {
+          "description": "Extra arguments appended to `command`.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "autostart": {
+          "default": true,
+          "description": "Start automatically with the runtime.",
+          "type": "boolean"
+        },
+        "build": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BuildSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Build step for compiled services (C++, Java, Go, Rust, ...). Runs before every start in\ndevelopment mode and during `openshell build` / `openshell package`."
+        },
+        "command": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CommandSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Command to run. Omit for external services."
+        },
+        "cwd": {
+          "description": "Working directory relative to the project root.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "depends_on": {
+          "description": "Services that must be healthy before this one starts.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "env": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "external": {
+          "default": false,
+          "description": "The service is already running elsewhere: do not spawn it, only monitor it.",
+          "type": "boolean"
+        },
+        "healthcheck": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HealthCheckSpec"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "kind": {
+          "description": "Informational category: `backend`, `database`, `worker`, `ai`, ...",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "max_restarts": {
+          "default": 5,
+          "description": "Maximum restarts within one minute before the service is marked as failed.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "modes": {
+          "description": "Only run in these modes (default: all).",
+          "items": {
+            "$ref": "#/$defs/Mode"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "Unique name (`[a-z0-9_-]`), used by CLI, API and agents.",
+          "type": "string"
+        },
+        "openapi": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpenApiSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Import the service's OpenAPI document as agent capabilities (path on the service, URL or file)."
+        },
+        "port": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PortSpec"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "restart": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RestartSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Restart policy (default: on-failure)."
+        },
+        "setup": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SetupConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "stop_timeout_ms": {
+          "description": "Grace period between the stop signal and a forced kill.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "url": {
+          "description": "Base URL of the service. Defaults to `http://127.0.0.1:<port>` when a port is set.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "watch": {
+          "description": "Paths (relative to the project root) that trigger a restart when changed (development mode).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "SetupConfig": {
+      "additionalProperties": false,
+      "description": "A one-time preparation step, e.g. `npm install`.",
+      "properties": {
+        "command": {
+          "$ref": "#/$defs/CommandSpec"
+        },
+        "creates": {
+          "description": "Skip the setup if this path (relative to the project root) exists.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cwd": {
+          "description": "Working directory (defaults to the service working directory).",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    "TaskConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "$ref": "#/$defs/CommandSpec"
+        },
+        "cwd": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "env": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "timeout_ms": {
+          "default": 300000,
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    "TaskSpec": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CommandSpec"
+        },
+        {
+          "$ref": "#/$defs/TaskConfig"
+        }
+      ],
+      "description": "A task: a shell string / argv, or a detailed object."
+    },
+    "WindowConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "close_to_tray": {
+          "default": false,
+          "description": "Hide the window instead of quitting when it is closed (the runtime keeps running in the tray).",
+          "type": "boolean"
+        },
+        "devtools": {
+          "description": "Enable WebView devtools. Defaults to `true` in development mode only.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "height": {
+          "default": 800.0,
+          "format": "double",
+          "type": "number"
+        },
+        "maximized": {
+          "default": false,
+          "type": "boolean"
+        },
+        "min_height": {
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "min_width": {
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "resizable": {
+          "default": true,
+          "type": "boolean"
+        },
+        "title": {
+          "description": "Window title. Defaults to `app.name`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tray": {
+          "default": true,
+          "description": "Show a system tray icon.",
+          "type": "boolean"
+        },
+        "width": {
+          "default": 1280.0,
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Root of an `openshell.json` / `openshell.toml` file.",
+  "properties": {
+    "$schema": {
+      "description": "Optional reference to the JSON schema (ignored by OpenShell).",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "agents": {
+      "$ref": "#/$defs/AgentsConfig",
+      "default": {
+        "approval_timeout_ms": 120000,
+        "detect_local_providers": true,
+        "enabled": true
+      },
+      "description": "Agent Interaction Layer settings (permissions, approvals, providers)."
+    },
+    "app": {
+      "$ref": "#/$defs/AppConfig",
+      "description": "Application metadata."
+    },
+    "capabilities": {
+      "default": [],
+      "description": "Functions the application exposes to agents.",
+      "items": {
+        "$ref": "#/$defs/CapabilityConfig"
+      },
+      "type": "array"
+    },
+    "frontend": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FrontendConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The web frontend shown in the embedded WebView."
+    },
+    "package": {
+      "$ref": "#/$defs/PackageConfig",
+      "default": {},
+      "description": "Installer settings (`openshell package`)."
+    },
+    "runtime": {
+      "$ref": "#/$defs/RuntimeConfig",
+      "default": {
+        "autostart": true,
+        "background_mode": false,
+        "log_buffer_lines": 10000,
+        "shutdown_timeout_ms": 5000
+      },
+      "description": "Runtime manager behaviour."
+    },
+    "services": {
+      "default": [],
+      "description": "Backends, databases, workers, local AI servers, ...",
+      "items": {
+        "$ref": "#/$defs/ServiceConfig"
+      },
+      "type": "array"
+    },
+    "tasks": {
+      "additionalProperties": {
+        "$ref": "#/$defs/TaskSpec"
+      },
+      "default": {},
+      "description": "Named, pre-declared commands (e.g. `test`, `lint`, `migrate`).",
+      "type": "object"
+    },
+    "version": {
+      "default": 1,
+      "description": "Schema version of this file. Currently `1`.",
+      "format": "uint32",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "window": {
+      "$ref": "#/$defs/WindowConfig",
+      "default": {
+        "close_to_tray": false,
+        "height": 800.0,
+        "maximized": false,
+        "resizable": true,
+        "tray": true,
+        "width": 1280.0
+      },
+      "description": "Native window settings."
+    }
+  },
+  "required": [
+    "app"
+  ],
+  "title": "Config",
+  "type": "object"
+}

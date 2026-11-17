@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Permissions for OpenShell's own local pages (loading screen, runtime panel). Application frontends loaded from http(s) URLs get no Tauri IPC access; they use the OpenShell SDK over the control API instead.",
+  "windows": ["main", "runtime"],
+  "permissions": ["core:default", "notification:default", "dialog:default"]
+}

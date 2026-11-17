@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>OpenShell</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="loading">
+    <main>
+      <header>
+        <h1 id="app">Starting…</h1>
+        <p id="subtitle" class="muted">OpenShell is starting your application</p>
+      </header>
+      <section id="error" class="error" hidden></section>
+      <ul id="services" class="services"></ul>
+      <div class="actions">
+        <button type="button" id="open" hidden>Open app</button>
+        <button type="button" id="panel">Runtime panel</button>
+      </div>
+      <pre id="logs" class="logs" aria-label="Recent log lines"></pre>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

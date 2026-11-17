@@ -1,0 +1,1 @@
+{ "description": "Plain HTML/JS frontend + Java backend (JDK 17+, standard library, compiled with javac). No Maven/Gradle needed." }

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Todo App</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Todo App</h1>
+        <p id="stats" class="muted">loading…</p>
+      </header>
+
+      <form id="new-todo">
+        <label for="title" class="sr-only">New todo</label>
+        <input id="title" name="title" placeholder="What needs to be done?" autocomplete="off" />
+        <button type="submit">Add</button>
+      </form>
+
+      <nav aria-label="Filter">
+        <button type="button" data-filter="all" aria-pressed="true">All</button>
+        <button type="button" data-filter="open" aria-pressed="false">Open</button>
+        <button type="button" data-filter="done" aria-pressed="false">Done</button>
+      </nav>
+
+      <ul id="todos"></ul>
+      <p id="error" role="alert" hidden></p>
+
+      <footer class="muted">
+        Running in <strong id="host">a browser</strong>. Edit <code>web/</code> or <code>backend/</code> – OpenShell reloads
+        the window and restarts the backend automatically.
+      </footer>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

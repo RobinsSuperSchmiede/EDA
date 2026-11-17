@@ -1,0 +1,3 @@
+.openshell/
+node_modules/
+dist/

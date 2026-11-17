@@ -1,0 +1,52 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/config",
+    "crates/runtime",
+    "crates/agent",
+    "crates/core",
+    "crates/cli",
+    "crates/package",
+    "apps/desktop/src-tauri",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/RobinsSuperSchmiede/EDA"
+
+[workspace.dependencies]
+openshell-config = { path = "crates/config" }
+openshell-runtime = { path = "crates/runtime" }
+openshell-agent = { path = "crates/agent" }
+openshell-core = { path = "crates/core" }
+
+anyhow = "1"
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_path_to_error = "0.1"
+toml = "0.8"
+schemars = "1"
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
+axum = { version = "0.8", features = ["ws"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+clap = { version = "4", features = ["derive"] }
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4"] }
+which = "7"
+notify-debouncer-mini = "0.6"
+mime_guess = "2"
+include_dir = "0.7"
+libc = "0.2"
+tempfile = "3"
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_JobObjects", "Win32_System_Threading", "Win32_Security"] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 4
+strip = true
