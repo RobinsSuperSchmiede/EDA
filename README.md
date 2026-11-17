@@ -1,158 +1,294 @@
+<div align="center">
+
+<img src="docs/assets/logo.png" width="96" alt="OpenShell logo" />
+
 # OpenShell
 
-**Build the shell once. Build applications on top of it. Let agents use and evolve them.**
+**Turn any web app into a native desktop app – managed by a runtime that people *and* AI agents can operate.**
 
-OpenShell (project codename **EDA**) is an open-source desktop shell built on **Rust + Tauri 2**. It turns any
-existing web application into a native desktop app – without writing desktop infrastructure – and gives AI agents a
-standardized, permission-checked way to inspect, operate and evolve the running application.
+[![CI](https://github.com/RobinsSuperSchmiede/EDA/actions/workflows/ci.yml/badge.svg)](https://github.com/RobinsSuperSchmiede/EDA/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Rust](https://img.shields.io/badge/Rust-stable-orange?logo=rust)
+![Tauri 2](https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri)
+![MCP](https://img.shields.io/badge/MCP-ready-6E56CF)
+![Status](https://img.shields.io/badge/status-alpha-yellow)
 
-OpenShell is not your application. It is the **runtime and management layer** around it:
+[Quick start](#quick-start) · [Usage](#using-openshell) · [AI agents](#ai-agents) · [Documentation](docs/README.md) · [Roadmap](ROADMAP.md) · [Deutsch](README.de.md)
 
-```
-                 you / your users                     AI agents (Claude, OpenAI, Ollama, LM Studio, MCP, custom)
-                        │                                             │
-                ┌───────▼─────────────────────────────────────────────▼───────┐
-                │  OpenShell desktop shell (Tauri 2)                           │
-                │  window · WebView · tray · notifications · approval dialogs │
-                │  ┌───────────────────────┐   ┌────────────────────────────┐ │
-                │  │ Runtime Manager       │   │ Agent Interaction Layer    │ │
-                │  │ processes · health    │   │ tools · MCP · UI bridge    │ │
-                │  │ restarts · logs       │   │ permissions · approvals    │ │
-                │  │ ports · file watching │   │ audit log · capabilities   │ │
-                │  └──────────┬────────────┘   └────────────────────────────┘ │
-                └─────────────┼───────────────────────────────────────────────┘
-                              │ manages (separate processes, never compiled into the shell)
-          ┌──────────────┬────┴─────────┬──────────────┬─────────────┐
-          ▼              ▼              ▼              ▼             ▼
-      frontend        backend        database        worker      local AI server
-   (React, Vue,    (Python, Node,   (SQLite,        (any)        (Ollama, ...)
-    Svelte, ...)    Go, Rust, ...)   Postgres, ...)
-```
+</div>
 
-Change the frontend or backend – by hand or by an agent – and the running app picks it up. The shell never needs to be
-rebuilt.
+---
 
-## Features
+OpenShell is an open-source desktop shell built on **Rust and Tauri 2**. You bring a normal web frontend and any
+backend – Python, Node.js, Java, C++, Go, Rust, .NET – and describe them in one `openshell.json`. OpenShell runs
+everything as a native desktop app: it starts and supervises your services, shows the frontend in a native window,
+reloads on code changes, and builds installers. You never write desktop or process-management code.
 
-- **One config file** (`openshell.json` or `.toml`), versioned, validated, with a JSON Schema for editor completion.
-- **Runtime Manager** – starts services in dependency order, one-time `setup` steps (e.g. `npm install`), HTTP/TCP
-  health checks, restart policies with backoff and crash-loop protection, dynamic ports (`"port": "auto"`),
-  `${services.backend.url}` variables, log collection, process-tree cleanup (Windows job objects, Unix process groups).
-- **Any frontend** – dev server with HMR, production build served by OpenShell (with `/api` reverse proxy), or any URL.
-- **Any backend** – every executable works: Python, Node.js, Go, Rust, **Java**, **C++**, .NET, … or services that
-  already run elsewhere. Compiled services get a `build` step that re-runs on every code change in development mode
-  ([languages.md](docs/languages.md)).
-- **Native installers** – `openshell package` creates NSIS/MSI, DMG or DEB/AppImage installers with your app's name
-  and icon, without compiling desktop code ([installers.md](docs/installers.md)).
-- **Service monitoring in the window** – right-click the title bar (Windows) or use the tray / macOS menu bar: every
-  service with state, CPU, memory, pid, port, uptime and restart/stop/logs actions.
-- **Development mode** – file watching restarts backends and reloads the window automatically.
-- **Agents can use the app, not only build it** – the *app profile* exposes just the application's own functions
-  (declared capabilities, imported OpenAPI operations, frontend actions) as MCP tools. Installed apps are MCP servers
-  themselves (`my-app.exe --mcp`) and start in the background on demand – no UI automation needed.
-- **Agent Interaction Layer** – 28 built-in tools (status, logs, services, files, UI automation, app capabilities) over **MCP**
-  (stdio and Streamable HTTP) and a plain **HTTP/JSON API**. Model- and vendor-agnostic.
-- **Semantic UI automation** – agents get an accessibility-style snapshot with element refs and can click, fill, press,
-  navigate and wait – in the desktop window or a browser tab. No screenshots or pixel coordinates needed.
-- **Application capabilities** – declare functions in the config (HTTP endpoint or task) or register them from the
-  frontend with the SDK; agents discover and call them directly.
-- **Security** – permission scopes (`read`, `ui`, `actions`, `services`, `files`, `code`, `system`) per mode,
-  human approval for critical actions (desktop dialog or CLI), append-only audit log, project-scoped file access,
-  loopback-only control API with token, Host and Origin checks.
-- **CLI** – `init`, `create`, `dev`, `start`, `stop`, `restart`, `status`, `logs`, `doctor`, `mcp`, `call`, `approve`, …
-- **Three modes, one runtime** – development, production and headless (no window, browser access).
+What makes it different: every OpenShell app is **agent-native**. AI agents (Claude, OpenAI, local models via Ollama /
+LM Studio, any MCP client) can *use* the app through its own functions and *develop* it through a controlled,
+permission-checked interface – without clicking through the UI.
+
+> **Build the shell once. Build applications on top of it. Let agents use and evolve them.**
+
+## Contents
+
+- [Quick start](#quick-start)
+- [How it works](#how-it-works)
+- [Using OpenShell](#using-openshell)
+- [AI agents](#ai-agents)
+- [Features](#features)
+- [Documentation](#documentation)
+- [Project status](#project-status)
+- [Repository layout](#repository-layout)
+- [Contributing](#contributing) · [License](#license)
 
 ## Quick start
 
-Requirements: Rust (stable), and on Linux the Tauri system dependencies (WebKitGTK 4.1). Windows 11 and macOS work out
-of the box.
+**1. Install** – OpenShell consists of two binaries: `openshell` (CLI) and `openshell-desktop` (the shell).
 
 ```bash
-git clone https://github.com/RobinsSuperSchmiede/EDA.git
-cd EDA
-cargo build --release          # builds `openshell` (CLI) and `openshell-desktop` (shell)
+# from source (requires Rust; on Linux also the Tauri system packages, see docs/getting-started.md)
+git clone https://github.com/RobinsSuperSchmiede/EDA.git openshell
+cd openshell
+cargo build --release
+# then put target/release on your PATH (both binaries must stay in the same folder)
 ```
 
-Add `target/release` to your `PATH` (or copy both binaries somewhere on it), then:
+Prebuilt binaries: once a release is published, use `scripts/install.sh` (macOS/Linux) or `scripts/install.ps1`
+(Windows), or download them from the [releases page](https://github.com/RobinsSuperSchmiede/EDA/releases).
+
+**2. Create and run an app**
 
 ```bash
-openshell create my-app        # zero-dependency template (HTML/JS + Python stdlib)
+openshell create my-app          # HTML/JS frontend + Python backend, no other installs needed
 cd my-app
-openshell dev                  # native window, hot reload, logs in the terminal
+openshell dev                    # opens the native window, streams logs, hot-reloads on changes
 ```
 
-Other templates: `openshell create my-app --template react-python` (also `react-node`, `vue-python`, `svelte-go`,
-`vanilla-java`, `vanilla-cpp`, `custom`). Ship it with `openshell package`. For an existing project run `openshell init` – it detects Vite/Next/CRA/Angular/Vue frontends and
-Python/Node/Go/Rust backends.
+**3. Make it yours** – edit `web/` or `backend/`. The window reloads and the backend restarts automatically.
+Other stacks: `openshell create --list` (React, Vue, Svelte, Node.js, Go, Java, C++).
 
-Try it right away with the example in this repository:
+**4. Ship it**
 
 ```bash
-cd examples/todo-app
-openshell dev                  # or: openshell dev --headless (open the printed URL in a browser)
+openshell package                # → Windows setup.exe / macOS .dmg / Linux .deb + .AppImage
 ```
 
-## Let an agent use or develop your app
+**5. Let AI use it**
 
 ```bash
-# use the app (only its own functions, starts it in the background if needed)
-claude mcp add my-app -- openshell mcp --app --start --project /path/to/my-app
-# installed app: command "C:/…/My App/my-app.exe", args ["--mcp"]
-
-# develop the app (runtime, logs, files, UI automation)
-claude mcp add my-app-dev -- openshell mcp --project /path/to/my-app
+claude mcp add my-app -- openshell mcp --app --start --project .
+# "Add a todo 'call the bank' to my app" – the agent calls the app's own add_todo function
 ```
 
-The agent sees the running application: `app_info`, `runtime_status`, `logs_read`, `ui_snapshot`, `ui_click`,
-`ui_fill`, `service_restart`, `cap_add_todo`, … Ask it *"Add a 'clear completed' button"* – it edits the code, the
-shell reloads the window, and the agent verifies the result through the UI bridge. See [docs/agents.md](docs/agents.md).
+## How it works
 
-Without MCP, the same tools are available as HTTP/JSON (`POST /v1/tools/{name}`) or from the terminal:
+```
+             people                                    AI agents (Claude, OpenAI, Ollama, LM Studio, any MCP client)
+                │                                                    │
+        ┌───────▼────────────────────────────────────────────────────▼────────┐
+        │  OpenShell desktop shell (Tauri 2)                                    │
+        │  native window + WebView · tray · notifications · approval dialogs   │
+        │  ┌───────────────────────────┐   ┌─────────────────────────────────┐ │
+        │  │ Runtime Manager           │   │ Agent Interaction Layer          │ │
+        │  │ start · health · restart  │   │ MCP + HTTP tools · UI bridge     │ │
+        │  │ build · logs · metrics    │   │ capabilities · OpenAPI import    │ │
+        │  │ ports · file watching     │   │ permissions · approvals · audit  │ │
+        │  └─────────────┬─────────────┘   └─────────────────────────────────┘ │
+        └────────────────┼─────────────────────────────────────────────────────┘
+                         │ manages separate processes – never compiled into the shell
+     ┌────────────┬──────┴──────┬────────────┬──────────────┐
+     ▼            ▼             ▼            ▼              ▼
+  frontend     backend       database     worker      local AI server
+ React/Vue/  Python/Node/   SQLite/PG/    any         Ollama, LM Studio
+ Svelte/HTML Java/C++/Go…   external…
+```
+
+- **The shell is not your app.** It is the runtime and management layer around it. Your frontend and backend stay
+  normal, independent projects – change them (by hand or by an agent) and the running app picks it up. The shell is
+  never rebuilt.
+- **One config file** describes the app: which frontend to show, which services to run, how to check their health,
+  what agents may do. See the [configuration reference](docs/configuration.md).
+- **One runtime, three modes:** development (hot reload, broad agent access), production (stable, restricted agents)
+  and headless (no window, background service).
+
+## Using OpenShell
+
+### Turn an existing web app into a desktop app
 
 ```bash
-openshell call ui_snapshot
-openshell call ui_fill '{"label": "New todo", "value": "Buy milk", "submit": true}'
-openshell call service_restart '{"name": "backend"}'
+cd my-existing-project
+openshell init        # detects Vite/Next/CRA/Angular/Vue frontends and Python/Node/Go/Rust/Java/C++ backends
+openshell doctor      # checks commands, folders, ports, toolchain
+openshell dev
 ```
+
+A typical `openshell.json`:
+
+```json
+{
+  "version": 1,
+  "app": { "name": "My App", "version": "1.0.0", "icon": "assets/icon.png" },
+  "frontend": {
+    "command": "npm run dev -- --port ${port} --strictPort",
+    "cwd": "frontend",
+    "port": "auto",
+    "url": "http://127.0.0.1:${port}",
+    "setup": { "command": "npm install", "creates": "frontend/node_modules" },
+    "build": "npm run build",
+    "dist": "frontend/dist",
+    "proxy": { "/api": "${services.backend.url}" },
+    "depends_on": ["backend"]
+  },
+  "services": [
+    {
+      "name": "backend",
+      "command": ["python", "main.py"],
+      "cwd": "backend",
+      "port": "auto",
+      "healthcheck": "http://127.0.0.1:${port}/health",
+      "openapi": "/openapi.json",
+      "watch": ["backend"]
+    }
+  ]
+}
+```
+
+Your backend reads its port from `PORT`, stores data in `OPENSHELL_DATA_DIR` and answers `/health`. That is the whole
+contract – see the [app contract](docs/ai/app-development.md#the-app-contract).
+
+### Develop
+
+| Task | Command |
+|---|---|
+| Run with window / without window (browser) | `openshell dev` / `openshell dev --headless` |
+| What is running? (state, pid, port, CPU, memory) | `openshell status` |
+| Logs | `openshell logs backend -f --errors` |
+| Restart / stop / start a service | `openshell restart backend` · `openshell stop worker` · `openshell run worker` |
+| Production mode, in the background | `openshell start --detach` |
+| Stop everything | `openshell stop` |
+
+In the window, **right-click the title bar** (Windows) or use the **tray icon** to monitor every service – state, CPU,
+memory, uptime – and to restart services, open logs or copy the MCP command for agents.
+
+### Any language
+
+| Backend | Example `command` | `build` |
+|---|---|---|
+| Python | `["python", "main.py"]` | – |
+| Node.js | `["node", "server.js"]` | – |
+| Java / Spring Boot | `["mvnw", "spring-boot:run"]` | – (or `mvnw package` + `java -jar`) |
+| C++ (CMake) | `["build/bin/server"]` | `cmake -S . -B build && cmake --build build` |
+| Go / Rust / .NET | `["bin/server"]` | `go build` / `cargo build` / `dotnet build` |
+
+Compiled services rebuild and restart automatically on every change in development mode. Details:
+[docs/languages.md](docs/languages.md).
+
+### Ship
+
+`openshell package` builds the app (`frontend.build`, `services[].build`) and creates a native installer with your
+app's name and icon – NSIS/MSI on Windows, `.app`/`.dmg` on macOS, `.deb`/`.rpm`/`.AppImage` on Linux. Installed apps
+keep their data per user and are MCP servers themselves. See [docs/installers.md](docs/installers.md).
+
+## AI agents
+
+OpenShell offers agents two profiles over [MCP](https://modelcontextprotocol.io) (and plain HTTP/JSON):
+
+| | **App profile** – *use* the app | **Full profile** – *develop* the app |
+|---|---|---|
+| For | assistants working with your application | coding agents building / fixing it |
+| Tools | the app's own functions: declared capabilities, imported OpenAPI operations, frontend actions, `app_status` | 28 tools: status, logs, services, files, UI automation, tasks, capabilities |
+| Connect | `openshell mcp --app --start` · installed app: `my-app.exe --mcp` | `openshell mcp` |
+
+```bash
+claude mcp add my-app     -- openshell mcp --app --start --project /path/to/my-app   # use
+claude mcp add my-app-dev -- openshell mcp --project /path/to/my-app                 # develop
+```
+
+Every call is checked against permission scopes (`read`, `ui`, `actions`, `services`, `files`, `code`, `system`),
+critical actions can require a human approval dialog, and everything is written to an audit log.
+Read more in [docs/agents.md](docs/agents.md).
+
+### Build a new app with an AI coding agent
+
+This repository is prepared for AI harnesses (Claude Code, Codex, Cursor, Copilot, Aider, …):
+
+- [`AGENTS.md`](AGENTS.md) / [`CLAUDE.md`](CLAUDE.md) – entry points for agents working in this repo,
+- [`docs/ai/app-development.md`](docs/ai/app-development.md) – the complete guide for building apps on OpenShell
+  (also printed by `openshell guide`),
+- [`llms.txt`](llms.txt) / [`llms-full.txt`](llms-full.txt) – the documentation in LLM-friendly form,
+- every project created with `openshell create` / `openshell init` gets its own `AGENTS.md` and `CLAUDE.md`.
+
+So you can simply say to your coding agent:
+
+> *Build me a desktop app with OpenShell: a recipe manager with a React frontend and a Python backend. Recipes should
+> be searchable, and AI agents should be able to add and find recipes.*
+
+The agent finds the contract, the templates, the verification commands (`openshell status`, `openshell call
+ui_snapshot`, …) and the packaging steps on its own. See [docs/ai/README.md](docs/ai/README.md).
+
+## Features
+
+- **Runtime manager** – dependency-ordered start, one-time setup (`npm install`), build steps, HTTP/TCP health checks,
+  restart policies with backoff and crash-loop protection, dynamic ports and `${services.x.url}` variables, logs,
+  CPU/memory per process tree, process-tree cleanup (Windows job objects, Unix process groups), external services.
+- **Frontend manager** – dev servers with HMR, production builds served by OpenShell with `/api` reverse proxy,
+  external URLs; framework-agnostic.
+- **Desktop integration** – window settings, loading screen, runtime panel, tray, notifications, close-to-tray /
+  background mode, single instance, title-bar service menu, approval dialogs.
+- **Agent Interaction Layer** – MCP (stdio + Streamable HTTP) and HTTP/JSON, semantic UI automation (accessibility-style
+  snapshots with element refs, click/fill/press/navigate/wait), capabilities from config / OpenAPI / frontend SDK,
+  AI provider discovery (Ollama, LM Studio, configured providers).
+- **Security** – permission scopes per mode, human approvals, append-only audit log, project-scoped file access,
+  loopback-only control API with tokens, Host and Origin checks.
+- **Developer experience** – CLI (`init`, `create`, `dev`, `doctor`, `logs`, `package`, …), 8 templates, JSON Schema
+  for editor completion, frontend SDK, `openshell doctor`.
+- **Installers** – per-app branded installers without compiling desktop code.
+
+## Documentation
+
+| | |
+|---|---|
+| [Getting started](docs/getting-started.md) | Install, first app, existing projects |
+| [Tutorial](docs/tutorial.md) | Build a complete app step by step |
+| [Configuration](docs/configuration.md) | Every field of `openshell.json` |
+| [Languages](docs/languages.md) | C++, Java, Go, Rust, .NET, Python, Node |
+| [AI agents](docs/agents.md) | MCP profiles, tools, UI automation, capabilities, permissions |
+| [AI app development](docs/ai/app-development.md) | Guide for AI coding agents building apps on OpenShell |
+| [Installers](docs/installers.md) | `openshell package`, installed app behaviour |
+| [CLI](docs/cli.md) · [SDK](docs/sdk.md) · [Control API](docs/control-api.md) | References |
+| [Architecture](ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Changelog](CHANGELOG.md) | Project |
+
+## Project status
+
+**Alpha (0.1).** Tested end to end on Windows 11: desktop shell, services in Python / Node / Java / C++, monitoring,
+CLI, MCP in both profiles, OpenAPI import, UI automation, approvals, NSIS installers. macOS and Linux build in CI but
+have seen little manual testing. APIs and the config format may still change before 1.0. Next: bundled runtimes,
+auto-updates, code signing, screenshot fallback for UI automation – see the [roadmap](ROADMAP.md).
 
 ## Repository layout
 
 ```
-crates/config      openshell-config   – config schema, parsing, validation, variables
-crates/runtime     openshell-runtime  – process/service/frontend manager, health, logs, static server, watcher
-crates/agent       openshell-agent    – permissions, approvals, audit, UI bridge hub, tool catalogue, MCP
-crates/core        openshell-core     – wires runtime + agent layer, control API (HTTP/WS/MCP), tool execution
-crates/cli         openshell          – command line interface (also the headless runtime and MCP stdio server)
-crates/package     openshell-package  – native installers (branded shell binary + app files + Tauri bundler)
-apps/desktop       openshell-desktop  – Tauri 2 shell: window, WebView, tray, dialogs, loading screen, runtime panel
-packages/sdk       @openshell/sdk     – optional frontend SDK (no dependencies)
+apps/desktop/      openshell-desktop  Tauri 2 shell: window, WebView, tray, menus, dialogs, loading screen
+crates/config      openshell-config   config schema, parsing, validation, variables
+crates/runtime     openshell-runtime  services, health, builds, logs, metrics, static server, file watching
+crates/agent       openshell-agent    permissions, approvals, audit, UI bridge, tool catalogue, MCP protocol
+crates/core        openshell-core     runtime + agent layer, control API, tools, OpenAPI import, MCP stdio
+crates/cli         openshell          command line interface
+crates/package     openshell-package  native installers
+packages/sdk       @openshell/sdk     optional frontend SDK
 templates/         project templates (embedded into the CLI)
-examples/todo-app  runnable example
+examples/          runnable examples
+docs/              documentation (docs/ai: material for AI agents, docs/concept: original concept, German)
 schema/            JSON Schema of openshell.json
-docs/              documentation
 ```
 
-## Documentation
+## Contributing
 
-- [Getting started](docs/getting-started.md)
-- [Configuration reference](docs/configuration.md)
-- [Agent Interaction Layer](docs/agents.md) – MCP, tools, UI automation, capabilities, permissions
-- [CLI reference](docs/cli.md)
-- [Frontend SDK](docs/sdk.md)
-- [C++, Java and other languages](docs/languages.md)
-- [Installers](docs/installers.md)
-- [Control API](docs/control-api.md)
-- [Architecture](ARCHITECTURE.md) and [Roadmap](ROADMAP.md)
-- [Contributing](CONTRIBUTING.md)
-- Original concept (German): [docs/concept.de.md](docs/concept.de.md), [Plan.md](Plan.md), [Prompt.md](Prompt.md)
-
-## Status
-
-Alpha (v0.1). Works end to end on Windows: desktop shell, WebView, backend supervision (Python, Node, Java, C++),
-health checks, resource monitoring, logs, CLI, MCP (app and developer profiles), OpenAPI import, UI automation,
-approvals, NSIS installers. macOS/Linux builds are untested so far. Auto-updates, bundled runtimes and autostart are
-on the [roadmap](ROADMAP.md).
+Contributions are welcome – bug reports, docs, templates, platform testing (macOS/Linux!) and code. Start with
+[CONTRIBUTING.md](CONTRIBUTING.md); please follow the [Code of Conduct](CODE_OF_CONDUCT.md) and report
+vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE) © The OpenShell contributors

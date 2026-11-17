@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & ideas
+    url: https://github.com/RobinsSuperSchmiede/EDA/discussions
+    about: Ask how to build something with OpenShell or discuss ideas.
+  - name: Security vulnerability
+    url: https://github.com/RobinsSuperSchmiede/EDA/security/advisories/new
+    about: Please report security issues privately.

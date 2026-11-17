@@ -54,11 +54,7 @@ pub fn find_desktop_binary() -> Option<PathBuf> {
             return Some(p);
         }
     }
-    let name = if cfg!(windows) {
-        "openshell-desktop.exe"
-    } else {
-        "openshell-desktop"
-    };
+    let name = if cfg!(windows) { "openshell-desktop.exe" } else { "openshell-desktop" };
     if let Ok(exe) = std::env::current_exe() {
         let candidate = exe.with_file_name(name);
         if candidate.is_file() {
@@ -146,7 +142,11 @@ async fn run_headless(project: Project, mode: Mode) -> Result<()> {
     Ok(())
 }
 
-async fn wait_for_shell(project: &Project, child: &mut std::process::Child, timeout: Duration) -> Result<ControlClient> {
+async fn wait_for_shell(
+    project: &Project,
+    child: &mut std::process::Child,
+    timeout: Duration,
+) -> Result<ControlClient> {
     let deadline = Instant::now() + timeout;
     loop {
         if let Ok(c) = ControlClient::connect(&project.state_dir()).await {
@@ -179,23 +179,20 @@ fn configure_detached(cmd: &mut std::process::Command) {
 
 async fn run_desktop(project: &Project, mode: Mode, bin: &Path, detach: bool) -> Result<()> {
     let mut cmd = std::process::Command::new(bin);
-    cmd.arg("--project")
-        .arg(&project.root)
-        .arg("--mode")
-        .arg(mode.to_string())
-        .stdin(Stdio::null());
+    cmd.arg("--project").arg(&project.root).arg("--mode").arg(mode.to_string()).stdin(Stdio::null());
     if detach {
         cmd.stdout(Stdio::null()).stderr(Stdio::null());
         openshell_core::headless::disable_stdio_inheritance();
     }
     configure_detached(&mut cmd);
-    let mut child = cmd
-        .spawn()
-        .with_context(|| format!("cannot start {}", bin.display()))?;
+    let mut child = cmd.spawn().with_context(|| format!("cannot start {}", bin.display()))?;
     let client = wait_for_shell(project, &mut child, Duration::from_secs(60)).await?;
     banner(&client.info.app, mode, "desktop", &client.info.url);
     if detach {
-        output::ok(&format!("running in the background (pid {}). Stop it with `openshell stop`.", child.id()));
+        output::ok(&format!(
+            "running in the background (pid {}). Stop it with `openshell stop`.",
+            child.id()
+        ));
         return Ok(());
     }
 
@@ -291,24 +288,15 @@ pub async fn build_project(project: &Project) -> Result<()> {
     for def in defs.iter().filter(|d| d.build.is_some()) {
         let b = def.build.as_ref().unwrap();
         println!("{} {} {}", dim("build:"), bold(&def.name), b.command.display());
-        run_inherit(&b.command, &b.cwd)
-            .await
-            .with_context(|| format!("building `{}` failed", def.name))?;
+        run_inherit(&b.command, &b.cwd).await.with_context(|| format!("building `{}` failed", def.name))?;
         did_something = true;
     }
     if let Some(fe) = &project.config.frontend {
-        let cwd = fe
-            .cwd
-            .as_ref()
-            .map(|c| project.resolve_path(c))
-            .unwrap_or_else(|| project.root.clone());
+        let cwd = fe.cwd.as_ref().map(|c| project.resolve_path(c)).unwrap_or_else(|| project.root.clone());
         if let Some(build) = &fe.build {
             if let Some(setup) = &fe.setup {
-                let needed = setup
-                    .creates
-                    .as_ref()
-                    .map(|c| !project.resolve_path(c).exists())
-                    .unwrap_or(true);
+                let needed =
+                    setup.creates.as_ref().map(|c| !project.resolve_path(c).exists()).unwrap_or(true);
                 if needed {
                     println!("{} {}", dim("setup:"), setup.command.display());
                     run_inherit(&setup.command, &cwd).await?;
@@ -320,7 +308,9 @@ pub async fn build_project(project: &Project) -> Result<()> {
         }
     }
     if did_something {
-        output::ok("build finished. Run it with `openshell start` or create an installer with `openshell package`.");
+        output::ok(
+            "build finished. Run it with `openshell start` or create an installer with `openshell package`.",
+        );
     } else {
         output::ok("nothing to build (no `build` steps configured)");
     }

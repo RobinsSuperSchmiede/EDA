@@ -70,7 +70,9 @@ pub fn mcp_tool(t: &ToolDef) -> Value {
 pub fn mcp_call_result(outcome: &ToolOutcome) -> Value {
     let text = match &outcome.result {
         Value::String(s) => s.clone(),
-        v if !outcome.ok => v.get("error").and_then(|e| e.as_str()).map(str::to_string).unwrap_or_else(|| v.to_string()),
+        v if !outcome.ok => {
+            v.get("error").and_then(|e| e.as_str()).map(str::to_string).unwrap_or_else(|| v.to_string())
+        }
         v => serde_json::to_string_pretty(v).unwrap_or_default(),
     };
     let mut result = json!({
@@ -99,9 +101,7 @@ pub async fn handle_message(provider: &dyn ToolProvider, msg: Value, ctx: CallCo
     let params = msg.get("params").cloned().unwrap_or(json!({}));
 
     // notifications and responses have no id
-    let Some(id) = id else {
-        return None;
-    };
+    let id = id?;
     if method.is_empty() {
         return Some(rpc_error(&id, -32600, "invalid request"));
     }
@@ -158,7 +158,12 @@ mod tests {
         fn list_tools(&self) -> Vec<ToolDef> {
             builtin_tools()
         }
-        fn call_tool<'a>(&'a self, name: &'a str, args: Value, ctx: CallContext) -> BoxFuture<'a, ToolOutcome> {
+        fn call_tool<'a>(
+            &'a self,
+            name: &'a str,
+            args: Value,
+            ctx: CallContext,
+        ) -> BoxFuture<'a, ToolOutcome> {
             Box::pin(async move {
                 if name == "fs_write" {
                     ToolOutcome::error("denied")
@@ -183,9 +188,13 @@ mod tests {
         .await
         .unwrap();
         assert_eq!(init["result"]["protocolVersion"], "2025-03-26");
-        assert!(handle_message(&Echo, json!({"jsonrpc":"2.0","method":"notifications/initialized"}), ctx()).await.is_none());
+        assert!(handle_message(&Echo, json!({"jsonrpc":"2.0","method":"notifications/initialized"}), ctx())
+            .await
+            .is_none());
 
-        let list = handle_message(&Echo, json!({"jsonrpc":"2.0","id":2,"method":"tools/list"}), ctx()).await.unwrap();
+        let list = handle_message(&Echo, json!({"jsonrpc":"2.0","id":2,"method":"tools/list"}), ctx())
+            .await
+            .unwrap();
         let tools = list["result"]["tools"].as_array().unwrap();
         assert!(tools.iter().any(|t| t["name"] == "ui_snapshot"));
 
@@ -209,7 +218,8 @@ mod tests {
         assert_eq!(denied["result"]["isError"], true);
         assert_eq!(denied["result"]["content"][0]["text"], "denied");
 
-        let unknown = handle_message(&Echo, json!({"jsonrpc":"2.0","id":5,"method":"nope"}), ctx()).await.unwrap();
+        let unknown =
+            handle_message(&Echo, json!({"jsonrpc":"2.0","id":5,"method":"nope"}), ctx()).await.unwrap();
         assert_eq!(unknown["error"]["code"], -32601);
     }
 }

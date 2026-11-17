@@ -1,0 +1,32 @@
+# OpenShell
+
+> OpenShell is an open-source desktop shell (Rust + Tauri 2) that turns any web app into a native desktop app. An app is a normal project folder: a web frontend, services in any language (Python, Node.js, Java, C++, Go, Rust, .NET) and an `openshell.json`. OpenShell starts and supervises the services, shows the frontend in a native window, reloads on code changes, builds installers and exposes the app to AI agents over MCP – in an "app" profile (use the app's own functions) and a "full" profile (develop it: logs, services, files, UI automation).
+
+Key facts for building apps: services read `PORT` and bind `127.0.0.1`, answer `GET /health`, store data in `OPENSHELL_DATA_DIR`; the frontend calls the backend via relative `/api` URLs; app functions become agent tools via `capabilities`, `openapi` or frontend actions. CLI: `openshell create|init|dev|status|logs|call|build|package|mcp|guide`. All docs in one file: llms-full.txt.
+
+## Building apps
+
+- [AI app development guide](https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/ai/app-development.md): app contract, workflow, verification commands, config cheat sheet, pitfalls (also `openshell guide`)
+- [Getting started](https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/getting-started.md): install, create, run
+- [Tutorial](https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/tutorial.md): a complete app step by step
+- [Configuration reference](https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/configuration.md): every field of openshell.json
+- [Languages](https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/languages.md): Java, Spring Boot, C++/CMake, Go, Rust, .NET
+- [Installers](https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/installers.md): openshell package
+
+## AI agents
+
+- [Agent Interaction Layer](https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/agents.md): MCP profiles, tools, UI automation, capabilities, permissions, security
+- [AI material overview](https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/ai/README.md): harness setup, skill, example prompts
+- [Control API](https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/control-api.md): local HTTP API
+
+## Reference
+
+- [CLI](https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/cli.md)
+- [Frontend SDK](https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/sdk.md)
+- [JSON Schema](https://github.com/RobinsSuperSchmiede/EDA/blob/main/schema/openshell.schema.json)
+
+## Optional
+
+- [Architecture](https://github.com/RobinsSuperSchmiede/EDA/blob/main/ARCHITECTURE.md)
+- [Contributing / working on OpenShell itself](https://github.com/RobinsSuperSchmiede/EDA/blob/main/AGENTS.md)
+- [Roadmap](https://github.com/RobinsSuperSchmiede/EDA/blob/main/ROADMAP.md)

@@ -52,10 +52,7 @@ impl AuditLog {
         if let Some(dir) = path.as_ref().and_then(|p| p.parent()) {
             let _ = std::fs::create_dir_all(dir);
         }
-        Self {
-            path,
-            recent: Mutex::new(VecDeque::new()),
-        }
+        Self { path, recent: Mutex::new(VecDeque::new()) }
     }
 
     pub fn record(&self, mut entry: AuditEntry) {

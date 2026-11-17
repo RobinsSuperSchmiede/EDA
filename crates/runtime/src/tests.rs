@@ -49,10 +49,7 @@ async fn runs_process_and_captures_output() {
     rt.start_all();
     let st = wait_state(&rt, "hello", ServiceState::Exited, 10).await;
     assert_eq!(st.exit_code, Some(0));
-    let lines = rt.logs().query(&LogQuery {
-        service: Some("hello".into()),
-        ..Default::default()
-    });
+    let lines = rt.logs().query(&LogQuery { service: Some("hello".into()), ..Default::default() });
     assert!(
         lines.iter().any(|l| l.text.contains("hello-openshell") && l.stream == LogStream::Stdout),
         "{lines:?}"
@@ -74,9 +71,8 @@ async fn crash_loop_is_limited() {
 
 #[tokio::test]
 async fn crash_without_restart_is_reported() {
-    let (_d, p) = project(
-        r#"{"app":{"name":"t"},"services":[{"name":"crash","command":"exit 2","restart":false}]}"#,
-    );
+    let (_d, p) =
+        project(r#"{"app":{"name":"t"},"services":[{"name":"crash","command":"exit 2","restart":false}]}"#);
     let rt = Runtime::new(&p, Mode::Development).unwrap();
     rt.start("crash").unwrap();
     let st = wait_state(&rt, "crash", ServiceState::Crashed, 10).await;
@@ -85,10 +81,8 @@ async fn crash_without_restart_is_reported() {
 
 #[tokio::test]
 async fn stop_and_restart_long_running_process() {
-    let json = format!(
-        r#"{{"app":{{"name":"t"}},"services":[{{"name":"svc","command":"{}"}}]}}"#,
-        sleep_cmd()
-    );
+    let json =
+        format!(r#"{{"app":{{"name":"t"}},"services":[{{"name":"svc","command":"{}"}}]}}"#, sleep_cmd());
     let (_d, p) = project(&json);
     let rt = Runtime::new(&p, Mode::Development).unwrap();
     rt.start_all();
@@ -165,12 +159,7 @@ async fn setup_runs_once() {
     wait_state(&rt, "s", ServiceState::Exited, 10).await;
     assert!(dir.path().join("marker.txt").exists());
     let setup_runs = |rt: &Runtime| {
-        rt.logs()
-            .query(&LogQuery {
-                contains: Some("running setup".into()),
-                ..Default::default()
-            })
-            .len()
+        rt.logs().query(&LogQuery { contains: Some("running setup".into()), ..Default::default() }).len()
     };
     assert_eq!(setup_runs(&rt), 1);
     rt.start("s").unwrap();
@@ -181,9 +170,7 @@ async fn setup_runs_once() {
 
 #[tokio::test]
 async fn serves_static_frontend_with_injection() {
-    let (dir, p) = project(
-        r#"{"app":{"name":"t"},"frontend":{"dist":"web"}}"#,
-    );
+    let (dir, p) = project(r#"{"app":{"name":"t"},"frontend":{"dist":"web"}}"#);
     std::fs::create_dir_all(dir.path().join("web/assets")).unwrap();
     std::fs::write(
         dir.path().join("web/index.html"),
@@ -209,9 +196,8 @@ async fn serves_static_frontend_with_injection() {
 
 #[tokio::test]
 async fn events_are_emitted() {
-    let (_d, p) = project(
-        r#"{"app":{"name":"t"},"services":[{"name":"e","command":"echo hi","restart":false}]}"#,
-    );
+    let (_d, p) =
+        project(r#"{"app":{"name":"t"},"services":[{"name":"e","command":"echo hi","restart":false}]}"#);
     let rt = Runtime::new(&p, Mode::Development).unwrap();
     let mut rx = rt.subscribe();
     rt.start_all();
@@ -230,10 +216,8 @@ async fn events_are_emitted() {
 
 #[tokio::test]
 async fn start_while_stopping_is_not_lost() {
-    let json = format!(
-        r#"{{"app":{{"name":"t"}},"services":[{{"name":"svc","command":"{}"}}]}}"#,
-        sleep_cmd()
-    );
+    let json =
+        format!(r#"{{"app":{{"name":"t"}},"services":[{{"name":"svc","command":"{}"}}]}}"#, sleep_cmd());
     let (_d, p) = project(&json);
     let rt = Runtime::new(&p, Mode::Development).unwrap();
     rt.start_all();
@@ -298,16 +282,15 @@ async fn failed_build_is_reported() {
     rt.start("svc").unwrap();
     let st = wait_state(&rt, "svc", ServiceState::Failed, 15).await;
     assert!(st.last_error.unwrap().starts_with("build failed"));
-    let errs = rt.logs().query(&LogQuery { contains: Some("missing semicolon".into()), ..Default::default() });
+    let errs =
+        rt.logs().query(&LogQuery { contains: Some("missing semicolon".into()), ..Default::default() });
     assert_eq!(errs.iter().filter(|l| l.stream == LogStream::Stdout).count(), 1);
 }
 
 #[tokio::test]
 async fn metrics_are_sampled() {
-    let json = format!(
-        r#"{{"app":{{"name":"t"}},"services":[{{"name":"svc","command":"{}"}}]}}"#,
-        sleep_cmd()
-    );
+    let json =
+        format!(r#"{{"app":{{"name":"t"}},"services":[{{"name":"svc","command":"{}"}}]}}"#, sleep_cmd());
     let (_d, p) = project(&json);
     let rt = Runtime::new(&p, Mode::Development).unwrap();
     rt.start_all();

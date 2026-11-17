@@ -118,13 +118,23 @@ pub fn operations(doc: &Value, service: &str, base_url: &str, cfg: &OpenApiConfi
             let mut required: Vec<String> = Vec::new();
             let mut path_params = Vec::new();
             let mut query_params = Vec::new();
-            let params = resolve(doc, &json!([shared_params, op.get("parameters").cloned().unwrap_or(json!([]))]), 0);
-            for p in params.as_array().into_iter().flatten().flat_map(|a| a.as_array().cloned().unwrap_or_default()) {
-                let (Some(pname), Some(location)) = (p.get("name").and_then(|v| v.as_str()), p.get("in").and_then(|v| v.as_str())) else {
+            let params =
+                resolve(doc, &json!([shared_params, op.get("parameters").cloned().unwrap_or(json!([]))]), 0);
+            for p in params
+                .as_array()
+                .into_iter()
+                .flatten()
+                .flat_map(|a| a.as_array().cloned().unwrap_or_default())
+            {
+                let (Some(pname), Some(location)) =
+                    (p.get("name").and_then(|v| v.as_str()), p.get("in").and_then(|v| v.as_str()))
+                else {
                     continue;
                 };
                 let mut schema = p.get("schema").cloned().unwrap_or(json!({ "type": "string" }));
-                if let (Some(d), Some(o)) = (p.get("description").and_then(|d| d.as_str()), schema.as_object_mut()) {
+                if let (Some(d), Some(o)) =
+                    (p.get("description").and_then(|d| d.as_str()), schema.as_object_mut())
+                {
                     o.insert("description".into(), json!(d));
                 }
                 match location {
@@ -150,7 +160,8 @@ pub fn operations(doc: &Value, service: &str, base_url: &str, cfg: &OpenApiConfi
                     .and_then(|c| c.get("schema"))
                     .map(|s| resolve(doc, s, 0))
                     .unwrap_or(json!({}));
-                let body_required = op.pointer("/requestBody/required").and_then(|r| r.as_bool()).unwrap_or(false);
+                let body_required =
+                    op.pointer("/requestBody/required").and_then(|r| r.as_bool()).unwrap_or(false);
                 match schema.get("properties").and_then(|p| p.as_object()) {
                     Some(props) => {
                         for (k, v) in props {
@@ -261,7 +272,12 @@ mod tests {
                 "properties": { "name": { "type": "string" }, "price": { "type": "number" } }
             } } }
         });
-        let cfg = OpenApiConfig { location: "/openapi.json".into(), include: vec![], exclude: vec!["health".into()], prefix: None };
+        let cfg = OpenApiConfig {
+            location: "/openapi.json".into(),
+            include: vec![],
+            exclude: vec!["health".into()],
+            prefix: None,
+        };
         let ops = operations(&doc, "backend", "http://127.0.0.1:8000/", &cfg);
         assert_eq!(ops.len(), 2);
         let read = ops.iter().find(|o| o.name == "read_item").unwrap();

@@ -25,7 +25,9 @@ pub fn resolve(root: &Path, rel: &str, for_write: bool) -> Result<PathBuf, Strin
         match comp {
             Component::Normal(c) => out.push(c),
             Component::CurDir => {}
-            Component::ParentDir => return Err(format!("`{rel}`: `..` is not allowed; paths are relative to the project root")),
+            Component::ParentDir => {
+                return Err(format!("`{rel}`: `..` is not allowed; paths are relative to the project root"))
+            }
             Component::RootDir | Component::Prefix(_) => {
                 return Err(format!("`{rel}`: use a path relative to the project root"))
             }
@@ -65,10 +67,7 @@ fn dunce(p: PathBuf) -> PathBuf {
 }
 
 fn rel_display(root: &Path, p: &Path) -> String {
-    p.strip_prefix(root)
-        .unwrap_or(p)
-        .to_string_lossy()
-        .replace('\\', "/")
+    p.strip_prefix(root).unwrap_or(p).to_string_lossy().replace('\\', "/")
 }
 
 pub fn list(root: &Path, rel: &str, recursive: bool, max: usize) -> Result<Value, String> {

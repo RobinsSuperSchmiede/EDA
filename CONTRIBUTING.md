@@ -31,11 +31,18 @@ cd examples/todo-app
 | Process supervision, health, logs, static server | `crates/runtime` |
 | Permissions, approvals, audit, UI bridge (`assets/bridge.js`), MCP, tool definitions | `crates/agent` |
 | Tool implementations, control API routes | `crates/core` |
-| CLI commands, templates | `crates/cli`, `templates/` |
+| CLI commands, templates | `crates/cli`, `templates/` (`templates/_shared` is added to every project) |
+| Installers | `crates/package` |
+| Docs for AI agents | `docs/ai/`, `AGENTS.md`, `llms.txt` |
 | Window, tray, dialogs, loading screen | `apps/desktop` |
 | Frontend SDK | `packages/sdk` |
 
 When you add a config field, regenerate the schema: `cargo run -p openshell-cli -- schema > schema/openshell.schema.json`.
+When you change documentation, regenerate `llms-full.txt`: `python scripts/gen-llms-full.py`. CI checks both.
+
+Using an AI coding agent to contribute? [AGENTS.md](AGENTS.md) contains the project map, commands and conventions.
+Changes that affect app developers must also update [docs/ai/app-development.md](docs/ai/app-development.md) and
+[templates/_shared/AGENTS.md](templates/_shared/AGENTS.md) – that is what AI agents read when they build apps.
 
 ## Guidelines
 

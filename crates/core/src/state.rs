@@ -70,10 +70,7 @@ impl ControlClient {
     pub async fn connect(state_dir: &Path) -> Result<Self> {
         let info = read_runtime_info(state_dir).ok_or_else(|| anyhow!(NOT_RUNNING))?;
         let client = Self {
-            http: reqwest::Client::builder()
-                .no_proxy()
-                .timeout(Duration::from_secs(300))
-                .build()?,
+            http: reqwest::Client::builder().no_proxy().timeout(Duration::from_secs(300)).build()?,
             info,
             agent: "openshell-cli".into(),
         };
@@ -98,11 +95,7 @@ impl ControlClient {
         let text = resp.text().await.unwrap_or_default();
         let value: Value = serde_json::from_str(&text).unwrap_or(Value::String(text.clone()));
         if !status.is_success() {
-            let msg = value
-                .get("error")
-                .and_then(|e| e.as_str())
-                .map(str::to_string)
-                .unwrap_or(text);
+            let msg = value.get("error").and_then(|e| e.as_str()).map(str::to_string).unwrap_or(text);
             bail!("{msg}");
         }
         Ok(value)

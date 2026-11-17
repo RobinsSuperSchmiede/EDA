@@ -45,48 +45,28 @@ fn parses_full_example() {
     assert_eq!(backend.port, Some(PortSpec::Fixed(8000)));
     assert_eq!(cfg.capabilities[1].permission, Permission::Actions);
     assert_eq!(
-        cfg.agents
-            .permissions_for(Mode::Production)
-            .into_iter()
-            .collect::<Vec<_>>(),
+        cfg.agents.permissions_for(Mode::Production).into_iter().collect::<Vec<_>>(),
         vec![Permission::Read]
     );
-    assert!(cfg
-        .agents
-        .permissions_for(Mode::Development)
-        .contains(&Permission::Code));
+    assert!(cfg.agents.permissions_for(Mode::Development).contains(&Permission::Code));
 }
 
 #[test]
 fn frontend_plan_depends_on_mode() {
     let cfg = parse_json(FULL).unwrap();
     let fe = cfg.frontend.unwrap();
-    assert!(matches!(
-        fe.plan(Mode::Development),
-        Some(FrontendPlan::Process { .. })
-    ));
-    assert_eq!(
-        fe.plan(Mode::Production),
-        Some(FrontendPlan::Static {
-            dist: "frontend/dist".into()
-        })
-    );
-    let external = FrontendConfig {
-        url: Some("https://example.com".into()),
-        ..Default::default()
-    };
+    assert!(matches!(fe.plan(Mode::Development), Some(FrontendPlan::Process { .. })));
+    assert_eq!(fe.plan(Mode::Production), Some(FrontendPlan::Static { dist: "frontend/dist".into() }));
+    let external = FrontendConfig { url: Some("https://example.com".into()), ..Default::default() };
     assert_eq!(
         external.plan(Mode::Production),
-        Some(FrontendPlan::External {
-            url: "https://example.com".into()
-        })
+        Some(FrontendPlan::External { url: "https://example.com".into() })
     );
 }
 
 #[test]
 fn unknown_fields_report_path() {
-    let err = parse_json(r#"{"app":{"name":"x"},"services":[{"name":"a","comand":"x"}]}"#)
-        .unwrap_err();
+    let err = parse_json(r#"{"app":{"name":"x"},"services":[{"name":"a","comand":"x"}]}"#).unwrap_err();
     assert!(err.contains("services[0]"), "{err}");
     assert!(err.contains("comand"), "{err}");
 }
@@ -110,11 +90,7 @@ fn detects_semantic_errors() {
     )
     .unwrap();
     let issues = validate(&cfg);
-    let text = issues
-        .iter()
-        .map(|i| i.to_string())
-        .collect::<Vec<_>>()
-        .join("\n");
+    let text = issues.iter().map(|i| i.to_string()).collect::<Vec<_>>().join("\n");
     for needle in [
         "dependency cycle",
         "unknown service `missing`",
@@ -145,10 +121,7 @@ fn startup_order_respects_dependencies() {
         {"name":"worker","command":"x"}]}"#,
     )
     .unwrap();
-    assert_eq!(
-        startup_order(&cfg.services),
-        vec!["db", "api", "web", "worker"]
-    );
+    assert_eq!(startup_order(&cfg.services), vec!["db", "api", "web", "worker"]);
 }
 
 #[test]
@@ -159,21 +132,11 @@ fn interpolation() {
         _ => None,
     };
     assert_eq!(
-        interpolate(
-            "http://localhost:${port}/x?a=$$b&u=${ services.api.url }",
-            lookup
-        )
-        .unwrap(),
+        interpolate("http://localhost:${port}/x?a=$$b&u=${ services.api.url }", lookup).unwrap(),
         "http://localhost:1234/x?a=$b&u=http://127.0.0.1:9"
     );
-    assert_eq!(
-        interpolate("${nope}", lookup),
-        Err(InterpolationError::Unknown("nope".into()))
-    );
-    assert!(matches!(
-        interpolate("${port", lookup),
-        Err(InterpolationError::Unterminated(_))
-    ));
+    assert_eq!(interpolate("${nope}", lookup), Err(InterpolationError::Unknown("nope".into())));
+    assert!(matches!(interpolate("${port", lookup), Err(InterpolationError::Unterminated(_))));
     assert_eq!(variables("a ${x} $${y} ${z.w}"), vec!["x", "z.w"]);
 }
 
@@ -200,11 +163,7 @@ restart = "always"
 #[test]
 fn project_discovery_walks_up() {
     let dir = tempfile::tempdir().unwrap();
-    std::fs::write(
-        dir.path().join("openshell.json"),
-        r#"{"app":{"name":"Disc"}}"#,
-    )
-    .unwrap();
+    std::fs::write(dir.path().join("openshell.json"), r#"{"app":{"name":"Disc"}}"#).unwrap();
     let nested = dir.path().join("a/b");
     std::fs::create_dir_all(&nested).unwrap();
     let project = Project::discover(&nested).unwrap();
@@ -215,11 +174,8 @@ fn project_discovery_walks_up() {
 #[test]
 fn invalid_file_reports_issues() {
     let dir = tempfile::tempdir().unwrap();
-    std::fs::write(
-        dir.path().join("openshell.json"),
-        r#"{"app":{"name":"x"},"services":[{"name":"a"}]}"#,
-    )
-    .unwrap();
+    std::fs::write(dir.path().join("openshell.json"), r#"{"app":{"name":"x"},"services":[{"name":"a"}]}"#)
+        .unwrap();
     let err = Project::load(dir.path()).unwrap_err();
     assert!(matches!(err, ConfigError::Invalid { .. }));
     assert!(err.to_string().contains("services[0].command"));

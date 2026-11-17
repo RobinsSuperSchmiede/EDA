@@ -24,35 +24,19 @@ pub struct Policy {
 impl Policy {
     /// Policy for agents (tools, MCP).
     pub fn for_agents(cfg: &AgentsConfig, mode: Mode) -> Self {
-        let granted = if cfg.enabled {
-            cfg.permissions_for(mode)
-        } else {
-            BTreeSet::new()
-        };
-        Self {
-            mode,
-            granted,
-            approval_required: cfg.approval_required(),
-        }
+        let granted = if cfg.enabled { cfg.permissions_for(mode) } else { BTreeSet::new() };
+        Self { mode, granted, approval_required: cfg.approval_required() }
     }
 
     /// Policy for the application frontend (SDK token). Never needs approval:
     /// the frontend is the application itself, so scopes are simply granted or not.
     pub fn for_sdk(cfg: &AgentsConfig, mode: Mode) -> Self {
-        Self {
-            mode,
-            granted: cfg.sdk_permissions(),
-            approval_required: BTreeSet::new(),
-        }
+        Self { mode, granted: cfg.sdk_permissions(), approval_required: BTreeSet::new() }
     }
 
     /// Unrestricted policy (local CLI / administrator).
     pub fn admin(mode: Mode) -> Self {
-        Self {
-            mode,
-            granted: Permission::ALL.into_iter().collect(),
-            approval_required: BTreeSet::new(),
-        }
+        Self { mode, granted: Permission::ALL.into_iter().collect(), approval_required: BTreeSet::new() }
     }
 
     pub fn check(&self, permission: Permission) -> Decision {
@@ -73,11 +57,7 @@ impl Policy {
             if self.granted.is_empty() {
                 "none".to_string()
             } else {
-                self.granted
-                    .iter()
-                    .map(|p| p.as_str())
-                    .collect::<Vec<_>>()
-                    .join(", ")
+                self.granted.iter().map(|p| p.as_str()).collect::<Vec<_>>().join(", ")
             }
         )
     }
@@ -116,11 +96,7 @@ mod tests {
 
     #[test]
     fn disabled_agents_get_nothing() {
-        let mut cfg = AgentsConfig::default();
-        cfg.enabled = false;
-        assert_eq!(
-            Policy::for_agents(&cfg, Mode::Development).check(Permission::Read),
-            Decision::Deny
-        );
+        let cfg = AgentsConfig { enabled: false, ..Default::default() };
+        assert_eq!(Policy::for_agents(&cfg, Mode::Development).check(Permission::Read), Decision::Deny);
     }
 }

@@ -240,11 +240,7 @@ impl HealthCheck {
         }
     }
     pub fn tcp(addr: impl Into<String>) -> Self {
-        Self {
-            http: None,
-            tcp: Some(addr.into()),
-            ..Self::http("")
-        }
+        Self { http: None, tcp: Some(addr.into()), ..Self::http("") }
     }
 }
 
@@ -394,10 +390,7 @@ impl ServiceConfig {
     }
 
     pub fn restart_policy(&self) -> RestartPolicy {
-        self.restart
-            .as_ref()
-            .map(RestartSpec::policy)
-            .unwrap_or(RestartPolicy::OnFailure)
+        self.restart.as_ref().map(RestartSpec::policy).unwrap_or(RestartPolicy::OnFailure)
     }
 
     pub fn enabled_in(&self, mode: Mode) -> bool {
@@ -497,10 +490,9 @@ impl FrontendConfig {
     ) -> Option<FrontendPlan> {
         match (command, url, dist) {
             (Some(command), Some(url), _) => Some(FrontendPlan::Process { command, url }),
-            (Some(command), None, _) if has_port => Some(FrontendPlan::Process {
-                command,
-                url: "http://127.0.0.1:${port}".into(),
-            }),
+            (Some(command), None, _) if has_port => {
+                Some(FrontendPlan::Process { command, url: "http://127.0.0.1:${port}".into() })
+            }
             (None, Some(url), _) => Some(FrontendPlan::External { url }),
             (_, _, Some(dist)) => Some(FrontendPlan::Static { dist }),
             _ => None,
@@ -548,9 +540,7 @@ fn default_shutdown_timeout() -> u64 {
 }
 
 /// Permission scopes for agents. Every agent tool requires exactly one scope.
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum Permission {
     /// Read state, status, logs, capabilities.
@@ -684,11 +674,7 @@ impl AgentsConfig {
     }
 
     pub fn approval_required(&self) -> BTreeSet<Permission> {
-        self.approval_required
-            .clone()
-            .unwrap_or_else(|| vec![Permission::System])
-            .into_iter()
-            .collect()
+        self.approval_required.clone().unwrap_or_else(|| vec![Permission::System]).into_iter().collect()
     }
 
     pub fn sdk_permissions(&self) -> BTreeSet<Permission> {
@@ -819,13 +805,7 @@ impl Config {
         Self {
             schema: None,
             version: crate::CONFIG_VERSION,
-            app: AppConfig {
-                name: name.into(),
-                id: None,
-                version: None,
-                description: None,
-                icon: None,
-            },
+            app: AppConfig { name: name.into(), id: None, version: None, description: None, icon: None },
             window: WindowConfig::default(),
             frontend: None,
             services: vec![],
@@ -842,10 +822,7 @@ impl Config {
     }
 
     pub fn window_title(&self) -> String {
-        self.window
-            .title
-            .clone()
-            .unwrap_or_else(|| self.app.name.clone())
+        self.window.title.clone().unwrap_or_else(|| self.app.name.clone())
     }
 }
 
@@ -884,11 +861,9 @@ pub struct BuildConfig {
 impl BuildSpec {
     pub fn normalized(&self) -> BuildConfig {
         match self {
-            BuildSpec::Command(c) => BuildConfig {
-                command: c.clone(),
-                cwd: None,
-                on_start: BuildWhen::Development,
-            },
+            BuildSpec::Command(c) => {
+                BuildConfig { command: c.clone(), cwd: None, on_start: BuildWhen::Development }
+            }
             BuildSpec::Detailed(b) => b.clone(),
         }
     }
@@ -922,12 +897,9 @@ pub struct OpenApiConfig {
 impl OpenApiSpec {
     pub fn normalized(&self) -> OpenApiConfig {
         match self {
-            OpenApiSpec::Location(l) => OpenApiConfig {
-                location: l.clone(),
-                include: vec![],
-                exclude: vec![],
-                prefix: None,
-            },
+            OpenApiSpec::Location(l) => {
+                OpenApiConfig { location: l.clone(), include: vec![], exclude: vec![], prefix: None }
+            }
             OpenApiSpec::Detailed(c) => c.clone(),
         }
     }
@@ -980,11 +952,8 @@ impl Config {
 
 /// `My Cool App!` -> `my-cool-app`
 pub fn slug(name: &str) -> String {
-    let s: String = name
-        .to_lowercase()
-        .chars()
-        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
-        .collect();
+    let s: String =
+        name.to_lowercase().chars().map(|c| if c.is_ascii_alphanumeric() { c } else { '-' }).collect();
     let s = s.split('-').filter(|p| !p.is_empty()).collect::<Vec<_>>().join("-");
     if s.is_empty() {
         "app".into()

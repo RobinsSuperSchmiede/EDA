@@ -88,9 +88,7 @@ pub(crate) fn spawn(shell: Shell, listener: tokio::net::TcpListener) {
 }
 
 fn query_token(req: &Request) -> Option<String> {
-    req.uri().query()?.split('&').find_map(|kv| {
-        kv.strip_prefix("token=").map(str::to_string)
-    })
+    req.uri().query()?.split('&').find_map(|kv| kv.strip_prefix("token=").map(str::to_string))
 }
 
 fn cors(resp: &mut Response, origin: &str) {
@@ -101,36 +99,23 @@ fn cors(resp: &mut Response, origin: &str) {
     h.insert(header::VARY, HeaderValue::from_static("Origin"));
     h.insert(
         header::ACCESS_CONTROL_ALLOW_HEADERS,
-        HeaderValue::from_static("authorization, content-type, x-openshell-agent, mcp-session-id, mcp-protocol-version"),
+        HeaderValue::from_static(
+            "authorization, content-type, x-openshell-agent, mcp-session-id, mcp-protocol-version",
+        ),
     );
-    h.insert(
-        header::ACCESS_CONTROL_ALLOW_METHODS,
-        HeaderValue::from_static("GET, POST, OPTIONS"),
-    );
+    h.insert(header::ACCESS_CONTROL_ALLOW_METHODS, HeaderValue::from_static("GET, POST, OPTIONS"));
 }
 
 async fn guard(State(shell): State<Shell>, mut req: Request, next: Next) -> Response {
     let port = shell.inner.control_url.rsplit(':').next().unwrap_or("").to_string();
-    let host = req
-        .headers()
-        .get(header::HOST)
-        .and_then(|h| h.to_str().ok())
-        .unwrap_or("");
-    let host_ok = [
-        format!("127.0.0.1:{port}"),
-        format!("localhost:{port}"),
-        format!("[::1]:{port}"),
-    ]
-    .iter()
-    .any(|h| h == host);
+    let host = req.headers().get(header::HOST).and_then(|h| h.to_str().ok()).unwrap_or("");
+    let host_ok = [format!("127.0.0.1:{port}"), format!("localhost:{port}"), format!("[::1]:{port}")]
+        .iter()
+        .any(|h| h == host);
     if !host_ok {
         return ApiError(StatusCode::FORBIDDEN, "invalid Host header".into()).into_response();
     }
-    let origin = req
-        .headers()
-        .get(header::ORIGIN)
-        .and_then(|o| o.to_str().ok())
-        .map(str::to_string);
+    let origin = req.headers().get(header::ORIGIN).and_then(|o| o.to_str().ok()).map(str::to_string);
     if let Some(o) = &origin {
         if !shell.inner.allowed_origins.iter().any(|a| a == o) {
             return ApiError(StatusCode::FORBIDDEN, format!("origin {o} is not allowed")).into_response();
@@ -156,7 +141,9 @@ async fn guard(State(shell): State<Shell>, mut req: Request, next: Next) -> Resp
         let role = match token {
             Some(t) if t == shell.inner.admin_token => Role::Admin,
             Some(t) if t == shell.inner.app_token => Role::App,
-            _ => return ApiError(StatusCode::UNAUTHORIZED, "missing or invalid token".into()).into_response(),
+            _ => {
+                return ApiError(StatusCode::UNAUTHORIZED, "missing or invalid token".into()).into_response()
+            }
         };
         if role == Role::App && !(path.starts_with("/v1/sdk/") || path == "/v1/ui/bridge") {
             return ApiError(StatusCode::FORBIDDEN, "not allowed with the app token".into()).into_response();
@@ -215,7 +202,10 @@ async fn status(State(shell): State<Shell>) -> ApiResult {
     })))
 }
 
-async fn service_action(State(shell): State<Shell>, Path((name, action)): Path<(String, String)>) -> ApiResult {
+async fn service_action(
+    State(shell): State<Shell>,
+    Path((name, action)): Path<(String, String)>,
+) -> ApiResult {
     let rt = &shell.inner.runtime;
     match action.as_str() {
         "start" => rt.start(&name),
@@ -267,7 +257,10 @@ async fn approvals(State(shell): State<Shell>) -> ApiResult {
     Ok(Json(json!({ "pending": shell.inner.approvals.pending() })))
 }
 
-async fn approval_decide(State(shell): State<Shell>, Path((id, decision)): Path<(String, String)>) -> ApiResult {
+async fn approval_decide(
+    State(shell): State<Shell>,
+    Path((id, decision)): Path<(String, String)>,
+) -> ApiResult {
     let approved = match decision.as_str() {
         "approve" => true,
         "deny" => false,
@@ -319,10 +312,7 @@ async fn tool_call(
     body: Option<Json<Value>>,
 ) -> ApiResult {
     let args = body.map(|b| b.0).unwrap_or(json!({}));
-    let ctx = CallContext {
-        agent: agent_name(&headers, "http-agent"),
-        channel: "http".into(),
-    };
+    let ctx = CallContext { agent: agent_name(&headers, "http-agent"), channel: "http".into() };
     let policy = shell.inner.agent_policy.clone();
     let outcome = shell.call_tool(&name, args, ctx, &policy).await;
     Ok(Json(json!(outcome)))
@@ -342,15 +332,9 @@ async fn mcp_app(State(shell): State<Shell>, headers: HeaderMap, Json(msg): Json
 }
 
 async fn mcp_with(shell: Shell, headers: HeaderMap, msg: Value, app_profile: bool) -> Response {
-    let session = headers
-        .get("mcp-session-id")
-        .and_then(|h| h.to_str().ok())
-        .map(str::to_string);
+    let session = headers.get("mcp-session-id").and_then(|h| h.to_str().ok()).map(str::to_string);
     let is_init = msg.get("method").and_then(|m| m.as_str()) == Some("initialize");
-    let client_name = msg
-        .pointer("/params/clientInfo/name")
-        .and_then(|n| n.as_str())
-        .map(str::to_string);
+    let client_name = msg.pointer("/params/clientInfo/name").and_then(|n| n.as_str()).map(str::to_string);
     let agent = headers
         .get("x-openshell-agent")
         .and_then(|h| h.to_str().ok())
@@ -433,15 +417,9 @@ async fn sdk_call(
     body: Option<Json<Value>>,
 ) -> ApiResult {
     let args = body.map(|b| b.0).unwrap_or(json!({}));
-    let ctx = CallContext {
-        agent: "frontend".into(),
-        channel: "sdk".into(),
-    };
-    let policy = if role == Role::Admin {
-        shell.inner.agent_policy.clone()
-    } else {
-        shell.inner.sdk_policy.clone()
-    };
+    let ctx = CallContext { agent: "frontend".into(), channel: "sdk".into() };
+    let policy =
+        if role == Role::Admin { shell.inner.agent_policy.clone() } else { shell.inner.sdk_policy.clone() };
     let outcome = shell.call_tool(&tool, args, ctx, &policy).await;
     Ok(Json(json!(outcome)))
 }

@@ -97,11 +97,7 @@ pub struct Shell {
 }
 
 fn token() -> String {
-    format!(
-        "{}{}",
-        uuid::Uuid::new_v4().simple(),
-        uuid::Uuid::new_v4().simple()
-    )
+    format!("{}{}", uuid::Uuid::new_v4().simple(), uuid::Uuid::new_v4().simple())
 }
 
 fn origin_of(url: &str) -> Option<String> {
@@ -157,10 +153,7 @@ impl Shell {
         });
         let shell = Shell { inner };
 
-        shell
-            .inner
-            .runtime
-            .set_extra_env("OPENSHELL_CONTROL_URL", control_url.clone());
+        shell.inner.runtime.set_extra_env("OPENSHELL_CONTROL_URL", control_url.clone());
         shell.inner.runtime.set_html_injection(Some(format!(
             "<script>window.__OPENSHELL__ = window.__OPENSHELL__ || {};</script><script>{}</script>",
             shell.client_config("browser"),
@@ -255,14 +248,21 @@ impl Shell {
                     Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
                     Err(_) => break,
                 };
-                let openshell_runtime::RuntimeEvent::ServiceState { service, state, .. } = ev else { continue };
+                let openshell_runtime::RuntimeEvent::ServiceState { service, state, .. } = ev else {
+                    continue;
+                };
                 if state != openshell_runtime::ServiceState::Running {
                     continue;
                 }
                 let Some((_, cfg)) = with_openapi.iter().find(|(n, _)| *n == service) else { continue };
                 match shell.load_openapi(&service, cfg).await {
-                    Ok(n) => shell.inner.runtime.logs().system(&service, format!("imported {n} API operation(s) for agents from {}", cfg.location)),
-                    Err(e) => shell.inner.runtime.logs().system(&service, format!("OpenAPI import failed: {e}")),
+                    Ok(n) => shell.inner.runtime.logs().system(
+                        &service,
+                        format!("imported {n} API operation(s) for agents from {}", cfg.location),
+                    ),
+                    Err(e) => {
+                        shell.inner.runtime.logs().system(&service, format!("OpenAPI import failed: {e}"))
+                    }
                 }
             }
         });
@@ -271,20 +271,33 @@ impl Shell {
     async fn load_openapi(&self, service: &str, cfg: &openshell_config::OpenApiConfig) -> Result<usize> {
         let base = self.inner.runtime.service_url(service).unwrap_or_default();
         let loc = cfg.location.trim();
-        let doc: serde_json::Value = if loc.starts_with("http://") || loc.starts_with("https://") || loc.starts_with('/') {
-            let url = if loc.starts_with('/') { format!("{}{loc}", base.trim_end_matches('/')) } else { loc.to_string() };
-            let client = reqwest::Client::builder().no_proxy().build()?;
-            client.get(&url).timeout(std::time::Duration::from_secs(15)).send().await?.error_for_status()?.json().await?
-        } else {
-            serde_json::from_str(&std::fs::read_to_string(self.inner.project.resolve_path(loc))?)?
-        };
+        let doc: serde_json::Value =
+            if loc.starts_with("http://") || loc.starts_with("https://") || loc.starts_with('/') {
+                let url = if loc.starts_with('/') {
+                    format!("{}{loc}", base.trim_end_matches('/'))
+                } else {
+                    loc.to_string()
+                };
+                let client = reqwest::Client::builder().no_proxy().build()?;
+                client
+                    .get(&url)
+                    .timeout(std::time::Duration::from_secs(15))
+                    .send()
+                    .await?
+                    .error_for_status()?
+                    .json()
+                    .await?
+            } else {
+                serde_json::from_str(&std::fs::read_to_string(self.inner.project.resolve_path(loc))?)?
+            };
         // servers[0].url may carry a base path (e.g. "/api/v1")
         let server_path = doc
             .pointer("/servers/0/url")
             .and_then(|u| u.as_str())
             .filter(|u| u.starts_with('/'))
             .unwrap_or("");
-        let ops = openapi::operations(&doc, service, &format!("{}{server_path}", base.trim_end_matches('/')), cfg);
+        let ops =
+            openapi::operations(&doc, service, &format!("{}{server_path}", base.trim_end_matches('/')), cfg);
         let n = ops.len();
         let mut imported = self.inner.imported.write().unwrap();
         imported.retain(|o| o.service != service);
@@ -308,11 +321,7 @@ impl Shell {
 
     /// Initialization script for the desktop WebView (config + bridge).
     pub fn webview_init_script(&self) -> String {
-        format!(
-            "window.__OPENSHELL__ = {};\n{}",
-            self.client_config("desktop"),
-            openshell_agent::BRIDGE_JS
-        )
+        format!("window.__OPENSHELL__ = {};\n{}", self.client_config("desktop"), openshell_agent::BRIDGE_JS)
     }
 }
 

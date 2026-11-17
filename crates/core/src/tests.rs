@@ -25,19 +25,11 @@ async fn launch(extra: &str, mode: Mode) -> (tempfile::TempDir, Shell, ControlCl
         config,
         state_dir_override: None,
     };
-    let shell = Shell::launch(project, mode, Arc::new(HeadlessHost::default()))
-        .await
-        .unwrap();
+    let shell = Shell::launch(project, mode, Arc::new(HeadlessHost::default())).await.unwrap();
     shell.start();
-    shell
-        .runtime()
-        .wait_ready("api", Duration::from_secs(10))
-        .await
-        .unwrap();
-    let client = ControlClient::connect(&dir.path().join(".openshell"))
-        .await
-        .unwrap()
-        .with_agent("test-agent");
+    shell.runtime().wait_ready("api", Duration::from_secs(10)).await.unwrap();
+    let client =
+        ControlClient::connect(&dir.path().join(".openshell")).await.unwrap().with_agent("test-agent");
     (dir, shell, client)
 }
 
@@ -97,10 +89,7 @@ async fn mcp_over_http() {
         .await
         .unwrap();
     assert_eq!(init["result"]["serverInfo"]["name"], "openshell");
-    let list = client
-        .post("/mcp", &json!({"jsonrpc":"2.0","id":2,"method":"tools/list"}))
-        .await
-        .unwrap();
+    let list = client.post("/mcp", &json!({"jsonrpc":"2.0","id":2,"method":"tools/list"})).await.unwrap();
     assert!(list["result"]["tools"].as_array().unwrap().len() > 20);
     let call = client
         .post(
@@ -139,19 +128,15 @@ async fn production_policy_and_approvals() {
         }
         tokio::time::sleep(Duration::from_millis(50)).await;
     };
-    client
-        .post(&format!("/v1/approvals/{id}/approve"), &json!({}))
-        .await
-        .unwrap();
+    client.post(&format!("/v1/approvals/{id}/approve"), &json!({})).await.unwrap();
     let r = call.await.unwrap();
     assert_eq!(r["ok"], true, "{r}");
     assert_eq!(std::fs::read_to_string(dir.path().join("a.txt")).unwrap(), "approved");
 
     // deny the next one
     let c2 = client.clone();
-    let call = tokio::spawn(async move {
-        tool(&c2, "fs_write", json!({ "path": "b.txt", "content": "x" })).await
-    });
+    let call =
+        tokio::spawn(async move { tool(&c2, "fs_write", json!({ "path": "b.txt", "content": "x" })).await });
     let id = loop {
         let pending = client.get("/v1/approvals").await.unwrap();
         if let Some(id) = pending["pending"][0]["id"].as_str() {
@@ -175,20 +160,10 @@ async fn auth_and_origin_checks() {
     let r = http.get(format!("{base}/v1/status")).send().await.unwrap();
     assert_eq!(r.status(), 401);
 
-    let r = http
-        .get(format!("{base}/v1/status"))
-        .bearer_auth(&shell.inner.app_token)
-        .send()
-        .await
-        .unwrap();
+    let r = http.get(format!("{base}/v1/status")).bearer_auth(&shell.inner.app_token).send().await.unwrap();
     assert_eq!(r.status(), 403);
 
-    let r = http
-        .get(format!("{base}/v1/sdk/info"))
-        .bearer_auth(&shell.inner.app_token)
-        .send()
-        .await
-        .unwrap();
+    let r = http.get(format!("{base}/v1/sdk/info")).bearer_auth(&shell.inner.app_token).send().await.unwrap();
     assert_eq!(r.status(), 200);
 
     let r = http
@@ -200,12 +175,7 @@ async fn auth_and_origin_checks() {
         .unwrap();
     assert_eq!(r.status(), 403);
 
-    let r = http
-        .get(format!("{base}/v1/health"))
-        .header("Host", "evil.example")
-        .send()
-        .await
-        .unwrap();
+    let r = http.get(format!("{base}/v1/health")).header("Host", "evil.example").send().await.unwrap();
     assert_eq!(r.status(), 403);
 
     // the app token can call permitted SDK tools only
@@ -252,13 +222,25 @@ async fn openapi_backend() -> u16 {
         }
     });
     let app = axum::Router::new()
-        .route("/openapi.json", get(move || { let d = doc.clone(); async move { axum::Json(d) } }))
-        .route("/items/{id}", get(|axum::extract::Path(id): axum::extract::Path<u32>| async move {
-            axum::Json(json!({ "id": id, "name": format!("item {id}") }))
-        }))
-        .route("/items", axum::routing::post(|axum::Json(body): axum::Json<Value>| async move {
-            axum::Json(json!({ "created": body["name"] }))
-        }));
+        .route(
+            "/openapi.json",
+            get(move || {
+                let d = doc.clone();
+                async move { axum::Json(d) }
+            }),
+        )
+        .route(
+            "/items/{id}",
+            get(|axum::extract::Path(id): axum::extract::Path<u32>| async move {
+                axum::Json(json!({ "id": id, "name": format!("item {id}") }))
+            }),
+        )
+        .route(
+            "/items",
+            axum::routing::post(|axum::Json(body): axum::Json<Value>| async move {
+                axum::Json(json!({ "created": body["name"] }))
+            }),
+        );
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let port = listener.local_addr().unwrap().port();
     tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
@@ -268,9 +250,7 @@ async fn openapi_backend() -> u16 {
 #[tokio::test]
 async fn openapi_import_and_app_profile() {
     let port = openapi_backend().await;
-    let extra = format!(
-        r#","capabilities":[{{"name":"ping","description":"Ping","task":"ping"}}],"tasks":{{"ping":"echo pong"}}}}"#
-    );
+    let extra = r#","capabilities":[{"name":"ping","description":"Ping","task":"ping"}],"tasks":{"ping":"echo pong"}}"#.to_string();
     // second service: an external backend with an OpenAPI document
     let dir = tempfile::tempdir().unwrap();
     let json = format!(
@@ -296,8 +276,14 @@ async fn openapi_import_and_app_profile() {
     // wait for the import
     let deadline = std::time::Instant::now() + Duration::from_secs(10);
     let tools = loop {
-        let list = client.post("/mcp/app", &json!({"jsonrpc":"2.0","id":1,"method":"tools/list"})).await.unwrap();
-        let names: Vec<String> = list["result"]["tools"].as_array().unwrap().iter().map(|t| t["name"].as_str().unwrap().to_string()).collect();
+        let list =
+            client.post("/mcp/app", &json!({"jsonrpc":"2.0","id":1,"method":"tools/list"})).await.unwrap();
+        let names: Vec<String> = list["result"]["tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|t| t["name"].as_str().unwrap().to_string())
+            .collect();
         if names.contains(&"get_item".to_string()) || std::time::Instant::now() > deadline {
             break names;
         }

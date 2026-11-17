@@ -1,0 +1,79 @@
+# AGENTS.md
+
+Instructions for AI coding agents (Claude Code, Codex, Cursor, Copilot, Aider, …) working with this repository.
+
+**First decide which task you have:**
+
+| Task | Read |
+|---|---|
+| **Build a new desktop app with OpenShell**, or extend an app that has an `openshell.json` | [docs/ai/app-development.md](docs/ai/app-development.md) – complete guide (also `openshell guide`). Do **not** modify this repository for that; create the app in its own folder with `openshell create`. |
+| **Work on OpenShell itself** (runtime, CLI, desktop shell, agent layer, templates, docs) | The rest of this file. |
+
+---
+
+## Working on OpenShell
+
+### Project map
+
+| Path | Crate / package | Responsibility |
+|---|---|---|
+| `crates/config` | `openshell-config` | `openshell.json` model (`model.rs`), validation (`validate.rs`), `${...}` interpolation |
+| `crates/runtime` | `openshell-runtime` | plan (`plan.rs`: ports, URLs, probes), supervisor per service (`supervisor.rs`), processes (`process.rs`), health, logs, metrics, static server, file watching |
+| `crates/agent` | `openshell-agent` | permission policy, approvals, audit log, UI bridge hub + `assets/bridge.js`, tool catalogue (`tools.rs`), MCP JSON-RPC (`mcp.rs`), provider discovery |
+| `crates/core` | `openshell-core` | `Shell` (runtime + agent layer), control API (`server.rs`), tool implementations (`exec.rs`), OpenAPI import, MCP stdio proxy, headless runner, `runtime.json` + client (`state.rs`) |
+| `crates/cli` | `openshell` binary | commands in `src/commands/*`; templates are embedded from `templates/` |
+| `crates/package` | `openshell-package` | installers: stage files, brand exe icon, Tauri bundler |
+| `apps/desktop/src-tauri` | `openshell-desktop` binary | Tauri 2 app: window, host implementation, title-bar/tray menus (`menus.rs`), `--mcp` / `--headless` modes |
+| `apps/desktop/ui` | – | the shell's own pages (loading screen, runtime panel) – plain HTML/JS |
+| `packages/sdk` | `@openshell/sdk` | frontend SDK (plain ESM + `.d.ts`), also served at `/sdk.js` |
+| `templates/` | – | project templates; `_shared/` is added to every project (AGENTS.md, CLAUDE.md) |
+| `docs/` | – | user docs; `docs/ai/` for AI agents; `docs/concept/` original German concept |
+
+Data flow: CLI / SDK / agents → control API (`crates/core/src/server.rs`, 127.0.0.1 + token) → `Shell` → `Runtime`
+(desired-state `watch` channel per service → supervisor task) and agent layer (policy → approvals → tool → audit).
+
+### Commands
+
+```bash
+cargo build                                            # everything, incl. the desktop shell
+cargo test --workspace --exclude openshell-desktop     # all tests (~50, a few seconds)
+cargo test -p openshell-runtime                        # one crate
+cargo run -p openshell-cli -- --help
+cargo run -p openshell-cli -- schema > schema/openshell.schema.json   # after config changes
+python scripts/gen-llms-full.py                        # after docs changes (regenerates llms-full.txt)
+```
+
+Manual end-to-end check (Windows/macOS/Linux):
+
+```bash
+cargo build
+cd examples/todo-app
+../../target/debug/openshell dev --headless   # in the background
+../../target/debug/openshell status
+../../target/debug/openshell call cap_todo_stats
+../../target/debug/openshell stop
+```
+
+### Conventions
+
+- Rust 2021, stable toolchain. Errors: `anyhow` in binaries/core, `thiserror` in `openshell-config`.
+- The shell stays technology-agnostic: no assumptions about frontend frameworks, backend languages or AI vendors.
+- New config fields: add to `crates/config/src/model.rs` (with doc comments – they become the JSON Schema), validate in
+  `validate.rs`, regenerate `schema/openshell.schema.json`, document in `docs/configuration.md` and – if app
+  developers need it – `docs/ai/app-development.md` and `templates/_shared/AGENTS.md`.
+- New agent tools: define in `crates/agent/src/tools.rs` with exactly one permission scope, implement in
+  `crates/core/src/exec.rs`; they are audited automatically. Document in `docs/agents.md`.
+- Runtime tests use portable shell commands (`echo`, `exit N`, `ping -n` on Windows / `sleep` elsewhere) – see
+  `crates/runtime/src/tests.rs`.
+- Platform code: `#[cfg(windows)]` / `#[cfg(unix)]`; keep Windows process handling in `crates/runtime/src/process.rs`
+  and `crates/core/src/headless.rs` (job objects, `CREATE_NO_WINDOW`, non-inheritable stdio for detached children).
+- Line endings are LF (`.gitattributes`). Docs and code are English.
+- Update `CHANGELOG.md` (*Unreleased*) for user-visible changes.
+
+### Pitfalls
+
+- The desktop binary uses `windows_subsystem = "windows"` in release builds: no console output there.
+- Detached background processes must not inherit stdio handles on Windows (MCP clients would never see EOF) – use
+  `openshell_core::headless::spawn_detached`.
+- `Runtime::new` must run inside a Tokio runtime; the desktop app calls `Shell::launch` via `tauri::async_runtime::block_on`.
+- Services' desired state changes go through `Slot::set_run` / `restart` – never set states directly from outside the supervisor.

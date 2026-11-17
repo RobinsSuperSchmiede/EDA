@@ -25,7 +25,8 @@ use openshell_config::Project;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use tauri_bundler::bundle::{
-    BundleBinary, BundleSettings, NsisSettings, PackageSettings, PackageType, SettingsBuilder, WindowsSettings,
+    BundleBinary, BundleSettings, NsisSettings, PackageSettings, PackageType, SettingsBuilder,
+    WindowsSettings,
 };
 
 /// Default OpenShell icon (used when `app.icon` is not set).
@@ -98,11 +99,7 @@ pub fn collect_files(project: &Project) -> Result<Vec<String>> {
         for entry in std::fs::read_dir(&dir).with_context(|| format!("reading {}", dir.display()))? {
             let entry = entry?;
             let path = entry.path();
-            let rel = path
-                .strip_prefix(&project.root)
-                .unwrap_or(&path)
-                .to_string_lossy()
-                .replace('\\', "/");
+            let rel = path.strip_prefix(&project.root).unwrap_or(&path).to_string_lossy().replace('\\', "/");
             let ft = entry.file_type()?;
             if ft.is_dir() {
                 // prune excluded directories early
@@ -162,7 +159,8 @@ fn write_icons(project: &Project, dir: &Path) -> Result<(Vec<String>, PathBuf, P
         source
     };
     let mut pngs = Vec::new();
-    for (name, size) in [("32x32.png", 32), ("128x128.png", 128), ("128x128@2x.png", 256), ("icon.png", 512)] {
+    for (name, size) in [("32x32.png", 32), ("128x128.png", 128), ("128x128@2x.png", 256), ("icon.png", 512)]
+    {
         let path = dir.join(name);
         source.resize_exact(size, size, FilterType::Lanczos3).save(&path)?;
         pngs.push(path.display().to_string());
@@ -209,7 +207,10 @@ pub fn package(project: &Project, opts: &Options, log: &dyn Fn(&str)) -> Result<
         bail!("app.version `{version}` must be a semantic version like 1.2.3 for installers");
     }
     if !opts.desktop_binary.is_file() {
-        bail!("desktop binary {} not found (build it with `cargo build --release -p openshell-desktop`)", opts.desktop_binary.display());
+        bail!(
+            "desktop binary {} not found (build it with `cargo build --release -p openshell-desktop`)",
+            opts.desktop_binary.display()
+        );
     }
     let staging = project.state_dir().join("package");
     if staging.exists() {
@@ -272,10 +273,7 @@ pub fn package(project: &Project, opts: &Options, log: &dyn Fn(&str)) -> Result<
         #[allow(deprecated)]
         windows: WindowsSettings {
             icon_path: ico.clone(),
-            nsis: Some(NsisSettings {
-                start_menu_folder: Some(name.clone()),
-                ..Default::default()
-            }),
+            nsis: Some(NsisSettings { start_menu_folder: Some(name.clone()), ..Default::default() }),
             ..Default::default()
         },
         ..Default::default()
@@ -313,11 +311,7 @@ pub fn package(project: &Project, opts: &Options, log: &dyn Fn(&str)) -> Result<
         }
         installers = copied;
     }
-    Ok(Output {
-        installers,
-        staging: bin_dir,
-        files: files.len(),
-    })
+    Ok(Output { installers, staging: bin_dir, files: files.len() })
 }
 
 #[cfg(test)]

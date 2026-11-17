@@ -44,19 +44,13 @@ impl ToolOutcome {
         Self { ok: true, result }
     }
     pub fn error(message: impl Into<String>) -> Self {
-        Self {
-            ok: false,
-            result: serde_json::json!({ "error": message.into() }),
-        }
+        Self { ok: false, result: serde_json::json!({ "error": message.into() }) }
     }
     pub fn error_message(&self) -> Option<String> {
         if self.ok {
             None
         } else {
-            self.result
-                .get("error")
-                .and_then(|e| e.as_str())
-                .map(str::to_string)
+            self.result.get("error").and_then(|e| e.as_str()).map(str::to_string)
         }
     }
 }

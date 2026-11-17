@@ -51,7 +51,8 @@ async fn probe(client: &reqwest::Client, kind: ProviderKind, base: &str) -> Opti
             )
         }
         ProviderKind::LmStudio | ProviderKind::OpenaiCompatible => {
-            let url = if base.ends_with("/v1") { format!("{base}/models") } else { format!("{base}/v1/models") };
+            let url =
+                if base.ends_with("/v1") { format!("{base}/models") } else { format!("{base}/v1/models") };
             let v = fetch_json(client, &url).await?;
             Some(
                 v["data"]
@@ -72,7 +73,11 @@ pub async fn discover(configured: &[ProviderConfig], detect_local: bool) -> Vec<
         let (available, models, note) = match p.kind {
             ProviderKind::Ollama | ProviderKind::LmStudio | ProviderKind::OpenaiCompatible => {
                 let base = p.url.clone().unwrap_or_else(|| {
-                    if p.kind == ProviderKind::Ollama { OLLAMA_URL.into() } else { LMSTUDIO_URL.into() }
+                    if p.kind == ProviderKind::Ollama {
+                        OLLAMA_URL.into()
+                    } else {
+                        LMSTUDIO_URL.into()
+                    }
                 });
                 match probe(&client, p.kind, &base).await {
                     Some(models) => (true, if p.models.is_empty() { models } else { p.models.clone() }, None),

@@ -81,13 +81,8 @@ impl LogStore {
         let text = strip_ansi(&text.into());
         let text = text.trim_end_matches(['\r', '\n']).to_string();
         let mut inner = self.inner.lock().unwrap();
-        let line = LogLine {
-            seq: inner.next_seq,
-            ts: Utc::now(),
-            service: service.to_string(),
-            stream,
-            text,
-        };
+        let line =
+            LogLine { seq: inner.next_seq, ts: Utc::now(), service: service.to_string(), stream, text };
         inner.next_seq += 1;
         if let Some(dir) = &self.dir {
             if !inner.files.contains_key(service) {
@@ -125,12 +120,7 @@ impl LogStore {
             .filter(|l| q.since.map(|s| l.seq > s).unwrap_or(true))
             .filter(|l| q.service.as_ref().map(|s| &l.service == s).unwrap_or(true))
             .filter(|l| !q.errors_only || l.stream != LogStream::Stdout)
-            .filter(|l| {
-                needle
-                    .as_ref()
-                    .map(|n| l.text.to_lowercase().contains(n))
-                    .unwrap_or(true)
-            })
+            .filter(|l| needle.as_ref().map(|n| l.text.to_lowercase().contains(n)).unwrap_or(true))
             .cloned()
             .collect();
         if let Some(limit) = q.limit {
@@ -215,26 +205,14 @@ mod tests {
         let all = store.query(&LogQuery::default());
         assert_eq!(all.len(), 100);
         assert_eq!(all.last().unwrap().text, "ERROR boom");
-        let b = store.query(&LogQuery {
-            service: Some("b".into()),
-            ..Default::default()
-        });
+        let b = store.query(&LogQuery { service: Some("b".into()), ..Default::default() });
         assert_eq!(b.len(), 1);
-        let since = store.query(&LogQuery {
-            since: Some(store.last_seq() - 2),
-            ..Default::default()
-        });
+        let since = store.query(&LogQuery { since: Some(store.last_seq() - 2), ..Default::default() });
         assert_eq!(since.len(), 2);
-        let errs = store.query(&LogQuery {
-            errors_only: true,
-            contains: Some("boom".into()),
-            ..Default::default()
-        });
+        let errs =
+            store.query(&LogQuery { errors_only: true, contains: Some("boom".into()), ..Default::default() });
         assert_eq!(errs.len(), 1);
-        let limited = store.query(&LogQuery {
-            limit: Some(3),
-            ..Default::default()
-        });
+        let limited = store.query(&LogQuery { limit: Some(3), ..Default::default() });
         assert_eq!(limited.len(), 3);
         assert_eq!(limited[2].service, "b");
     }

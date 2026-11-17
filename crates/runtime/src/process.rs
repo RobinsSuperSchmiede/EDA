@@ -70,11 +70,7 @@ pub fn shell_command(line: &str) -> Command {
 }
 
 fn shell_quote(arg: &str) -> String {
-    if !arg.is_empty()
-        && arg
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || "-_./:=@,+%".contains(c))
-    {
+    if !arg.is_empty() && arg.chars().all(|c| c.is_ascii_alphanumeric() || "-_./:=@,+%".contains(c)) {
         return arg.to_string();
     }
     #[cfg(windows)]
@@ -187,19 +183,14 @@ pub async fn terminate(child: &mut Child, grace: Duration) {
     {
         let _ = grace;
         let mut tk = std::process::Command::new("taskkill");
-        tk.args(["/PID", &pid.to_string(), "/T", "/F"])
-            .stdout(Stdio::null())
-            .stderr(Stdio::null());
+        tk.args(["/PID", &pid.to_string(), "/T", "/F"]).stdout(Stdio::null()).stderr(Stdio::null());
         {
             use std::os::windows::process::CommandExt;
             tk.creation_flags(CREATE_NO_WINDOW);
         }
         let _ = tokio::task::spawn_blocking(move || tk.status()).await;
     }
-    if tokio::time::timeout(Duration::from_secs(3), child.wait())
-        .await
-        .is_err()
-    {
+    if tokio::time::timeout(Duration::from_secs(3), child.wait()).await.is_err() {
         let _ = child.kill().await;
     }
 }
@@ -262,10 +253,7 @@ impl ProcessJob {
         #[cfg(windows)]
         unsafe {
             if let Some(h) = child.raw_handle() {
-                windows_sys::Win32::System::JobObjects::AssignProcessToJobObject(
-                    self.handle,
-                    h as _,
-                );
+                windows_sys::Win32::System::JobObjects::AssignProcessToJobObject(self.handle, h as _);
             }
         }
         #[cfg(not(windows))]

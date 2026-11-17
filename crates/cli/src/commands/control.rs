@@ -29,17 +29,21 @@ pub async fn status(dir: &Path, as_json: bool) -> Result<()> {
     println!();
     println!(
         "  {}",
-        dim(&format!("{:<14} {:<10} {:<8} {:<7} {:<7} {:<8} {:<9} {}", "SERVICE", "STATE", "PID", "PORT", "CPU", "MEMORY", "RESTARTS", "INFO"))
+        dim(&format!(
+            "{:<14} {:<10} {:<8} {:<7} {:<7} {:<8} {:<9} {}",
+            "SERVICE", "STATE", "PID", "PORT", "CPU", "MEMORY", "RESTARTS", "INFO"
+        ))
     );
 
     for svc in s["services"].as_array().into_iter().flatten() {
         let state = svc["state"].as_str().unwrap_or("?");
         let info = svc["last_error"]
             .as_str()
-            .map(|e| red(e))
+            .map(red)
             .or_else(|| svc["url"].as_str().map(str::to_string))
             .unwrap_or_default();
-        let cpu = svc["metrics"]["cpu_percent"].as_f64().map(|c| format!("{c:.1}%")).unwrap_or_else(|| "-".into());
+        let cpu =
+            svc["metrics"]["cpu_percent"].as_f64().map(|c| format!("{c:.1}%")).unwrap_or_else(|| "-".into());
         let mem = svc["metrics"]["memory_bytes"]
             .as_u64()
             .map(|b| format!("{:.0} MB", b as f64 / 1_048_576.0))
@@ -199,7 +203,9 @@ pub async fn tools(dir: &Path, as_json: bool) -> Result<()> {
 pub async fn call(dir: &Path, tool: &str, args: Option<String>) -> Result<()> {
     let client = connect(dir).await?.with_agent("cli");
     let args: Value = match args {
-        Some(a) => serde_json::from_str(&a).context("arguments must be JSON, e.g. '{\"name\":\"backend\"}'")?,
+        Some(a) => {
+            serde_json::from_str(&a).context("arguments must be JSON, e.g. '{\"name\":\"backend\"}'")?
+        }
         None => json!({}),
     };
     let r = client.post(&format!("/v1/tools/{tool}"), &args).await?;

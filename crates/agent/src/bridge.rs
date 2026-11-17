@@ -166,12 +166,7 @@ impl UiHub {
     }
 
     pub fn pages(&self) -> Vec<PageInfo> {
-        self.sessions
-            .lock()
-            .unwrap()
-            .iter()
-            .map(|s| s.info.clone())
-            .collect()
+        self.sessions.lock().unwrap().iter().map(|s| s.info.clone()).collect()
     }
 
     /// Default target: the most recently connected desktop page, else the most recent page.
@@ -179,11 +174,7 @@ impl UiHub {
         let sessions = self.sessions.lock().unwrap();
         let found = match page {
             Some(id) => sessions.iter().find(|s| s.info.id == id),
-            None => sessions
-                .iter()
-                .rev()
-                .find(|s| s.info.host == "desktop")
-                .or_else(|| sessions.last()),
+            None => sessions.iter().rev().find(|s| s.info.host == "desktop").or_else(|| sessions.last()),
         };
         match found {
             Some(s) => Ok((s.info.id.clone(), s.tx.clone())),

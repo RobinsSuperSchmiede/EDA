@@ -40,13 +40,8 @@ pub async fn start(
     client: reqwest::Client,
 ) -> anyhow::Result<StaticServer> {
     // longest prefix first
-    proxy.sort_by(|a, b| b.0.len().cmp(&a.0.len()));
-    let state = AppState {
-        dist: Arc::new(dist),
-        proxy: Arc::new(proxy),
-        injection,
-        client,
-    };
+    proxy.sort_by_key(|p| std::cmp::Reverse(p.0.len()));
+    let state = AppState { dist: Arc::new(dist), proxy: Arc::new(proxy), injection, client };
     let app = Router::new().fallback(handle).with_state(state);
     let listener = tokio::net::TcpListener::bind(("127.0.0.1", port)).await?;
     let port = listener.local_addr()?.port();
@@ -58,11 +53,7 @@ pub async fn start(
             })
             .await;
     });
-    Ok(StaticServer {
-        port,
-        shutdown: tx,
-        task,
-    })
+    Ok(StaticServer { port, shutdown: tx, task })
 }
 
 async fn handle(State(state): State<AppState>, req: Request) -> Response {
@@ -82,10 +73,7 @@ async fn handle(State(state): State<AppState>, req: Request) -> Response {
 }
 
 fn status(code: StatusCode) -> Response {
-    Response::builder()
-        .status(code)
-        .body(Body::from(code.canonical_reason().unwrap_or("")))
-        .unwrap()
+    Response::builder().status(code).body(Body::from(code.canonical_reason().unwrap_or(""))).unwrap()
 }
 
 /// Map a URL path to a file inside `dist`, rejecting traversal.
@@ -170,23 +158,13 @@ pub(crate) fn inject_html(html: &str, snippet: &str) -> String {
     format!("{snippet}{html}")
 }
 
-const HOP_HEADERS: [&str; 7] = [
-    "connection",
-    "keep-alive",
-    "proxy-connection",
-    "transfer-encoding",
-    "upgrade",
-    "te",
-    "host",
-];
+const HOP_HEADERS: [&str; 7] =
+    ["connection", "keep-alive", "proxy-connection", "transfer-encoding", "upgrade", "te", "host"];
 
 async fn proxy(state: &AppState, target: &str, req: Request) -> Response {
     let (parts, body) = req.into_parts();
-    let path_and_query = parts
-        .uri
-        .path_and_query()
-        .map(|p| p.as_str().to_string())
-        .unwrap_or_else(|| "/".into());
+    let path_and_query =
+        parts.uri.path_and_query().map(|p| p.as_str().to_string()).unwrap_or_else(|| "/".into());
     let url = format!("{}{}", target.trim_end_matches('/'), path_and_query);
     let Ok(body) = to_bytes(body, 64 * 1024 * 1024).await else {
         return status(StatusCode::PAYLOAD_TOO_LARGE);
@@ -197,13 +175,7 @@ async fn proxy(state: &AppState, target: &str, req: Request) -> Response {
             headers.insert(k.clone(), v.clone());
         }
     }
-    let resp = state
-        .client
-        .request(parts.method, &url)
-        .headers(headers)
-        .body(body)
-        .send()
-        .await;
+    let resp = state.client.request(parts.method, &url).headers(headers).body(body).send().await;
     match resp {
         Ok(r) => {
             let mut builder = Response::builder().status(r.status());

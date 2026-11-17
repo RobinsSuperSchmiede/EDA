@@ -12,16 +12,27 @@ use openshell_core::config::Project;
 use openshell_core::state::ControlClient;
 use std::path::{Path, PathBuf};
 
+/// The AI app-development guide (docs/ai/app-development.md), embedded so agents can read it from the binary.
+const GUIDE: &str = include_str!("../../../../docs/ai/app-development.md");
+
 pub async fn run(project: Option<PathBuf>, cmd: Cmd) -> Result<()> {
     let dir = project.clone().unwrap_or_else(|| PathBuf::from("."));
     match cmd {
         Cmd::Init { force, name, toml } => init::run(&dir, force, name, toml),
-        Cmd::Create { name, template, list } => create::run(name.as_deref().unwrap_or_default(), &template, list),
+        Cmd::Create { name, template, list } => {
+            create::run(name.as_deref().unwrap_or_default(), &template, list)
+        }
+        Cmd::Guide => {
+            print!("{}", GUIDE);
+            Ok(())
+        }
         Cmd::Schema => {
             println!("{}", serde_json::to_string_pretty(&openshell_core::config::json_schema())?);
             Ok(())
         }
-        Cmd::Dev { headless } => run::run(&dir, openshell_core::config::Mode::Development, headless, false).await,
+        Cmd::Dev { headless } => {
+            run::run(&dir, openshell_core::config::Mode::Development, headless, false).await
+        }
         Cmd::Start { headless, detach } => {
             run::run(&dir, openshell_core::config::Mode::Production, headless, detach).await
         }
@@ -33,13 +44,9 @@ pub async fn run(project: Option<PathBuf>, cmd: Cmd) -> Result<()> {
         Cmd::Restart { service } => control::service(&dir, &service, "restart").await,
         Cmd::Run { service } => control::service(&dir, &service, "start").await,
         Cmd::Status { json } => control::status(&dir, json).await,
-        Cmd::Logs {
-            service,
-            follow,
-            lines,
-            errors,
-            grep,
-        } => control::logs(&dir, service, follow, lines, errors, grep).await,
+        Cmd::Logs { service, follow, lines, errors, grep } => {
+            control::logs(&dir, service, follow, lines, errors, grep).await
+        }
         Cmd::Tools { json } => control::tools(&dir, json).await,
         Cmd::Call { tool, args } => control::call(&dir, &tool, args).await,
         Cmd::Approvals => control::approvals(&dir).await,

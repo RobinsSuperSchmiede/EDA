@@ -140,6 +140,8 @@ enum Command {
     },
     /// Print the JSON Schema of openshell.json
     Schema,
+    /// Print the guide for AI coding agents that build apps on OpenShell
+    Guide,
 }
 
 fn main() {
@@ -153,10 +155,7 @@ fn main() {
         .init();
     output::enable_ansi();
 
-    let rt = tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
-        .expect("tokio runtime");
+    let rt = tokio::runtime::Builder::new_multi_thread().enable_all().build().expect("tokio runtime");
     let result = rt.block_on(commands::run(cli.project, cli.command));
     if let Err(e) = result {
         output::error(&format!("{e:#}"));

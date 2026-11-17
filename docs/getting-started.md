@@ -7,7 +7,14 @@ OpenShell consists of two binaries:
 - `openshell` – the CLI (also runs the headless runtime and the MCP server)
 - `openshell-desktop` – the desktop shell (Tauri 2)
 
-Until prebuilt releases are published, build them from source:
+**Prebuilt binaries** (from the [releases page](https://github.com/RobinsSuperSchmiede/EDA/releases)):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/scripts/install.sh | sh     # macOS / Linux
+irm https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/scripts/install.ps1 | iex         # Windows (PowerShell)
+```
+
+**From source** (needed until the first release is published, and for development):
 
 ```bash
 git clone https://github.com/RobinsSuperSchmiede/EDA.git
@@ -96,8 +103,12 @@ While `openshell dev` runs:
 
 ## 4. Connect an AI agent
 
+Coding agents: every project created with `openshell create` / `openshell init` contains an `AGENTS.md`, and
+`openshell guide` prints the complete guide for building OpenShell apps. To connect an agent to the running app:
+
 ```bash
-claude mcp add my-app -- openshell mcp --project /path/to/my-app
+claude mcp add my-app-dev -- openshell mcp --project /path/to/my-app              # develop the app
+claude mcp add my-app     -- openshell mcp --app --start --project /path/to/my-app  # use the app
 ```
 
 See [agents.md](agents.md) for other agents, the tool list and permissions.

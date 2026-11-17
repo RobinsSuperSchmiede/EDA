@@ -7,6 +7,7 @@ on:
 
 jobs:
   test:
+    name: Test (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
@@ -15,13 +16,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
       - name: Linux dependencies (Tauri)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - name: Format
+        if: runner.os == 'Linux'
+        run: cargo fmt --all --check
+      - name: Clippy
+        if: runner.os == 'Linux'
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Test
-        run: cargo test --workspace --exclude openshell-desktop
+        run: cargo test --workspace --exclude openshell-desktop --locked
       - name: Build desktop shell
-        run: cargo build -p openshell-desktop
+        run: cargo build -p openshell-desktop --locked
+
+  generated-files:
+    name: Generated files are up to date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: JSON Schema
+        run: |
+          cargo run -q -p openshell-cli --locked -- schema > /tmp/schema.json
+          diff -u schema/openshell.schema.json /tmp/schema.json || (echo "run: cargo run -p openshell-cli -- schema > schema/openshell.schema.json" && exit 1)
+      - name: llms-full.txt
+        run: python3 scripts/gen-llms-full.py --check

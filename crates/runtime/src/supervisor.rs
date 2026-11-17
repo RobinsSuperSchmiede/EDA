@@ -260,10 +260,9 @@ async fn run_build(rt: &Inner, slot: &Slot, build: &BuildDef, ctrl: &mut Ctrl) -
         s.metrics = None;
     });
     let started = std::time::Instant::now();
-    let mut cmd = build_command(&build.command, &[], &build.cwd, &process_env(rt, slot)).map_err(|e| e.to_string())?;
-    let mut child = cmd
-        .spawn()
-        .map_err(|e| format!("cannot run `{}`: {e}", build.command.display()))?;
+    let mut cmd =
+        build_command(&build.command, &[], &build.cwd, &process_env(rt, slot)).map_err(|e| e.to_string())?;
+    let mut child = cmd.spawn().map_err(|e| format!("cannot run `{}`: {e}", build.command.display()))?;
     if let Some(job) = &rt.job {
         job.assign(&child);
     }
@@ -300,8 +299,8 @@ async fn run_setup(rt: &Inner, slot: &Slot, setup: &SetupDef, ctrl: &mut Ctrl) -
     let name = &slot.def.name;
     rt.logs.system(name, format!("running setup: {}", setup.command.display()));
     slot.set_state(rt, ServiceState::Setup);
-    let mut cmd = build_command(&setup.command, &[], &setup.cwd, &process_env(rt, slot))
-        .map_err(|e| e.to_string())?;
+    let mut cmd =
+        build_command(&setup.command, &[], &setup.cwd, &process_env(rt, slot)).map_err(|e| e.to_string())?;
     let mut child = cmd.spawn().map_err(|e| format!("cannot run `{}`: {e}", setup.command.display()))?;
     if let Some(job) = &rt.job {
         job.assign(&child);
@@ -330,9 +329,7 @@ async fn run_setup(rt: &Inner, slot: &Slot, setup: &SetupDef, ctrl: &mut Ctrl) -
 }
 
 async fn run_process(rt: &Inner, slot: &Slot, ctrl: &mut Ctrl) -> Exit {
-    let DefKind::Process { command, args } = &slot.def.kind else {
-        unreachable!()
-    };
+    let DefKind::Process { command, args } = &slot.def.kind else { unreachable!() };
     let name = &slot.def.name;
     let mut cmd = match build_command(command, args, &slot.def.cwd, &process_env(rt, slot)) {
         Ok(c) => c,
@@ -476,9 +473,7 @@ async fn run_external(rt: &Inner, slot: &Slot, ctrl: &mut Ctrl) -> Exit {
 }
 
 async fn run_static(rt: &Inner, slot: &Slot, ctrl: &mut Ctrl) -> Exit {
-    let DefKind::Static { dist, proxy } = &slot.def.kind else {
-        unreachable!()
-    };
+    let DefKind::Static { dist, proxy } = &slot.def.kind else { unreachable!() };
     let port = slot.def.port.unwrap_or(0);
     slot.set_state(rt, ServiceState::Starting);
     if !dist.is_dir() {
@@ -499,10 +494,8 @@ async fn run_static(rt: &Inner, slot: &Slot, ctrl: &mut Ctrl) -> Exit {
         Ok(s) => s,
         Err(e) => return Exit::Error(format!("cannot serve {}: {e}", dist.display())),
     };
-    rt.logs.system(
-        &slot.def.name,
-        format!("serving {} at http://127.0.0.1:{}/", dist.display(), server.port),
-    );
+    rt.logs
+        .system(&slot.def.name, format!("serving {} at http://127.0.0.1:{}/", dist.display(), server.port));
     slot.update(rt, |s| {
         s.state = ServiceState::Running;
         s.started_at = Some(Utc::now());

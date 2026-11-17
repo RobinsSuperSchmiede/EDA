@@ -24,12 +24,7 @@ fn object(props: Value, required: &[&str]) -> Value {
 }
 
 fn tool(name: &str, permission: Permission, description: &str, schema: Value) -> ToolDef {
-    ToolDef {
-        name: name.into(),
-        description: description.into(),
-        permission,
-        input_schema: schema,
-    }
+    ToolDef { name: name.into(), description: description.into(), permission, input_schema: schema }
 }
 
 fn page_prop() -> Value {
@@ -57,7 +52,12 @@ fn merge(mut a: Value, b: Value) -> Value {
 /// All built-in tools.
 pub fn builtin_tools() -> Vec<ToolDef> {
     use Permission::*;
-    let service_name = || object(json!({ "name": { "type": "string", "description": "Service name (see runtime_status)" } }), &["name"]);
+    let service_name = || {
+        object(
+            json!({ "name": { "type": "string", "description": "Service name (see runtime_status)" } }),
+            &["name"],
+        )
+    };
     vec![
         // --- read ----------------------------------------------------------
         tool("app_info", Read,

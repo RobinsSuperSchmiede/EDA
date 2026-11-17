@@ -15,18 +15,10 @@ pub struct Issue {
 
 impl Issue {
     fn error(path: impl Into<String>, message: impl Into<String>) -> Self {
-        Self {
-            path: path.into(),
-            message: message.into(),
-            error: true,
-        }
+        Self { path: path.into(), message: message.into(), error: true }
     }
     fn warning(path: impl Into<String>, message: impl Into<String>) -> Self {
-        Self {
-            path: path.into(),
-            message: message.into(),
-            error: false,
-        }
+        Self { path: path.into(), message: message.into(), error: false }
     }
     pub fn is_error(&self) -> bool {
         self.error
@@ -46,9 +38,7 @@ pub const FRONTEND_SERVICE: &str = "frontend";
 fn valid_name(name: &str) -> bool {
     !name.is_empty()
         && name.len() <= 64
-        && name
-            .chars()
-            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '_')
+        && name.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '_')
         && name.chars().next().map(|c| c.is_ascii_alphanumeric()).unwrap_or(false)
 }
 
@@ -100,14 +90,10 @@ pub fn validate(config: &Config) -> Vec<Issue> {
             (Some(c), false) if c.is_empty() => {
                 issues.push(Issue::error(format!("{p}.command"), "must not be empty"))
             }
-            (Some(_), true) => issues.push(Issue::warning(
-                format!("{p}.command"),
-                "ignored because the service is `external`",
-            )),
-            (None, true) if s.url.is_none() && s.healthcheck.is_none() => issues.push(Issue::error(
-                format!("{p}"),
-                "an external service needs a `url` or a `healthcheck`",
-            )),
+            (Some(_), true) => issues
+                .push(Issue::warning(format!("{p}.command"), "ignored because the service is `external`")),
+            (None, true) if s.url.is_none() && s.healthcheck.is_none() => issues
+                .push(Issue::error(p.to_string(), "an external service needs a `url` or a `healthcheck`")),
             _ => {}
         }
         if let Some(port) = &s.port {
@@ -118,7 +104,8 @@ pub fn validate(config: &Config) -> Vec<Issue> {
         }
         for (j, d) in s.depends_on.iter().enumerate() {
             if d == &s.name {
-                issues.push(Issue::error(format!("{p}.depends_on[{j}]"), "a service cannot depend on itself"));
+                issues
+                    .push(Issue::error(format!("{p}.depends_on[{j}]"), "a service cannot depend on itself"));
             }
         }
         if let Some(b) = &s.build {
@@ -143,10 +130,7 @@ pub fn validate(config: &Config) -> Vec<Issue> {
     let deps_of = |deps: &[String], p: &str, issues: &mut Vec<Issue>| {
         for (j, d) in deps.iter().enumerate() {
             if !names.contains(d) {
-                issues.push(Issue::error(
-                    format!("{p}.depends_on[{j}]"),
-                    format!("unknown service `{d}`"),
-                ));
+                issues.push(Issue::error(format!("{p}.depends_on[{j}]"), format!("unknown service `{d}`")));
             }
         }
     };
@@ -154,10 +138,7 @@ pub fn validate(config: &Config) -> Vec<Issue> {
         deps_of(&s.depends_on, &format!("services[{i}]"), &mut issues);
     }
     if let Some(cycle) = find_cycle(&config.services) {
-        issues.push(Issue::error(
-            "services",
-            format!("dependency cycle: {}", cycle.join(" -> ")),
-        ));
+        issues.push(Issue::error("services", format!("dependency cycle: {}", cycle.join(" -> "))));
     }
 
     // --- frontend -----------------------------------------------------------
@@ -181,7 +162,7 @@ pub fn validate(config: &Config) -> Vec<Issue> {
                 "set `url`, `command` + `url`, or `dist` so OpenShell knows what to load",
             ));
         }
-        for (prefix, _) in &fe.proxy {
+        for prefix in fe.proxy.keys() {
             if !prefix.starts_with('/') {
                 issues.push(Issue::error(
                     format!("frontend.proxy.{prefix}"),
@@ -245,28 +226,30 @@ pub fn validate(config: &Config) -> Vec<Issue> {
             issues.push(Issue::error(format!("{p}.name"), format!("duplicate capability `{}`", c.name)));
         }
         match (&c.http, &c.task) {
-            (None, None) => issues.push(Issue::error(
-                p.clone(),
-                "a capability needs an `http` or `task` target",
-            )),
-            (Some(_), Some(_)) => issues.push(Issue::error(p.clone(), "use either `http` or `task`, not both")),
+            (None, None) => {
+                issues.push(Issue::error(p.clone(), "a capability needs an `http` or `task` target"))
+            }
+            (Some(_), Some(_)) => {
+                issues.push(Issue::error(p.clone(), "use either `http` or `task`, not both"))
+            }
             _ => {}
         }
         if let Some(h) = &c.http {
             match (&h.service, &h.url) {
-                (Some(s), _) if !names.contains(s) => issues.push(Issue::error(
-                    format!("{p}.http.service"),
-                    format!("unknown service `{s}`"),
-                )),
-                (None, None) => issues.push(Issue::error(
-                    format!("{p}.http"),
-                    "set `service` (+ `path`) or `url`",
-                )),
+                (Some(s), _) if !names.contains(s) => {
+                    issues.push(Issue::error(format!("{p}.http.service"), format!("unknown service `{s}`")))
+                }
+                (None, None) => {
+                    issues.push(Issue::error(format!("{p}.http"), "set `service` (+ `path`) or `url`"))
+                }
                 _ => {}
             }
             let m = h.method.to_ascii_uppercase();
             if !["GET", "POST", "PUT", "PATCH", "DELETE"].contains(&m.as_str()) {
-                issues.push(Issue::error(format!("{p}.http.method"), format!("unsupported method `{}`", h.method)));
+                issues.push(Issue::error(
+                    format!("{p}.http.method"),
+                    format!("unsupported method `{}`", h.method),
+                ));
             }
         }
         if let Some(t) = &c.task {
@@ -434,9 +417,7 @@ pub fn startup_order(services: &[ServiceConfig]) -> Vec<String> {
         // pick the first (in declaration order) service whose dependencies are placed
         let next = services.iter().find(|s| {
             !placed.contains(&s.name)
-                && s.depends_on
-                    .iter()
-                    .all(|d| placed.contains(d) || !services.iter().any(|o| &o.name == d))
+                && s.depends_on.iter().all(|d| placed.contains(d) || !services.iter().any(|o| &o.name == d))
         });
         if let Some(s) = next {
             placed.insert(s.name.clone());

@@ -27,8 +27,8 @@ mod watch;
 
 pub use health::{Probe, ProbeConfig};
 pub use logs::{LogLine, LogQuery, LogStore, LogStream};
-pub use openshell_config::{Mode, Project};
 pub use metrics::Metrics;
+pub use openshell_config::{Mode, Project};
 pub use plan::{build_plan, BuildDef, DefKind, ServiceDef};
 
 use anyhow::{anyhow, bail, Result};
@@ -159,7 +159,10 @@ pub enum RuntimeEvent {
     /// Watched frontend files changed; the WebView should reload.
     FrontendReload,
     /// Watched files of a service changed (it is being restarted).
-    FilesChanged { service: String, paths: Vec<String> },
+    FilesChanged {
+        service: String,
+        paths: Vec<String>,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -243,10 +246,8 @@ impl Runtime {
     pub fn new(project: &Project, mode: Mode) -> Result<Self> {
         let defs = build_plan(project, mode)?;
         let state_dir = project.state_dir();
-        let logs = Arc::new(LogStore::new(
-            project.config.runtime.log_buffer_lines,
-            Some(state_dir.join("logs")),
-        ));
+        let logs =
+            Arc::new(LogStore::new(project.config.runtime.log_buffer_lines, Some(state_dir.join("logs"))));
         let (events, _) = broadcast::channel(256);
         let slots = defs
             .into_iter()
@@ -269,21 +270,12 @@ impl Runtime {
                     autostart: def.autostart,
                     metrics: None,
                 };
-                let (control, _) = tokio_watch::channel(Control {
-                    run: false,
-                    generation: 0,
-                });
-                Arc::new(Slot {
-                    def,
-                    status: Mutex::new(status),
-                    control,
-                })
+                let (control, _) = tokio_watch::channel(Control { run: false, generation: 0 });
+                Arc::new(Slot { def, status: Mutex::new(status), control })
             })
             .collect();
-        let http = reqwest::Client::builder()
-            .no_proxy()
-            .redirect(reqwest::redirect::Policy::none())
-            .build()?;
+        let http =
+            reqwest::Client::builder().no_proxy().redirect(reqwest::redirect::Policy::none()).build()?;
         let inner = Arc::new(Inner {
             mode,
             root: project.root.clone(),
@@ -305,11 +297,7 @@ impl Runtime {
         // application data directory (survives updates of installed apps)
         let data_dir = project.data_dir();
         let _ = std::fs::create_dir_all(&data_dir);
-        inner
-            .extra_env
-            .write()
-            .unwrap()
-            .insert("OPENSHELL_DATA_DIR".into(), data_dir.display().to_string());
+        inner.extra_env.write().unwrap().insert("OPENSHELL_DATA_DIR".into(), data_dir.display().to_string());
         if inner.slots.iter().any(|s| matches!(s.def.kind, DefKind::Process { .. })) {
             handle.spawn(metrics::sample(Arc::downgrade(&inner)));
         }
@@ -338,11 +326,7 @@ impl Runtime {
     }
 
     pub fn status(&self) -> Vec<ServiceStatus> {
-        self.inner
-            .slots
-            .iter()
-            .map(|s| s.status.lock().unwrap().clone())
-            .collect()
+        self.inner.slots.iter().map(|s| s.status.lock().unwrap().clone()).collect()
     }
 
     pub fn service_status(&self, name: &str) -> Option<ServiceStatus> {
@@ -351,9 +335,7 @@ impl Runtime {
 
     /// URL that the WebView should load.
     pub fn frontend_url(&self) -> Option<String> {
-        self.inner
-            .slot(openshell_config::FRONTEND_SERVICE)
-            .and_then(|s| s.def.url.clone())
+        self.inner.slot(openshell_config::FRONTEND_SERVICE).and_then(|s| s.def.url.clone())
     }
 
     pub fn service_url(&self, name: &str) -> Option<String> {
@@ -375,11 +357,7 @@ impl Runtime {
 
     /// Environment variables added to every process started from now on.
     pub fn set_extra_env(&self, key: impl Into<String>, value: impl Into<String>) {
-        self.inner
-            .extra_env
-            .write()
-            .unwrap()
-            .insert(key.into(), value.into());
+        self.inner.extra_env.write().unwrap().insert(key.into(), value.into());
     }
 
     /// HTML snippet injected into pages served by the static frontend server.
@@ -507,19 +485,10 @@ impl Runtime {
             let h = watch::watch_paths(&slot.def.watch, move |paths| {
                 let rel: Vec<String> = paths
                     .iter()
-                    .map(|p| {
-                        p.strip_prefix(rt.root())
-                            .unwrap_or(p)
-                            .display()
-                            .to_string()
-                    })
+                    .map(|p| p.strip_prefix(rt.root()).unwrap_or(p).display().to_string())
                     .collect();
-                rt.logs()
-                    .system(&name, format!("files changed: {}", rel.join(", ")));
-                rt.emit(RuntimeEvent::FilesChanged {
-                    service: name.clone(),
-                    paths: rel,
-                });
+                rt.logs().system(&name, format!("files changed: {}", rel.join(", ")));
+                rt.emit(RuntimeEvent::FilesChanged { service: name.clone(), paths: rel });
                 if is_frontend {
                     rt.emit(RuntimeEvent::FrontendReload);
                 } else if let Some(st) = rt.service_status(&name) {
@@ -539,10 +508,7 @@ impl Runtime {
 
     fn slot(&self, name: &str) -> Result<&Arc<Slot>> {
         self.inner.slot(name).ok_or_else(|| {
-            anyhow!(
-                "unknown service `{name}` (available: {})",
-                self.service_names().join(", ")
-            )
+            anyhow!("unknown service `{name}` (available: {})", self.service_names().join(", "))
         })
     }
 }

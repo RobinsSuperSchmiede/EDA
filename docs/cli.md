@@ -9,9 +9,10 @@ binary), `NO_COLOR`.
 | Command | Description |
 |---|---|
 | `openshell create <name> [-t <template>]` | New project from a template (`vanilla-python` default, `react-python`, `react-node`, `vue-python`, `svelte-go`, `vanilla-java`, `vanilla-cpp`, `custom`). `--list` shows all. |
-| `openshell init [--name <n>] [--toml] [--force]` | Generate a config for an existing project (auto-detection). |
+| `openshell init [--name <n>] [--toml] [--force]` | Generate a config for an existing project (auto-detection) and an `AGENTS.md` for coding agents if none exists. |
 | `openshell doctor` | Validate config, commands, directories, ports, desktop binary, WebView2, toolchain. Exit code 1 on errors. |
 | `openshell schema` | Print the JSON Schema of the configuration. |
+| `openshell guide` | Print the guide for AI coding agents that build apps on OpenShell (docs/ai/app-development.md). |
 | `openshell build` | Production build: `services[].build` (C++, Java, …) and `frontend.build` (with `frontend.setup` if needed). |
 | `openshell package [-t nsis\|msi\|dmg\|deb\|…] [-o dir] [--skip-build]` | Build a native installer – see [installers.md](installers.md). |
 

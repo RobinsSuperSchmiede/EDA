@@ -21,11 +21,7 @@ pub async fn run(dir: &Path, targets: Vec<String>, out: Option<PathBuf>, skip_bu
         build_project(&project).await?;
     }
     println!("{} {} {}", dim("package:"), bold(&project.config.app.name), project.config.identifier());
-    let opts = openshell_package::Options {
-        desktop_binary: desktop,
-        targets,
-        out_dir: out,
-    };
+    let opts = openshell_package::Options { desktop_binary: desktop, targets, out_dir: out };
     let result = tokio::task::spawn_blocking(move || {
         openshell_package::package(&project, &opts, &|msg| println!("  {} {msg}", dim("·")))
     })
@@ -34,10 +30,6 @@ pub async fn run(dir: &Path, targets: Vec<String>, out: Option<PathBuf>, skip_bu
     for i in &result.installers {
         output::ok(&format!("installer: {}", bold(&i.display().to_string())));
     }
-    println!(
-        "  {} {}",
-        dim("portable build (runs without installing):"),
-        result.staging.display()
-    );
+    println!("  {} {}", dim("portable build (runs without installing):"), result.staging.display());
     Ok(())
 }

@@ -103,15 +103,8 @@ fn require<'a>(args: &'a Value, key: &str) -> Result<&'a str, String> {
 
 impl Shell {
     pub(crate) fn capabilities(&self) -> Vec<Capability> {
-        let mut caps: Vec<Capability> = self
-            .inner
-            .project
-            .config
-            .capabilities
-            .iter()
-            .cloned()
-            .map(Capability::Config)
-            .collect();
+        let mut caps: Vec<Capability> =
+            self.inner.project.config.capabilities.iter().cloned().map(Capability::Config).collect();
         for op in self.inner.imported.read().unwrap().iter() {
             if !caps.iter().any(|c| c.name() == op.name) {
                 caps.push(Capability::OpenApi(op.clone()));
@@ -220,7 +213,13 @@ impl Shell {
         }
     }
 
-    async fn ui(&self, args: &Value, method: &str, params: Value, timeout: Duration) -> Result<Value, String> {
+    async fn ui(
+        &self,
+        args: &Value,
+        method: &str,
+        params: Value,
+        timeout: Duration,
+    ) -> Result<Value, String> {
         self.inner.hub.call(arg_str(args, "page"), method, params, timeout).await
     }
 
@@ -231,10 +230,9 @@ impl Shell {
         match name {
             "app_info" => Ok(self.app_info()),
             "runtime_status" => match arg_str(args, "service") {
-                Some(s) => rt
-                    .service_status(s)
-                    .map(|st| json!(st))
-                    .ok_or_else(|| format!("unknown service `{s}`")),
+                Some(s) => {
+                    rt.service_status(s).map(|st| json!(st)).ok_or_else(|| format!("unknown service `{s}`"))
+                }
                 None => Ok(json!({ "services": rt.status() })),
             },
             "logs_read" => {
@@ -323,7 +321,11 @@ impl Shell {
                 args.get("recursive").and_then(|v| v.as_bool()).unwrap_or(false),
                 arg_u64(args, "max_entries").unwrap_or(500) as usize,
             ),
-            "fs_read" => fs::read(&root, require(args, "path")?, arg_u64(args, "max_bytes").unwrap_or(200_000) as usize),
+            "fs_read" => fs::read(
+                &root,
+                require(args, "path")?,
+                arg_u64(args, "max_bytes").unwrap_or(200_000) as usize,
+            ),
             "fs_search" => fs::search(
                 &root,
                 arg_str(args, "path").unwrap_or(""),
@@ -331,10 +333,8 @@ impl Shell {
                 arg_u64(args, "max_results").unwrap_or(100) as usize,
             ),
             "fs_write" => {
-                let content = args
-                    .get("content")
-                    .and_then(|v| v.as_str())
-                    .ok_or("missing argument `content`")?;
+                let content =
+                    args.get("content").and_then(|v| v.as_str()).ok_or("missing argument `content`")?;
                 fs::write(&root, require(args, "path")?, content)
             }
             "task_run" => self.run_task(require(args, "name")?).await,
@@ -447,7 +447,12 @@ impl Shell {
             Capability::Page { page, .. } => {
                 self.inner
                     .hub
-                    .call(Some(&page), "invoke_action", json!({ "name": name, "input": input }), Duration::from_secs(30))
+                    .call(
+                        Some(&page),
+                        "invoke_action",
+                        json!({ "name": name, "input": input }),
+                        Duration::from_secs(30),
+                    )
                     .await
             }
             Capability::Config(c) => {
@@ -465,14 +470,17 @@ impl Shell {
                     (None, None) => return Err("capability has no url".into()),
                 };
                 let url = format!("{}{}", base.trim_end_matches('/'), h.path);
-                let method = reqwest::Method::from_bytes(h.method.to_uppercase().as_bytes()).map_err(|e| e.to_string())?;
+                let method = reqwest::Method::from_bytes(h.method.to_uppercase().as_bytes())
+                    .map_err(|e| e.to_string())?;
                 let client = reqwest::Client::builder().no_proxy().build().map_err(|e| e.to_string())?;
                 let mut req = client.request(method.clone(), &url).timeout(Duration::from_secs(60));
                 if method == reqwest::Method::GET || method == reqwest::Method::DELETE {
                     if let Some(obj) = input.as_object() {
                         let q: Vec<(String, String)> = obj
                             .iter()
-                            .map(|(k, v)| (k.clone(), v.as_str().map(str::to_string).unwrap_or_else(|| v.to_string())))
+                            .map(|(k, v)| {
+                                (k.clone(), v.as_str().map(str::to_string).unwrap_or_else(|| v.to_string()))
+                            })
                             .collect();
                         req = req.query(&q);
                     }
@@ -562,11 +570,11 @@ impl ToolProvider for AppTools {
                     .map(|s| json!({ "name": s.name, "state": s.state, "error": s.last_error }))
                     .collect();
                 let healthy = services.iter().all(|s| s["state"] == "running");
-                return ToolOutcome::ok(json!({ "app": self.0.runtime().app_name(), "healthy": healthy, "services": services }));
+                return ToolOutcome::ok(
+                    json!({ "app": self.0.runtime().app_name(), "healthy": healthy, "services": services }),
+                );
             }
-            self.0
-                .call_tool(&format!("{CAPABILITY_TOOL_PREFIX}{name}"), args, ctx, &policy)
-                .await
+            self.0.call_tool(&format!("{CAPABILITY_TOOL_PREFIX}{name}"), args, ctx, &policy).await
         })
     }
 

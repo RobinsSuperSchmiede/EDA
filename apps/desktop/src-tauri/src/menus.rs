@@ -40,10 +40,10 @@ fn chrono_now() -> i64 {
 
 fn glyph(state: ServiceState) -> &'static str {
     match state {
-        ServiceState::Running => "\u{25cf}",                     // ●
+        ServiceState::Running => "\u{25cf}", // ●
         ServiceState::Unhealthy | ServiceState::Crashed | ServiceState::Failed => "\u{2716}", // ✖
         ServiceState::Stopped | ServiceState::Exited => "\u{25cb}", // ○
-        _ => "\u{25d0}",                                          // ◐
+        _ => "\u{25d0}",                     // ◐
     }
 }
 
@@ -132,11 +132,32 @@ fn append_services(app: &AppHandle, menu: &dyn MenuLike) -> tauri::Result<()> {
 
     let agents = Submenu::new(app, "AI agents", true)?;
     let pending = shell.approvals().pending().len();
-    agents.append(&info(app, format!("{} page(s) bridged \u{00b7} {pending} pending approval(s)", shell.hub().pages().len()))?)?;
-    agents.append(&MenuItem::with_id(app, "agent:copy-app", "Copy MCP command (use the app)", true, None::<&str>)?)?;
-    agents.append(&MenuItem::with_id(app, "agent:copy-full", "Copy MCP command (develop the app)", true, None::<&str>)?)?;
+    agents.append(&info(
+        app,
+        format!("{} page(s) bridged \u{00b7} {pending} pending approval(s)", shell.hub().pages().len()),
+    )?)?;
+    agents.append(&MenuItem::with_id(
+        app,
+        "agent:copy-app",
+        "Copy MCP command (use the app)",
+        true,
+        None::<&str>,
+    )?)?;
+    agents.append(&MenuItem::with_id(
+        app,
+        "agent:copy-full",
+        "Copy MCP command (develop the app)",
+        true,
+        None::<&str>,
+    )?)?;
     if pending > 0 {
-        agents.append(&MenuItem::with_id(app, "rt:panel", "Review approvals\u{2026}", true, None::<&str>)?)?;
+        agents.append(&MenuItem::with_id(
+            app,
+            "rt:panel",
+            "Review approvals\u{2026}",
+            true,
+            None::<&str>,
+        )?)?;
     }
     menu.add(&agents)?;
     Ok(())
@@ -168,8 +189,15 @@ fn titlebar_menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
     }
     menu.append(&PredefinedMenuItem::separator(app)?)?;
     menu.append(&MenuItem::with_id(app, "win:minimize", "Minimize", true, None::<&str>)?)?;
-    let maximized = main_window(app).and_then(|w| w.is_maximized().map_err(|e| e.to_string())).unwrap_or(false);
-    menu.append(&MenuItem::with_id(app, "win:maximize", if maximized { "Restore" } else { "Maximize" }, true, None::<&str>)?)?;
+    let maximized =
+        main_window(app).and_then(|w| w.is_maximized().map_err(|e| e.to_string())).unwrap_or(false);
+    menu.append(&MenuItem::with_id(
+        app,
+        "win:maximize",
+        if maximized { "Restore" } else { "Maximize" },
+        true,
+        None::<&str>,
+    )?)?;
     menu.append(&MenuItem::with_id(app, "win:close", "Close", true, None::<&str>)?)?;
     Ok(menu)
 }

@@ -50,14 +50,12 @@ impl Backend {
 fn pom_value(pom: &str, tag: &str) -> Option<String> {
     let mut text = pom.to_string();
     for block in ["parent", "dependencies", "build", "dependencyManagement", "profiles"] {
-        loop {
-            let (Some(a), Some(b)) = (text.find(&format!("<{block}>")), text.find(&format!("</{block}>"))) else {
-                break;
-            };
+        let (open, close) = (format!("<{block}>"), format!("</{block}>"));
+        while let (Some(a), Some(b)) = (text.find(&open), text.find(&close)) {
             if b < a {
                 break;
             }
-            text.replace_range(a..b + block.len() + 3, "");
+            text.replace_range(a..b + close.len(), "");
         }
     }
     let start = text.find(&format!("<{tag}>"))? + tag.len() + 2;
@@ -75,7 +73,8 @@ fn detect_java(dir: &Path, rel_dir: String) -> Option<Backend> {
                 8080,
                 "Java (Spring Boot, Maven)",
             );
-            b.healthcheck = pom.contains("actuator").then(|| "http://127.0.0.1:${port}/actuator/health".into());
+            b.healthcheck =
+                pom.contains("actuator").then(|| "http://127.0.0.1:${port}/actuator/health".into());
             b.openapi = pom.contains("springdoc").then(|| "/v3/api-docs".into());
             b.watch = Some("src".into());
             return Some(b);
@@ -95,7 +94,11 @@ fn detect_java(dir: &Path, rel_dir: String) -> Option<Backend> {
     }
     for gradle in ["build.gradle", "build.gradle.kts"] {
         if let Ok(text) = std::fs::read_to_string(dir.join(gradle)) {
-            let g = if dir.join("gradlew").exists() || dir.join("gradlew.bat").exists() { "gradlew" } else { "gradle" };
+            let g = if dir.join("gradlew").exists() || dir.join("gradlew.bat").exists() {
+                "gradlew"
+            } else {
+                "gradle"
+            };
             let spring = text.contains("org.springframework.boot");
             let mut b = Backend::simple(
                 rel_dir,
@@ -115,7 +118,12 @@ fn detect_java(dir: &Path, rel_dir: String) -> Option<Backend> {
     // plain sources: compile with javac
     for main in ["src/Main.java", "Main.java"] {
         if dir.join(main).is_file() {
-            let mut b = Backend::simple(rel_dir, json!(["java", "-cp", "build/classes", "Main"]), 8000, "Java (javac)");
+            let mut b = Backend::simple(
+                rel_dir,
+                json!(["java", "-cp", "build/classes", "Main"]),
+                8000,
+                "Java (javac)",
+            );
             b.build = Some(json!(["javac", "-d", "build/classes", main]));
             b.watch = Some(if main.starts_with("src") { "src".into() } else { main.into() });
             return Some(b);
@@ -177,9 +185,7 @@ fn package_manager(dir: &Path) -> &'static str {
 }
 
 fn has_dep(pkg: &Value, name: &str) -> bool {
-    ["dependencies", "devDependencies"]
-        .iter()
-        .any(|k| pkg[k].get(name).is_some())
+    ["dependencies", "devDependencies"].iter().any(|k| pkg[k].get(name).is_some())
 }
 
 fn detect_frontend(root: &Path) -> Option<Frontend> {
@@ -187,14 +193,29 @@ fn detect_frontend(root: &Path) -> Option<Frontend> {
         let dir = root.join(d);
         let pkg_path = dir.join("package.json");
         if let Some(pkg) = read_json(&pkg_path) {
-            let is_frontend = ["vite", "react-scripts", "next", "@angular/core", "@vue/cli-service", "svelte", "astro", "parcel"]
-                .iter()
-                .any(|d| has_dep(&pkg, d));
+            let is_frontend = [
+                "vite",
+                "react-scripts",
+                "next",
+                "@angular/core",
+                "@vue/cli-service",
+                "svelte",
+                "astro",
+                "parcel",
+            ]
+            .iter()
+            .any(|d| has_dep(&pkg, d));
             if !is_frontend {
                 continue;
             }
             let pm = package_manager(&dir);
-            let run = |script: &str| if pm == "npm" { format!("npm run {script}") } else { format!("{pm} {script}") };
+            let run = |script: &str| {
+                if pm == "npm" {
+                    format!("npm run {script}")
+                } else {
+                    format!("{pm} {script}")
+                }
+            };
             let scripts = &pkg["scripts"];
             let (framework, port, dist) = if has_dep(&pkg, "next") {
                 ("Next.js", 3000, "out")
@@ -382,7 +403,9 @@ pub fn generate(root: &Path, name: Option<String>) -> (Value, Vec<String>) {
         }
         cfg.insert("frontend".into(), Value::Object(fj));
     } else {
-        notes.push("no frontend detected – set `frontend.url`, `frontend.command` + `url` or `frontend.dist`".into());
+        notes.push(
+            "no frontend detected – set `frontend.url`, `frontend.command` + `url` or `frontend.dist`".into(),
+        );
         cfg.insert("frontend".into(), json!({ "url": "http://localhost:3000" }));
     }
     cfg.insert("services".into(), json!(services));
@@ -422,6 +445,17 @@ pub fn run(dir: &Path, force: bool, name: Option<String>, toml_out: bool) -> Res
     };
     std::fs::write(root.join(file), text)?;
     output::ok(&format!("created {}", bold(file)));
+    let app_name = cfg["app"]["name"].as_str().unwrap_or("App").to_string();
+    let written =
+        super::create::write_agent_files(&root, &openshell_core::config::slug(&app_name), &app_name)?;
+    if !written.is_empty() {
+        output::ok(&format!("created {} (instructions for AI coding agents)", written.join(", ")));
+    } else {
+        println!(
+            "  {} AGENTS.md exists – run `openshell guide` and add the OpenShell commands to it so coding agents know how to run this app",
+            dim("•")
+        );
+    }
     for n in notes {
         println!("  {} {n}", dim("•"));
     }

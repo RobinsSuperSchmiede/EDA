@@ -42,12 +42,10 @@ pub fn interpolate(
             Some((_, '{')) => {
                 chars.next();
                 let rest = &input[i + 2..];
-                let end = rest
-                    .find('}')
-                    .ok_or_else(|| InterpolationError::Unterminated(input.to_string()))?;
+                let end =
+                    rest.find('}').ok_or_else(|| InterpolationError::Unterminated(input.to_string()))?;
                 let name = rest[..end].trim();
-                let value =
-                    lookup(name).ok_or_else(|| InterpolationError::Unknown(name.to_string()))?;
+                let value = lookup(name).ok_or_else(|| InterpolationError::Unknown(name.to_string()))?;
                 out.push_str(&value);
                 // skip the variable body and the closing brace
                 for _ in 0..rest[..=end].chars().count() {

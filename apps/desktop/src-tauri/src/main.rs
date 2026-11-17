@@ -97,13 +97,7 @@ impl Host for DesktopHost {
     }
 
     fn notify(&self, title: &str, body: &str) -> Result<(), String> {
-        self.app
-            .notification()
-            .builder()
-            .title(title)
-            .body(body)
-            .show()
-            .map_err(|e| e.to_string())
+        self.app.notification().builder().title(title).body(body).show().map_err(|e| e.to_string())
     }
 
     fn reload_frontend(&self) -> Result<(), String> {
@@ -158,10 +152,7 @@ fn navigate(app: &AppHandle, url: &str) -> Result<(), String> {
 
 fn open_frontend(app: &AppHandle) -> Result<(), String> {
     let shell = app.state::<AppState>().shell().ok_or("the runtime is not running")?;
-    let url = shell
-        .runtime()
-        .frontend_url()
-        .ok_or("no frontend is configured in openshell.json")?;
+    let url = shell.runtime().frontend_url().ok_or("no frontend is configured in openshell.json")?;
     navigate(app, &url)
 }
 
@@ -293,10 +284,7 @@ fn open_app(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 fn resolve_approval(state: State<'_, AppState>, id: String, approve: bool) -> bool {
-    state
-        .shell()
-        .map(|s| s.approvals().resolve(&id, approve))
-        .unwrap_or(false)
+    state.shell().map(|s| s.approvals().resolve(&id, approve)).unwrap_or(false)
 }
 
 #[tauri::command]
@@ -374,7 +362,11 @@ fn resolve_project(args: &Args) -> Result<(Project, bool), String> {
     }
     if let Ok(exe) = std::env::current_exe() {
         if let Some(dir) = exe.parent() {
-            for candidate in [dir.join("app"), dir.join("../Resources/app"), dir.join("../lib").join(exe_stem()).join("app")] {
+            for candidate in [
+                dir.join("app"),
+                dir.join("../Resources/app"),
+                dir.join("../lib").join(exe_stem()).join("app"),
+            ] {
                 if find_config_file(&candidate).is_some() {
                     let project = Project::load(&candidate).map_err(|e| e.to_string())?;
                     let state = dirs::data_local_dir()
@@ -411,10 +403,7 @@ fn mcp_commands(project: &Project, packaged: bool) -> (String, String) {
 
 fn default_mode(args: &Args) -> Mode {
     args.mode.unwrap_or_else(|| {
-        std::env::var("OPENSHELL_MODE")
-            .ok()
-            .and_then(|m| m.parse().ok())
-            .unwrap_or(Mode::Production)
+        std::env::var("OPENSHELL_MODE").ok().and_then(|m| m.parse().ok()).unwrap_or(Mode::Production)
     })
 }
 
@@ -426,9 +415,7 @@ fn handle_running_instance(project: &Project) -> bool {
             return false;
         };
         if client.info.host == "desktop" {
-            let _ = client
-                .post("/v1/tools/window_control", &json!({ "action": "focus" }))
-                .await;
+            let _ = client.post("/v1/tools/window_control", &json!({ "action": "focus" })).await;
             return true;
         }
         // a headless instance (e.g. started for an agent): replace it with the window
@@ -467,9 +454,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let cfg = project.config.clone();
     *state.app_name.lock().unwrap() = cfg.app.name.clone();
     *state.mcp_commands.lock().unwrap() = mcp_commands(&project, packaged);
-    state
-        .hide_on_close
-        .store(cfg.window.close_to_tray || cfg.runtime.background_mode, Ordering::SeqCst);
+    state.hide_on_close.store(cfg.window.close_to_tray || cfg.runtime.background_mode, Ordering::SeqCst);
     let icon_path = cfg.app.icon.as_ref().map(|i| project.resolve_path(i));
 
     let host = Arc::new(DesktopHost { app: handle.clone() });
@@ -554,14 +539,22 @@ fn run_mcp(args: &Args) -> ! {
                 start_args.push("--project".into());
                 start_args.push(project.root.display().to_string());
             }
-            let mode = args.mode.unwrap_or(if profile == McpProfile::App { Mode::Production } else { Mode::Development });
+            let mode = args.mode.unwrap_or(if profile == McpProfile::App {
+                Mode::Production
+            } else {
+                Mode::Development
+            });
             start_args.push("--mode".into());
             start_args.push(mode.to_string());
             let autostart: openshell_core::stdio::Autostart = Box::new(move || {
                 openshell_core::headless::spawn_detached(&std::env::current_exe()?, &start_args).map(|_| ())
             });
             let rt = tokio::runtime::Runtime::new().expect("tokio runtime");
-            match rt.block_on(openshell_core::stdio::serve(Some(project.state_dir()), profile, Some(autostart))) {
+            match rt.block_on(openshell_core::stdio::serve(
+                Some(project.state_dir()),
+                profile,
+                Some(autostart),
+            )) {
                 Ok(()) => 0,
                 Err(e) => {
                     eprintln!("openshell: {e:#}");

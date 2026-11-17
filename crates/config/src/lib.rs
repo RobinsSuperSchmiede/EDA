@@ -45,11 +45,7 @@ pub enum ConfigError {
 }
 
 fn format_issues(issues: &[Issue]) -> String {
-    issues
-        .iter()
-        .map(|i| format!("  - {i}"))
-        .collect::<Vec<_>>()
-        .join("\n")
+    issues.iter().map(|i| format!("  - {i}")).collect::<Vec<_>>().join("\n")
 }
 
 /// A loaded and validated project: the configuration plus where it lives.
@@ -90,16 +86,8 @@ impl Project {
             path
         };
         let config = load_file(&path)?;
-        let root = path
-            .parent()
-            .map(Path::to_path_buf)
-            .unwrap_or_else(|| PathBuf::from("."));
-        Ok(Project {
-            root,
-            config_path: path,
-            config,
-            state_dir_override: None,
-        })
+        let root = path.parent().map(Path::to_path_buf).unwrap_or_else(|| PathBuf::from("."));
+        Ok(Project { root, config_path: path, config, state_dir_override: None })
     }
 
     /// Resolve a (possibly relative) path from the configuration against the project root.
@@ -114,9 +102,7 @@ impl Project {
 
     /// Directory for runtime state (`.openshell/` in the project root).
     pub fn state_dir(&self) -> PathBuf {
-        self.state_dir_override
-            .clone()
-            .unwrap_or_else(|| self.root.join(".openshell"))
+        self.state_dir_override.clone().unwrap_or_else(|| self.root.join(".openshell"))
     }
 
     /// Directory for application data (`OPENSHELL_DATA_DIR`), inside the state directory.
@@ -133,37 +119,19 @@ impl Project {
 
 /// Returns the first configuration file found directly in `dir`.
 pub fn find_config_file(dir: &Path) -> Option<PathBuf> {
-    CONFIG_FILE_NAMES
-        .iter()
-        .map(|name| dir.join(name))
-        .find(|p| p.is_file())
+    CONFIG_FILE_NAMES.iter().map(|name| dir.join(name)).find(|p| p.is_file())
 }
 
 /// Read, parse and validate a configuration file.
 pub fn load_file(path: &Path) -> Result<Config, ConfigError> {
-    let text = std::fs::read_to_string(path).map_err(|source| ConfigError::Io {
-        path: path.to_path_buf(),
-        source,
-    })?;
-    let is_toml = path
-        .extension()
-        .map(|e| e.eq_ignore_ascii_case("toml"))
-        .unwrap_or(false);
-    let config = if is_toml {
-        parse_toml(&text)
-    } else {
-        parse_json(&text)
-    }
-    .map_err(|message| ConfigError::Parse {
-        path: path.to_path_buf(),
-        message,
-    })?;
+    let text = std::fs::read_to_string(path)
+        .map_err(|source| ConfigError::Io { path: path.to_path_buf(), source })?;
+    let is_toml = path.extension().map(|e| e.eq_ignore_ascii_case("toml")).unwrap_or(false);
+    let config = if is_toml { parse_toml(&text) } else { parse_json(&text) }
+        .map_err(|message| ConfigError::Parse { path: path.to_path_buf(), message })?;
     let issues = validate(&config);
     if issues.iter().any(|i| i.is_error()) {
-        return Err(ConfigError::Invalid {
-            path: path.to_path_buf(),
-            issues,
-        });
+        return Err(ConfigError::Invalid { path: path.to_path_buf(), issues });
     }
     Ok(config)
 }
@@ -197,15 +165,10 @@ fn absolute(p: &Path) -> PathBuf {
     let joined = if p.is_absolute() {
         p.to_path_buf()
     } else {
-        std::env::current_dir()
-            .map(|d| d.join(p))
-            .unwrap_or_else(|_| p.to_path_buf())
+        std::env::current_dir().map(|d| d.join(p)).unwrap_or_else(|_| p.to_path_buf())
     };
     // drop `.` components so paths print nicely
-    joined
-        .components()
-        .filter(|c| !matches!(c, std::path::Component::CurDir))
-        .collect()
+    joined.components().filter(|c| !matches!(c, std::path::Component::CurDir)).collect()
 }
 
 impl fmt::Display for Mode {
@@ -223,9 +186,7 @@ impl std::str::FromStr for Mode {
         match s.to_ascii_lowercase().as_str() {
             "dev" | "development" => Ok(Mode::Development),
             "prod" | "production" => Ok(Mode::Production),
-            other => Err(format!(
-                "unknown mode `{other}` (expected `development` or `production`)"
-            )),
+            other => Err(format!("unknown mode `{other}` (expected `development` or `production`)")),
         }
     }
 }

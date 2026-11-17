@@ -30,7 +30,8 @@ impl Report {
 
 fn tool_version(cmd: &str, arg: &str) -> Option<String> {
     let out = std::process::Command::new(which::which(cmd).ok()?).arg(arg).output().ok()?;
-    let text = String::from_utf8_lossy(if out.stdout.is_empty() { &out.stderr } else { &out.stdout }).to_string();
+    let text =
+        String::from_utf8_lossy(if out.stdout.is_empty() { &out.stderr } else { &out.stdout }).to_string();
     text.lines().next().map(|l| l.trim().to_string())
 }
 
@@ -62,7 +63,10 @@ pub async fn run(dir: &Path) -> Result<()> {
                     match &d.kind {
                         DefKind::Process { command, .. } => {
                             if !d.cwd.is_dir() {
-                                r.err(&format!("{label} working directory {} does not exist", d.cwd.display()));
+                                r.err(&format!(
+                                    "{label} working directory {} does not exist",
+                                    d.cwd.display()
+                                ));
                             } else if !program_exists(command, &d.cwd) {
                                 r.err(&format!(
                                     "{label} `{}` not found in PATH",
@@ -85,9 +89,18 @@ pub async fn run(dir: &Path) -> Result<()> {
                                 let pending = setup.creates.as_ref().map(|c| !c.exists()).unwrap_or(true);
                                 if pending {
                                     if program_exists(&setup.command, &setup.cwd) {
-                                        println!("    {}", dim(&format!("setup `{}` will run on first start", setup.command.display())));
+                                        println!(
+                                            "    {}",
+                                            dim(&format!(
+                                                "setup `{}` will run on first start",
+                                                setup.command.display()
+                                            ))
+                                        );
                                     } else {
-                                        r.err(&format!("{label} setup `{}` not runnable (missing in PATH)", setup.command.display()));
+                                        r.err(&format!(
+                                            "{label} setup `{}` not runnable (missing in PATH)",
+                                            setup.command.display()
+                                        ));
                                     }
                                 }
                             }
@@ -96,10 +109,15 @@ pub async fn run(dir: &Path) -> Result<()> {
                             if dist.is_dir() {
                                 r.ok(&format!("{label} static files in {}", dist.display()));
                             } else {
-                                r.err(&format!("{label} {} does not exist (run `openshell build`?)", dist.display()));
+                                r.err(&format!(
+                                    "{label} {} does not exist (run `openshell build`?)",
+                                    dist.display()
+                                ));
                             }
                         }
-                        DefKind::External => r.ok(&format!("{label} external {}", d.url.clone().unwrap_or_default())),
+                        DefKind::External => {
+                            r.ok(&format!("{label} external {}", d.url.clone().unwrap_or_default()))
+                        }
                     }
                     if running.is_none() && !matches!(d.kind, DefKind::External) {
                         if let Some(port) = d.port {
@@ -130,11 +148,14 @@ pub async fn run(dir: &Path) -> Result<()> {
     println!("\n{}", bold("Desktop"));
     match find_desktop_binary() {
         Some(b) => r.ok(&format!("desktop shell: {}", b.display())),
-        None => r.warn("desktop shell `openshell-desktop` not found – `openshell dev` will run headless (browser mode)"),
+        None => r.warn(
+            "desktop shell `openshell-desktop` not found – `openshell dev` will run headless (browser mode)",
+        ),
     }
     #[cfg(windows)]
     {
-        let key = r"HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}";
+        let key =
+            r"HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}";
         let found = std::process::Command::new("reg")
             .args(["query", key, "/v", "pv"])
             .output()

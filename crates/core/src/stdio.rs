@@ -36,7 +36,12 @@ impl ToolProvider for Offline {
             McpProfile::App => vec![],
         }
     }
-    fn call_tool<'a>(&'a self, _name: &'a str, _args: Value, _ctx: CallContext) -> BoxFuture<'a, ToolOutcome> {
+    fn call_tool<'a>(
+        &'a self,
+        _name: &'a str,
+        _args: Value,
+        _ctx: CallContext,
+    ) -> BoxFuture<'a, ToolOutcome> {
         Box::pin(async { ToolOutcome::error(NOT_RUNNING) })
     }
     fn instructions(&self) -> String {
@@ -66,7 +71,11 @@ async fn wait_settled(client: &ControlClient, timeout: Duration) {
     }
 }
 
-pub async fn serve(state_dir: Option<PathBuf>, profile: McpProfile, autostart: Option<Autostart>) -> Result<()> {
+pub async fn serve(
+    state_dir: Option<PathBuf>,
+    profile: McpProfile,
+    autostart: Option<Autostart>,
+) -> Result<()> {
     let endpoint = match profile {
         McpProfile::Full => "/mcp",
         McpProfile::App => "/mcp/app",
@@ -119,10 +128,7 @@ pub async fn serve(state_dir: Option<PathBuf>, profile: McpProfile, autostart: O
                 wait_settled(c, Duration::from_secs(60)).await;
             }
         }
-        let ctx = CallContext {
-            agent: agent.clone(),
-            channel: "mcp".into(),
-        };
+        let ctx = CallContext { agent: agent.clone(), channel: "mcp".into() };
         let reply = match &client {
             Some(c) => match c.clone().with_agent(agent.clone()).post(endpoint, &msg).await {
                 Ok(Value::String(s)) if s.is_empty() => None, // notification accepted

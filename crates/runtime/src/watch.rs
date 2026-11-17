@@ -24,12 +24,7 @@ const IGNORED_DIRS: [&str; 10] = [
 ];
 
 pub(crate) fn is_ignored(path: &Path) -> bool {
-    if path.components().any(|c| {
-        c.as_os_str()
-            .to_str()
-            .map(|s| IGNORED_DIRS.contains(&s))
-            .unwrap_or(false)
-    }) {
+    if path.components().any(|c| c.as_os_str().to_str().map(|s| IGNORED_DIRS.contains(&s)).unwrap_or(false)) {
         return true;
     }
     let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
@@ -45,23 +40,17 @@ pub fn watch_paths(
     paths: &[PathBuf],
     on_change: impl Fn(Vec<PathBuf>) + Send + 'static,
 ) -> anyhow::Result<WatchHandle> {
-    let mut debouncer = new_debouncer(
-        Duration::from_millis(400),
-        move |res: DebounceEventResult| {
-            if let Ok(events) = res {
-                let mut changed: Vec<PathBuf> = events
-                    .into_iter()
-                    .map(|e| e.path)
-                    .filter(|p| !is_ignored(p))
-                    .collect();
-                changed.sort();
-                changed.dedup();
-                if !changed.is_empty() {
-                    on_change(changed);
-                }
+    let mut debouncer = new_debouncer(Duration::from_millis(400), move |res: DebounceEventResult| {
+        if let Ok(events) = res {
+            let mut changed: Vec<PathBuf> =
+                events.into_iter().map(|e| e.path).filter(|p| !is_ignored(p)).collect();
+            changed.sort();
+            changed.dedup();
+            if !changed.is_empty() {
+                on_change(changed);
             }
-        },
-    )?;
+        }
+    })?;
     for p in paths {
         if p.exists() {
             debouncer.watcher().watch(p, RecursiveMode::Recursive)?;
@@ -69,7 +58,5 @@ pub fn watch_paths(
             tracing::warn!("watch path {} does not exist", p.display());
         }
     }
-    Ok(WatchHandle {
-        _debouncer: debouncer,
-    })
+    Ok(WatchHandle { _debouncer: debouncer })
 }

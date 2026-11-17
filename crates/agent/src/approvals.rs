@@ -51,10 +51,7 @@ impl Default for Approvals {
 impl Approvals {
     pub fn new() -> Self {
         let (events, _) = broadcast::channel(64);
-        Self {
-            pending: Mutex::new(HashMap::new()),
-            events,
-        }
+        Self { pending: Mutex::new(HashMap::new()), events }
     }
 
     pub fn subscribe(&self) -> broadcast::Receiver<ApprovalEvent> {
@@ -84,21 +81,12 @@ impl Approvals {
         };
         let id = request.id.clone();
         let (tx, rx) = oneshot::channel();
-        self.pending.lock().unwrap().insert(
-            id.clone(),
-            Pending {
-                request: request.clone(),
-                tx,
-            },
-        );
+        self.pending.lock().unwrap().insert(id.clone(), Pending { request: request.clone(), tx });
         let _ = self.events.send(ApprovalEvent::Requested(request));
         let approved = matches!(tokio::time::timeout(timeout, rx).await, Ok(Ok(true)));
         if self.pending.lock().unwrap().remove(&id).is_some() {
             // timed out
-            let _ = self.events.send(ApprovalEvent::Resolved {
-                id,
-                approved: false,
-            });
+            let _ = self.events.send(ApprovalEvent::Resolved { id, approved: false });
         }
         approved
     }
@@ -109,10 +97,7 @@ impl Approvals {
         match pending {
             Some(p) => {
                 let _ = p.tx.send(approved);
-                let _ = self.events.send(ApprovalEvent::Resolved {
-                    id: id.to_string(),
-                    approved,
-                });
+                let _ = self.events.send(ApprovalEvent::Resolved { id: id.to_string(), approved });
                 true
             }
             None => false,
@@ -120,13 +105,7 @@ impl Approvals {
     }
 
     pub fn pending(&self) -> Vec<ApprovalRequest> {
-        let mut list: Vec<_> = self
-            .pending
-            .lock()
-            .unwrap()
-            .values()
-            .map(|p| p.request.clone())
-            .collect();
+        let mut list: Vec<_> = self.pending.lock().unwrap().values().map(|p| p.request.clone()).collect();
         list.sort_by_key(|r| r.created_at);
         list
     }
@@ -143,8 +122,15 @@ mod tests {
         let mut rx = a.subscribe();
         let a2 = a.clone();
         let waiter = tokio::spawn(async move {
-            a2.request("agent", "fs_write", Permission::Code, "write x".into(), serde_json::json!({}), Duration::from_secs(5))
-                .await
+            a2.request(
+                "agent",
+                "fs_write",
+                Permission::Code,
+                "write x".into(),
+                serde_json::json!({}),
+                Duration::from_secs(5),
+            )
+            .await
         });
         let id = match rx.recv().await.unwrap() {
             ApprovalEvent::Requested(r) => r.id,
@@ -157,7 +143,14 @@ mod tests {
         assert!(!a.resolve(&id, true));
 
         let denied = a
-            .request("agent", "x", Permission::System, "s".into(), serde_json::json!({}), Duration::from_millis(50))
+            .request(
+                "agent",
+                "x",
+                Permission::System,
+                "s".into(),
+                serde_json::json!({}),
+                Duration::from_millis(50),
+            )
             .await;
         assert!(!denied);
         assert!(a.pending().is_empty());

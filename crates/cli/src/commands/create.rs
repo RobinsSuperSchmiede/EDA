@@ -10,6 +10,7 @@ static TEMPLATES: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../../templates");
 pub fn template_names() -> Vec<(String, String)> {
     let mut out: Vec<(String, String)> = TEMPLATES
         .dirs()
+        .filter(|d| !d.path().to_string_lossy().starts_with('_'))
         .map(|d| {
             let name = d.path().to_string_lossy().to_string();
             let desc = d
@@ -26,11 +27,8 @@ pub fn template_names() -> Vec<(String, String)> {
 }
 
 fn slug(name: &str) -> String {
-    let s: String = name
-        .to_lowercase()
-        .chars()
-        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
-        .collect();
+    let s: String =
+        name.to_lowercase().chars().map(|c| if c.is_ascii_alphanumeric() { c } else { '-' }).collect();
     s.trim_matches('-').split('-').filter(|p| !p.is_empty()).collect::<Vec<_>>().join("-")
 }
 
@@ -43,6 +41,31 @@ fn title(name: &str) -> String {
         })
         .collect::<Vec<_>>()
         .join(" ")
+}
+
+/// A file from `templates/_shared` (added to every project), rendered for an app.
+pub fn shared_file(file: &str, project: &str, app_name: &str) -> Option<String> {
+    TEMPLATES
+        .get_file(format!("_shared/{file}"))
+        .and_then(|f| f.contents_utf8())
+        .map(|t| render(t, project, app_name))
+}
+
+/// Write `AGENTS.md` and `CLAUDE.md` (guides for AI coding agents) if they do not exist yet.
+/// Returns the names of the files written.
+pub fn write_agent_files(target: &Path, project: &str, app_name: &str) -> Result<Vec<String>> {
+    let mut written = Vec::new();
+    for file in ["AGENTS.md", "CLAUDE.md"] {
+        let path = target.join(file);
+        if path.exists() {
+            continue;
+        }
+        if let Some(text) = shared_file(file, project, app_name) {
+            std::fs::write(&path, text)?;
+            written.push(file.to_string());
+        }
+    }
+    Ok(written)
 }
 
 fn render(text: &str, project: &str, app_name: &str) -> String {
@@ -64,7 +87,8 @@ fn write_dir(dir: &Dir<'_>, base: &Path, target: &Path, project: &str, app_name:
                 if name == "template.json" && rel.parent().map(|p| p.as_os_str().is_empty()).unwrap_or(true) {
                     continue;
                 }
-                let out_rel = if name == "_gitignore" { rel.with_file_name(".gitignore") } else { rel.to_path_buf() };
+                let out_rel =
+                    if name == "_gitignore" { rel.with_file_name(".gitignore") } else { rel.to_path_buf() };
                 let out = target.join(out_rel);
                 if let Some(parent) = out.parent() {
                     std::fs::create_dir_all(parent)?;
@@ -96,10 +120,7 @@ pub fn run(name: &str, template: &str, list: bool) -> Result<()> {
         bail!("{} already exists and is not empty", target.display());
     }
     let project = slug(
-        &target
-            .file_name()
-            .map(|n| n.to_string_lossy().to_string())
-            .unwrap_or_else(|| name.to_string()),
+        &target.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| name.to_string()),
     );
     if project.is_empty() {
         bail!("invalid project name `{name}`");
@@ -107,6 +128,7 @@ pub fn run(name: &str, template: &str, list: bool) -> Result<()> {
     let app_name = title(&project);
     std::fs::create_dir_all(target).with_context(|| format!("cannot create {}", target.display()))?;
     write_dir(dir, dir.path(), target, &project, &app_name)?;
+    write_agent_files(target, &project, &app_name)?;
     output::ok(&format!("created {} from template {}", bold(&target.display().to_string()), bold(template)));
     println!("\n  cd {}\n  openshell dev\n", target.display());
     if template != "vanilla-python" && template != "custom" {
@@ -146,5 +168,9 @@ mod tests {
         assert!(target.join(".gitignore").exists());
         assert!(!target.join("template.json").exists());
         assert!(target.join("backend/main.py").exists());
+        let agents = std::fs::read_to_string(target.join("AGENTS.md")).unwrap();
+        assert!(agents.contains("# AGENTS.md – My Cool App"));
+        assert_eq!(std::fs::read_to_string(target.join("CLAUDE.md")).unwrap().trim(), "@AGENTS.md");
+        assert!(!template_names().iter().any(|(n, _)| n.starts_with('_')));
     }
 }

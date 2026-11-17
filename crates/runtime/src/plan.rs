@@ -5,8 +5,8 @@ use crate::health::{Probe, ProbeConfig};
 use crate::process::free_port;
 use anyhow::{anyhow, bail, Result};
 use openshell_config::{
-    interpolate, startup_order, BuildWhen, CommandSpec, FrontendPlan, HealthCheckSpec, Mode,
-    PortSpec, Project, RestartPolicy, FRONTEND_SERVICE,
+    interpolate, startup_order, BuildWhen, CommandSpec, FrontendPlan, HealthCheckSpec, Mode, PortSpec,
+    Project, RestartPolicy, FRONTEND_SERVICE,
 };
 use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
@@ -15,17 +15,11 @@ use std::time::Duration;
 #[derive(Debug, Clone)]
 pub enum DefKind {
     /// A local process managed by the runtime.
-    Process {
-        command: CommandSpec,
-        args: Vec<String>,
-    },
+    Process { command: CommandSpec, args: Vec<String> },
     /// Running elsewhere; only monitored.
     External,
     /// Static files served by the built-in web server.
-    Static {
-        dist: PathBuf,
-        proxy: Vec<(String, String)>,
-    },
+    Static { dist: PathBuf, proxy: Vec<(String, String)> },
 }
 
 #[derive(Debug, Clone)]
@@ -142,10 +136,8 @@ pub fn build_plan(project: &Project, mode: Mode) -> Result<Vec<ServiceDef>> {
         }
     };
 
-    let mut url_templates: Vec<(String, Option<String>)> = enabled
-        .iter()
-        .map(|s| (s.name.clone(), s.url.clone()))
-        .collect();
+    let mut url_templates: Vec<(String, Option<String>)> =
+        enabled.iter().map(|s| (s.name.clone(), s.url.clone())).collect();
     if let Some(plan) = &fe_plan {
         let t = match plan {
             FrontendPlan::Process { url, .. } | FrontendPlan::External { url } => Some(url.clone()),
@@ -194,9 +186,9 @@ pub fn build_plan(project: &Project, mode: Mode) -> Result<Vec<ServiceDef>> {
     let resolve_cmd = |own: Option<u16>, c: &CommandSpec, what: &str| -> Result<CommandSpec> {
         Ok(match c {
             CommandSpec::Shell(s) => CommandSpec::Shell(resolve(own, s, what)?),
-            CommandSpec::Argv(v) => CommandSpec::Argv(
-                v.iter().map(|a| resolve(own, a, what)).collect::<Result<_>>()?,
-            ),
+            CommandSpec::Argv(v) => {
+                CommandSpec::Argv(v.iter().map(|a| resolve(own, a, what)).collect::<Result<_>>()?)
+            }
         })
     };
     let resolve_path = |p: &Option<String>| -> PathBuf {
@@ -221,14 +213,9 @@ pub fn build_plan(project: &Project, mode: Mode) -> Result<Vec<ServiceDef>> {
             Some(spec) => {
                 let h = spec.normalized();
                 let probe = if let Some(u) = &h.http {
-                    Probe::Http {
-                        url: resolve(own, u, what)?,
-                        accept_any: false,
-                    }
+                    Probe::Http { url: resolve(own, u, what)?, accept_any: false }
                 } else if let Some(t) = &h.tcp {
-                    Probe::Tcp {
-                        addr: resolve(own, t, what)?,
-                    }
+                    Probe::Tcp { addr: resolve(own, t, what)? }
                 } else {
                     fallback
                 };
@@ -240,10 +227,7 @@ pub fn build_plan(project: &Project, mode: Mode) -> Result<Vec<ServiceDef>> {
                     ready_timeout: Duration::from_millis(h.ready_timeout_ms),
                 })
             }
-            None => Ok(ProbeConfig {
-                probe: fallback,
-                ..ProbeConfig::none()
-            }),
+            None => Ok(ProbeConfig { probe: fallback, ..ProbeConfig::none() }),
         }
     };
 
@@ -266,24 +250,13 @@ pub fn build_plan(project: &Project, mode: Mode) -> Result<Vec<ServiceDef>> {
         } else {
             DefKind::Process {
                 command: resolve_cmd(own, s.command.as_ref().expect("validated"), &what("command"))?,
-                args: s
-                    .args
-                    .iter()
-                    .map(|a| resolve(own, a, &what("args")))
-                    .collect::<Result<_>>()?,
+                args: s.args.iter().map(|a| resolve(own, a, &what("args"))).collect::<Result<_>>()?,
             }
         };
         let fallback = match (own, &url, s.external) {
-            (Some(p), _, false) => Probe::Tcp {
-                addr: format!("127.0.0.1:{p}"),
-            },
-            (_, Some(u), true) => Probe::Http {
-                url: u.clone(),
-                accept_any: true,
-            },
-            (Some(p), None, true) => Probe::Tcp {
-                addr: format!("127.0.0.1:{p}"),
-            },
+            (Some(p), _, false) => Probe::Tcp { addr: format!("127.0.0.1:{p}") },
+            (_, Some(u), true) => Probe::Http { url: u.clone(), accept_any: true },
+            (Some(p), None, true) => Probe::Tcp { addr: format!("127.0.0.1:{p}") },
             _ => Probe::None,
         };
         let cwd = resolve_path(&s.cwd);
@@ -314,12 +287,7 @@ pub fn build_plan(project: &Project, mode: Mode) -> Result<Vec<ServiceDef>> {
             probe: probe_from(own, &s.healthcheck, fallback, &what("healthcheck"))?,
             restart: s.restart_policy(),
             max_restarts: s.max_restarts,
-            depends_on: s
-                .depends_on
-                .iter()
-                .filter(|d| enabled_names.contains(d))
-                .cloned()
-                .collect(),
+            depends_on: s.depends_on.iter().filter(|d| enabled_names.contains(d)).cloned().collect(),
             autostart: s.autostart,
             setup: s.setup.as_ref().map(|st| SetupDef {
                 command: st.command.clone(),
@@ -327,10 +295,7 @@ pub fn build_plan(project: &Project, mode: Mode) -> Result<Vec<ServiceDef>> {
                 cwd: st.cwd.as_ref().map(|c| root.join(c)).unwrap_or_else(|| cwd.clone()),
             }),
             watch: s.watch.iter().map(|w| root.join(w)).collect(),
-            stop_timeout: s
-                .stop_timeout_ms
-                .map(Duration::from_millis)
-                .unwrap_or(shutdown),
+            stop_timeout: s.stop_timeout_ms.map(Duration::from_millis).unwrap_or(shutdown),
             cwd,
             is_frontend: false,
         });
@@ -352,14 +317,8 @@ pub fn build_plan(project: &Project, mode: Mode) -> Result<Vec<ServiceDef>> {
         let cwd = resolve_path(&fe.cwd);
         let (kind, fallback) = match plan {
             FrontendPlan::Process { command, .. } => (
-                DefKind::Process {
-                    command: resolve_cmd(own, &command, "frontend.command")?,
-                    args: vec![],
-                },
-                Probe::Http {
-                    url: url.clone().unwrap_or_default(),
-                    accept_any: true,
-                },
+                DefKind::Process { command: resolve_cmd(own, &command, "frontend.command")?, args: vec![] },
+                Probe::Http { url: url.clone().unwrap_or_default(), accept_any: true },
             ),
             FrontendPlan::Static { dist } => (
                 DefKind::Static {
@@ -372,13 +331,9 @@ pub fn build_plan(project: &Project, mode: Mode) -> Result<Vec<ServiceDef>> {
                 },
                 Probe::None,
             ),
-            FrontendPlan::External { .. } => (
-                DefKind::External,
-                Probe::Http {
-                    url: url.clone().unwrap_or_default(),
-                    accept_any: true,
-                },
-            ),
+            FrontendPlan::External { .. } => {
+                (DefKind::External, Probe::Http { url: url.clone().unwrap_or_default(), accept_any: true })
+            }
         };
         defs.push(ServiceDef {
             name: FRONTEND_SERVICE.into(),
@@ -391,12 +346,7 @@ pub fn build_plan(project: &Project, mode: Mode) -> Result<Vec<ServiceDef>> {
             probe: probe_from(own, &fe.healthcheck, fallback, "frontend.healthcheck")?,
             restart: RestartPolicy::OnFailure,
             max_restarts: 5,
-            depends_on: fe
-                .depends_on
-                .iter()
-                .filter(|d| enabled_names.contains(d))
-                .cloned()
-                .collect(),
+            depends_on: fe.depends_on.iter().filter(|d| enabled_names.contains(d)).cloned().collect(),
             autostart: true,
             setup: fe.setup.as_ref().map(|st| SetupDef {
                 command: st.command.clone(),
