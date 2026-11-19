@@ -5,6 +5,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- HTML5 drag and drop works in the app window: Tauri's drag and drop handler is off, so `dragover` and `drop` reach
+  the page (on Windows they did not). Files dropped on the window arrive as in a browser (`dataTransfer.files`).
+
 ## [0.2.0] - 2026-11-19
 
 ### Added

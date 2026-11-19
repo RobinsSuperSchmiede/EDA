@@ -483,7 +483,11 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         .resizable(w.resizable)
         .maximized(w.maximized)
         .devtools(w.devtools.unwrap_or(mode == Mode::Development))
-        .initialization_script(shell.webview_init_script());
+        .initialization_script(shell.webview_init_script())
+        // Tauri's own drag and drop handler (file drops as Tauri events) swallows the HTML5 drag events
+        // on Windows: `dragover` and `drop` never reach the page, so dragging inside the app and dropping
+        // files on it fail. Without it the WebView handles both like a browser does.
+        .disable_drag_drop_handler();
     if let (Some(mw), Some(mh)) = (w.min_width, w.min_height) {
         builder = builder.min_inner_size(mw, mh);
     }
