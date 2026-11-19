@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-19
+
 ### Added
 - `window.title_bar: "overlay"`: the frontend draws its own title bar. Windows and Linux get a window without the
   system title bar (edges still resize), macOS keeps its window buttons over the content. The desktop window offers
@@ -35,5 +37,6 @@ First public alpha.
   (`openshell guide`) and a Claude Code skill; every new project gets its own `AGENTS.md`.
 - Release workflow with prebuilt binaries for Windows, macOS (arm64, x86_64) and Linux, plus install scripts.
 
-[Unreleased]: https://github.com/RobinsSuperSchmiede/EDA/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/RobinsSuperSchmiede/EDA/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/RobinsSuperSchmiede/EDA/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/RobinsSuperSchmiede/EDA/releases/tag/v0.1.0
