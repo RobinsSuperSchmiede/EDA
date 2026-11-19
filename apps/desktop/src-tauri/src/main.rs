@@ -19,7 +19,7 @@
 mod menus;
 
 use openshell_core::agent::approvals::{ApprovalRequest, Approvals};
-use openshell_core::config::{find_config_file, Mode, Project};
+use openshell_core::config::{find_config_file, Mode, Project, TitleBar};
 use openshell_core::runtime::{LogQuery, RuntimeEvent, ServiceState};
 use openshell_core::state::ControlClient;
 use openshell_core::stdio::McpProfile;
@@ -287,6 +287,13 @@ fn resolve_approval(state: State<'_, AppState>, id: String, approve: bool) -> bo
     state.shell().map(|s| s.approvals().resolve(&id, approve)).unwrap_or(false)
 }
 
+/// The title bar menu, for frontends that draw their own title bar (`window.title_bar: "overlay"`).
+#[tauri::command]
+fn show_window_menu(app: AppHandle) {
+    let handle = app.clone();
+    let _ = app.run_on_main_thread(move || menus::show_titlebar_menu(&handle));
+}
+
 #[tauri::command]
 fn open_runtime_panel(app: AppHandle) -> Result<(), String> {
     show_runtime_panel(&app).map_err(|e| e.to_string())
@@ -480,6 +487,22 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     if let (Some(mw), Some(mh)) = (w.min_width, w.min_height) {
         builder = builder.min_inner_size(mw, mh);
     }
+    let overlay = w.title_bar == TitleBar::Overlay;
+    if overlay {
+        // The frontend draws the title bar. macOS keeps its window buttons over the content; on
+        // Windows and Linux the system title bar goes (edges still resize, Windows keeps the shadow).
+        #[cfg(target_os = "macos")]
+        {
+            builder = builder.title_bar_style(tauri::TitleBarStyle::Overlay).hidden_title(true);
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            builder = builder.decorations(false).shadow(true);
+        }
+        if let Some(url) = shell.runtime().frontend_url() {
+            allow_window_controls(&handle, &url);
+        }
+    }
     let window = builder.build()?;
     if let Some(icon) = icon_path.filter(|p| p.is_file()) {
         match tauri::image::Image::from_path(&icon) {
@@ -490,7 +513,9 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     #[cfg(windows)]
-    menus::titlebar::install(&handle, &window);
+    if !overlay {
+        menus::titlebar::install(&handle, &window);
+    }
 
     *state.shell.lock().unwrap() = Some(shell.clone());
     if w.tray {
@@ -502,6 +527,39 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     shell.start();
     watch_runtime(handle, shell);
     Ok(())
+}
+
+/// Window permissions an overlay title bar needs, granted to the app's frontend origin only (pages
+/// served from elsewhere get no IPC access). OpenShell's own pages have them in capabilities/default.json.
+const WINDOW_CONTROLS: &[&str] = &[
+    "core:window:allow-start-dragging",
+    "core:window:allow-internal-toggle-maximize",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-close",
+    "core:window:allow-is-maximized",
+    "allow-show-window-menu",
+];
+
+fn allow_window_controls(app: &AppHandle, frontend_url: &str) {
+    let Ok(url) = tauri::Url::parse(frontend_url) else { return };
+    let (Some(host), Some(port)) = (url.host_str(), url.port_or_known_default()) else { return };
+    // localhost and 127.0.0.1 are the same server; a frontend may redirect from one to the other.
+    let hosts: Vec<&str> = match host {
+        "localhost" | "127.0.0.1" => vec!["localhost", "127.0.0.1"],
+        other => vec![other],
+    };
+    let mut capability =
+        tauri::ipc::CapabilityBuilder::new("openshell-title-bar").window("main").local(false);
+    for host in hosts {
+        capability = capability.remote(format!("{}://{host}:{port}/*", url.scheme()));
+    }
+    for permission in WINDOW_CONTROLS {
+        capability = capability.permission(*permission);
+    }
+    if let Err(e) = app.add_capability(capability) {
+        tracing::warn!("overlay title bar: cannot allow the window controls for {frontend_url}: {e}");
+    }
 }
 
 fn build_tray(app: &AppHandle, name: &str) -> tauri::Result<()> {
@@ -616,7 +674,8 @@ fn main() {
             service_action,
             open_app,
             resolve_approval,
-            open_runtime_panel
+            open_runtime_panel,
+            show_window_menu
         ])
         .on_menu_event(menus::on_menu_event)
         .setup(setup)

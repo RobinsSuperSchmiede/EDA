@@ -1,7 +1,26 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissions for OpenShell's own local pages (loading screen, runtime panel). Application frontends loaded from http(s) URLs get no Tauri IPC access; they use the OpenShell SDK over the control API instead.",
-  "windows": ["main", "runtime"],
-  "permissions": ["core:default", "notification:default", "dialog:default"]
+  "description": "Permissions for OpenShell's own local pages (loading screen, runtime panel). Application frontends loaded from http(s) URLs get no Tauri IPC access; they use the OpenShell SDK over the control API instead. With an overlay title bar the app's frontend origin additionally gets the window controls (added at runtime, see allow_window_controls).",
+  "windows": [
+    "main",
+    "runtime"
+  ],
+  "permissions": [
+    "core:default",
+    "notification:default",
+    "dialog:default",
+    "allow-get-state",
+    "allow-service-action",
+    "allow-open-app",
+    "allow-resolve-approval",
+    "allow-open-runtime-panel",
+    "allow-show-window-menu",
+    "core:window:allow-start-dragging",
+    "core:window:allow-internal-toggle-maximize",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-close",
+    "core:window:allow-is-maximized"
+  ]
 }

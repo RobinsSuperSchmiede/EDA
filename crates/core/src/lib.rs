@@ -315,15 +315,44 @@ impl Shell {
             "host": host,
             "mode": self.inner.mode.to_string(),
             "app": self.inner.project.config.app.name,
+            // Who draws the title bar; only the desktop window can have an overlay title bar.
+            "window": {
+                "title_bar": if host == "desktop" { self.inner.project.config.window.title_bar.to_string() } else { "native".into() },
+                "os": std::env::consts::OS,
+            },
         })
         .to_string()
     }
 
-    /// Initialization script for the desktop WebView (config + bridge).
+    /// Initialization script for the desktop WebView (config + window functions + bridge).
     pub fn webview_init_script(&self) -> String {
-        format!("window.__OPENSHELL__ = {};\n{}", self.client_config("desktop"), openshell_agent::BRIDGE_JS)
+        format!(
+            "window.__OPENSHELL__ = {};\n{}\n{}",
+            self.client_config("desktop"),
+            WINDOW_JS,
+            openshell_agent::BRIDGE_JS
+        )
     }
 }
+
+/// `window.__OPENSHELL__.window` in the desktop window: functions for a frontend that draws its own
+/// title bar (`window.title_bar: "overlay"`). Elements with `data-tauri-drag-region` (`="deep"` for a
+/// whole bar) move the window; a double click maximizes it. The desktop shell allows these calls only
+/// for its own pages and the app's frontend URL.
+const WINDOW_JS: &str = r#"(function () {
+  var o = window.__OPENSHELL__;
+  if (!o || !o.window) return;
+  function call(cmd) {
+    var t = window.__TAURI_INTERNALS__;
+    return t ? t.invoke(cmd, {}) : Promise.reject(new Error("only available in the OpenShell desktop window"));
+  }
+  o.window.minimize = function () { return call("plugin:window|minimize"); };
+  o.window.toggleMaximize = function () { return call("plugin:window|toggle_maximize"); };
+  o.window.close = function () { return call("plugin:window|close"); };
+  o.window.isMaximized = function () { return call("plugin:window|is_maximized"); };
+  // The runtime menu (services, logs, agents) that the native title bar shows on a right click.
+  o.window.showMenu = function () { return call("show_window_menu"); };
+})();"#;
 
 #[cfg(test)]
 mod tests;

@@ -89,7 +89,24 @@ export default OpenShell;
 
 declare global {
   interface Window {
-    __OPENSHELL__?: { api: string; bridge: string; token: string; host: "desktop" | "browser"; mode: string; app: string };
+    __OPENSHELL__?: {
+      api: string;
+      bridge: string;
+      token: string;
+      host: "desktop" | "browser";
+      mode: string;
+      app: string;
+      /** Desktop window: who draws the title bar, and (with "overlay") the window functions. */
+      window?: {
+        title_bar: "native" | "overlay";
+        os: "windows" | "macos" | "linux" | string;
+        minimize?(): Promise<void>;
+        toggleMaximize?(): Promise<void>;
+        close?(): Promise<void>;
+        isMaximized?(): Promise<boolean>;
+        showMenu?(): Promise<void>;
+      };
+    };
     OpenShell?: OpenShellApi;
   }
 }

@@ -1010,6 +1010,14 @@
       ],
       "description": "A task: a shell string / argv, or a detailed object."
     },
+    "TitleBar": {
+      "description": "Who draws the window's title bar.",
+      "enum": [
+        "native",
+        "overlay"
+      ],
+      "type": "string"
+    },
     "WindowConfig": {
       "additionalProperties": false,
       "properties": {
@@ -1058,6 +1066,11 @@
             "string",
             "null"
           ]
+        },
+        "title_bar": {
+          "$ref": "#/$defs/TitleBar",
+          "default": "native",
+          "description": "`native` (default): the system's title bar. `overlay`: the frontend draws its own title bar –\nno system title bar on Windows and Linux, the window buttons over the content on macOS. The\nfrontend gets `window.__OPENSHELL__.window` (drag, minimize, maximize, close, runtime menu)."
         },
         "tray": {
           "default": true,
@@ -1161,6 +1174,7 @@
         "height": 800.0,
         "maximized": false,
         "resizable": true,
+        "title_bar": "native",
         "tray": true,
         "width": 1280.0
       },

@@ -115,3 +115,32 @@ select { font: inherit; }
   user-select: all;
 }
 .svc { grid-template-columns: 12px 120px 90px 1fr auto; }
+
+/* Title bar of OpenShell's own pages when the app draws its own (`window.title_bar: "overlay"`). */
+.titlebar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  padding-left: 14px;
+  z-index: 10;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.titlebar.macos { padding-left: 80px; }
+.titlebar .title { flex: 1; font-size: 12px; color: var(--muted); }
+.titlebar button {
+  width: 46px;
+  height: 36px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--fg);
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.titlebar button:hover { background: var(--line); }
+.titlebar button.close:hover { background: #c42b1c; color: #fff; }
+.titlebar svg { width: 10px; height: 10px; stroke: currentColor; stroke-width: 1; fill: none; }

@@ -30,6 +30,7 @@ Editor completion: add `"$schema": "https://raw.githubusercontent.com/RobinsSupe
 | `resizable` | `true` | |
 | `maximized` | `false` | |
 | `close_to_tray` | `false` | Closing hides the window; services keep running |
+| `title_bar` | `"native"` | `"overlay"`: the frontend draws the title bar (see [sdk.md](sdk.md#own-title-bar)). No system title bar on Windows/Linux; window buttons over the content on macOS |
 | `tray` | `true` | Show a tray icon (show, reload, runtime panel, restart services, quit) |
 | `devtools` | dev mode only | Allow WebView devtools |
 

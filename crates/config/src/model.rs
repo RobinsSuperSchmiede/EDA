@@ -102,6 +102,29 @@ pub struct WindowConfig {
     /// Enable WebView devtools. Defaults to `true` in development mode only.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub devtools: Option<bool>,
+    /// `native` (default): the system's title bar. `overlay`: the frontend draws its own title bar –
+    /// no system title bar on Windows and Linux, the window buttons over the content on macOS. The
+    /// frontend gets `window.__OPENSHELL__.window` (drag, minimize, maximize, close, runtime menu).
+    #[serde(default)]
+    pub title_bar: TitleBar,
+}
+
+/// Who draws the window's title bar.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum TitleBar {
+    #[default]
+    Native,
+    Overlay,
+}
+
+impl std::fmt::Display for TitleBar {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            TitleBar::Native => "native",
+            TitleBar::Overlay => "overlay",
+        })
+    }
 }
 
 impl Default for WindowConfig {
@@ -117,6 +140,7 @@ impl Default for WindowConfig {
             close_to_tray: false,
             tray: true,
             devtools: None,
+            title_bar: TitleBar::Native,
         }
     }
 }

@@ -64,3 +64,23 @@ OpenShell.agent.registerAction(
 
 Agents discover it with `capabilities_list` and call it as `cap_open_invoice` or `app_invoke`. The handler runs in the
 page; its return value (JSON) is sent back to the agent.
+
+## Own title bar
+
+With `"window": { "title_bar": "overlay" }` the desktop window has no system title bar (Windows, Linux) or shows
+only the window buttons over the content (macOS), and the frontend draws its own. The desktop window provides:
+
+```js
+const win = window.__OPENSHELL__?.window;     // undefined in a plain browser
+if (win?.title_bar === "overlay") {
+  win.os;                 // "windows" | "macos" | "linux" – macOS: leave ~80px on the left for its buttons
+  await win.minimize();
+  await win.toggleMaximize();
+  await win.close();      // respects close_to_tray
+  await win.isMaximized();
+  await win.showMenu();   // the runtime menu (services, logs, reload) at the cursor
+}
+```
+
+Mark the bar with `data-tauri-drag-region="deep"`: dragging it moves the window, a double click maximizes it; buttons,
+links and inputs inside keep working. These functions are allowed only for the app's frontend origin.

@@ -5,6 +5,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- `window.title_bar: "overlay"`: the frontend draws its own title bar. Windows and Linux get a window without the
+  system title bar (edges still resize), macOS keeps its window buttons over the content. The desktop window offers
+  `window.__OPENSHELL__.window` (`minimize`, `toggleMaximize`, `close`, `isMaximized`, `showMenu`, plus `title_bar`
+  and `os`); elements with `data-tauri-drag-region` move the window. The window permissions are granted at runtime to
+  the app's frontend origin only. OpenShell's loading screen shows a minimal title bar in this mode.
+- The title bar menu (services, reload, window actions) is available on every platform via `showMenu()`.
+
 ## [0.1.0] - 2026-11-17
 
 First public alpha.

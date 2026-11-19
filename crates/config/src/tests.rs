@@ -186,3 +186,12 @@ fn schema_generation() {
     let schema = json_schema();
     assert!(schema.to_string().contains("ServiceConfig"));
 }
+
+#[test]
+fn title_bar_defaults_to_native() {
+    let cfg = parse_json(r#"{ "app": { "name": "A" } }"#).unwrap();
+    assert_eq!(cfg.window.title_bar, TitleBar::Native);
+    let cfg = parse_json(r#"{ "app": { "name": "A" }, "window": { "title_bar": "overlay" } }"#).unwrap();
+    assert_eq!(cfg.window.title_bar, TitleBar::Overlay);
+    assert!(parse_json(r#"{ "app": { "name": "A" }, "window": { "title_bar": "hidden" } }"#).is_err());
+}

@@ -151,4 +151,31 @@ $("#open")?.addEventListener("click", () => invoke("open_app").catch((e) => aler
 $("#panel")?.addEventListener("click", () => invoke("open_runtime_panel").catch((e) => alert(e)));
 $("#filter")?.addEventListener("change", renderLogs);
 $("#errors")?.addEventListener("change", renderLogs);
+// Overlay title bar (`window.title_bar: "overlay"`): the system draws none on Windows and Linux, so
+// this page brings a minimal one to move, minimize, maximize and close the window while the app starts.
+function titleBar() {
+  const win = window.__OPENSHELL__ && window.__OPENSHELL__.window;
+  if (isPanel || !win || win.title_bar !== "overlay") return;
+  const svg = (path) => {
+    const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    s.setAttribute("viewBox", "0 0 10 10");
+    s.innerHTML = path;
+    return s;
+  };
+  const bar = el("div", { class: "titlebar " + win.os, "data-tauri-drag-region": "deep" }, el("span", { class: "title" }, ""));
+  bar.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    win.showMenu().catch(console.error);
+  });
+  if (win.os !== "macos") {
+    bar.append(
+      el("button", { type: "button", "aria-label": "Minimize", onclick: () => win.minimize() }, svg('<path d="M0 5h10"/>')),
+      el("button", { type: "button", "aria-label": "Maximize", onclick: () => win.toggleMaximize() }, svg('<rect x="0.5" y="0.5" width="9" height="9"/>')),
+      el("button", { type: "button", class: "close", "aria-label": "Close", onclick: () => win.close() }, svg('<path d="M0 0l10 10M10 0L0 10"/>')),
+    );
+  }
+  document.body.prepend(bar);
+}
+
+titleBar();
 tick();
