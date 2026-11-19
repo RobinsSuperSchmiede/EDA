@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-19
+
 ### Fixed
 - HTML5 drag and drop works in the app window: Tauri's drag and drop handler is off, so `dragover` and `drop` reach
   the page (on Windows they did not). Files dropped on the window arrive as in a browser (`dataTransfer.files`).
@@ -41,6 +43,7 @@ First public alpha.
   (`openshell guide`) and a Claude Code skill; every new project gets its own `AGENTS.md`.
 - Release workflow with prebuilt binaries for Windows, macOS (arm64, x86_64) and Linux, plus install scripts.
 
-[Unreleased]: https://github.com/RobinsSuperSchmiede/EDA/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/RobinsSuperSchmiede/EDA/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/RobinsSuperSchmiede/EDA/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/RobinsSuperSchmiede/EDA/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/RobinsSuperSchmiede/EDA/releases/tag/v0.1.0

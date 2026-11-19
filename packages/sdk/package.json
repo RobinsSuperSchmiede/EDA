@@ -1,6 +1,6 @@
 {
   "name": "@openshell/sdk",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Optional frontend SDK for apps running in OpenShell: runtime status, window control, notifications and agent actions.",
   "type": "module",
   "main": "src/index.js",
