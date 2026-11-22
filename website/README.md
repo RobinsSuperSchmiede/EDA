@@ -1,11 +1,12 @@
 # OpenShell website
 
-The landing page of OpenShell – a single static `index.html` (no build step, no dependencies besides the Geist font
-from Google Fonts) plus `assets/`.
+The landing page of OpenShell – a single static `index.html` (no build step, no dependencies besides Space Grotesk,
+Inter and JetBrains Mono from Google Fonts) plus `assets/`.
 
-The background is a dithered pixel sky drawn on a low-resolution canvas: value-noise clouds, a 4×4 Bayer dither and a
-palette that moves from day over dusk to a starry night as you scroll. It renders at ~15 fps (a few ms per frame) and
-stays static with `prefers-reduced-motion`.
+The background is an ASCII field drawn on a canvas: characters on a monospace grid whose density follows drifting
+value noise with contour bands, coloured from deep green over mint to white. It is strongest behind the hero, calms
+down behind the content, moves with a slight parallax and renders at ~10 fps; with `prefers-reduced-motion` it stays
+static. Product mockups (app window, console, terminal, agent) and the architecture diagram are plain HTML/inline SVG.
 
 ## Preview
 

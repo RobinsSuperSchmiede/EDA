@@ -20,7 +20,7 @@ All notable changes to this project are documented here. The format follows
   `openshell mcp`.
 - `runtime.launch_at_login` for installed apps.
 - `openshell status` and `openshell doctor` show databases and functions.
-- Landing page in `website/` (static, dithered day-to-night sky).
+- Landing page in `website/` (static, animated ASCII field in green and white, architecture diagram, product gallery).
 
 ## [0.2.1] - 2026-11-19
 
