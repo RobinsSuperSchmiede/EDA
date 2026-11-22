@@ -1,12 +1,12 @@
 # OpenShell website
 
-The landing page of OpenShell – a single static `index.html` (no build step, no dependencies besides Space Grotesk,
-Inter and JetBrains Mono from Google Fonts) plus `assets/`.
+The landing page of OpenShell – a single static `index.html` (no build step, no dependencies besides Geist and Geist
+Mono from Google Fonts) plus `assets/`.
 
 The background is an ASCII field drawn on a canvas: characters on a monospace grid whose density follows drifting
 value noise with contour bands, coloured from deep green over mint to white. It is strongest behind the hero, calms
 down behind the content, moves with a slight parallax and renders at ~10 fps; with `prefers-reduced-motion` it stays
-static. Product mockups (app window, console, terminal, agent) and the architecture diagram are plain HTML/inline SVG.
+static. Buttons follow the "Minimal Design System" (glass buttons, landing CTA). Product mockups (app window, console, terminal, agent) and the architecture diagram are plain HTML/inline SVG.
 
 ## Preview
 

@@ -10,43 +10,58 @@
     />
     <meta property="og:title" content="OpenShell – the desktop shell for agent-native apps" />
     <meta property="og:description" content="Any web app. A native desktop app. Agents included. Free and open source." />
-    <meta name="theme-color" content="#04110a" />
+    <meta name="theme-color" content="#0f3624" />
     <link rel="icon" href="assets/logo.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
     <style>
       :root {
-        --bg: #04110a;
-        --bg-2: #071a10;
-        --panel: #0a1f14;
-        --panel-2: #0e2a1b;
-        --line: rgba(160, 255, 200, 0.14);
-        --line-strong: rgba(160, 255, 200, 0.32);
-        --g-900: #0f3b24;
-        --g-700: #1c6a41;
-        --g-500: #2fa766;
-        --g-400: #45c97f;
-        --g-300: #7fe8ab;
-        --g-100: #d8ffe8;
-        --white: #f4fff8;
-        --text: #e3f5ea;
-        --muted: #93b8a2;
-        --amber: #f5d06b;
-        --display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
-        --mono: "JetBrains Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
-        font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+        --bg: #0f3624;
+        --bg-2: #0c2e1e;
+        --panel: #082416;
+        --panel-2: #0c2e1d;
+        --line: rgba(200, 255, 225, 0.16);
+        --line-strong: rgba(200, 255, 225, 0.34);
+        --g-900: #154a31;
+        --g-700: #23704a;
+        --g-500: #3bb873;
+        --g-400: #5fd896;
+        --g-300: #a3f0c4;
+        --g-100: #e2fff0;
+        --white: #ffffff;
+        --text: #effcf4;
+        --muted: rgba(239, 252, 244, 0.76);
+        --amber: #ffd77a;
+        --card: rgba(6, 32, 20, 0.74);
+        --display: Geist, "SF Pro Text", system-ui, -apple-system, "Segoe UI", sans-serif;
+        --mono: "Geist Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
+        /* Minimal design system – dark tokens */
+        --ease: cubic-bezier(0.16, 1, 0.3, 1);
+        --glass: rgba(255, 255, 255, 0.1);
+        --glass-hover: rgba(255, 255, 255, 0.15);
+        --glass-active: rgba(255, 255, 255, 0.07);
+        --ghost-hover: rgba(255, 255, 255, 0.08);
+        --sheen: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        --sheen-hover: inset 0 1px 0 rgba(255, 255, 255, 0.09);
+        --seg-on: rgba(255, 255, 255, 0.18);
+        --primary: #ffffff;
+        --primary-hover: #e4e4e6;
+        --on-primary: #0b0b0c;
+        --ring: rgba(255, 255, 255, 0.3);
+        font-family: Geist, "SF Pro Text", system-ui, -apple-system, "Segoe UI", sans-serif;
         font-size: 17px;
+        letter-spacing: -0.005em;
         -webkit-font-smoothing: antialiased;
       }
       * { box-sizing: border-box; }
       html { scroll-behavior: smooth; }
       body { margin: 0; color: var(--text); background: var(--bg); overflow-x: hidden; }
       a { color: inherit; }
-      ::selection { background: rgba(127, 232, 171, 0.35); }
+      ::selection { background: rgba(163, 240, 196, 0.4); }
 
       /* ASCII field behind everything */
       #field { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -2; }
@@ -55,7 +70,7 @@
         inset: 0;
         z-index: -1;
         pointer-events: none;
-        background: radial-gradient(ellipse 70% 60% at 50% 45%, rgba(4, 17, 10, 0.25), rgba(4, 17, 10, 0.78));
+        background: radial-gradient(ellipse 75% 65% at 50% 45%, rgba(15, 54, 36, 0.1), rgba(15, 54, 36, 0.55));
       }
 
       /* ------------------------------------------------------------ header */
@@ -74,56 +89,111 @@
         border-bottom: 1px solid transparent;
       }
       .top.scrolled {
-        background: rgba(4, 17, 10, 0.72);
+        background: rgba(15, 54, 36, 0.7);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border-bottom-color: var(--line);
       }
       .top.hidden { transform: translateY(-100%); }
-      .brand { display: flex; align-items: center; gap: 9px; text-decoration: none; font-family: var(--display); font-weight: 500; font-size: 17px; letter-spacing: -0.01em; color: var(--white); }
+      .brand { display: flex; align-items: center; gap: 9px; text-decoration: none; font-weight: 600; font-size: 19px; letter-spacing: -0.04em; color: var(--white); }
       .brand img { width: 20px; height: 20px; border-radius: 5px; }
+      /* Buttons from the "Minimal Design System": glass button (.btn) and landing CTA (.cta) */
       .btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 9px 16px;
-        border-radius: 8px;
-        background: var(--g-300);
-        color: #03140a;
-        font: 500 14px/1 Inter, system-ui, sans-serif;
-        text-decoration: none;
-        border: 1px solid var(--g-300);
-        cursor: pointer;
-        transition: background 0.2s, transform 0.15s;
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        height: 28px; padding: 0 16px; border: 0; border-radius: 999px; box-sizing: border-box;
+        box-shadow: var(--sheen); background: var(--glass); color: var(--white);
+        backdrop-filter: blur(24px) saturate(120%); -webkit-backdrop-filter: blur(24px) saturate(120%);
+        font-family: inherit; font-size: 13px; font-weight: 450; line-height: 1; letter-spacing: -0.005em;
+        text-decoration: none; white-space: nowrap; cursor: pointer;
+        transition: background-color 0.35s var(--ease), box-shadow 0.4s var(--ease), transform 0.3s var(--ease), color 0.28s var(--ease);
       }
-      .btn:hover { background: var(--white); border-color: var(--white); }
-      .btn.big { padding: 13px 22px; font-size: 15px; border-radius: 10px; }
-      .btn.line { background: transparent; color: var(--white); border-color: var(--line-strong); }
-      .btn.line:hover { background: rgba(127, 232, 171, 0.1); border-color: var(--g-300); }
-      .btn .arrow { font-family: var(--mono); }
+      .btn:hover { background: var(--glass-hover); box-shadow: var(--sheen-hover); transform: translateY(-0.5px); }
+      .btn:active { background: var(--glass-active); box-shadow: var(--sheen); transform: scale(0.98); transition-duration: 0.12s; }
+      .btn:focus-visible { outline: none; box-shadow: var(--sheen), 0 0 0 3px var(--ring); }
+      .btn--sm { height: 22px; padding: 0 11px; font-size: 12px; gap: 5px; }
+      .btn--lg { height: 36px; padding: 0 20px; font-size: 14px; }
+      .btn--primary { background: var(--primary); color: var(--on-primary); backdrop-filter: none; -webkit-backdrop-filter: none; }
+      .btn--primary:hover { background: var(--primary-hover); }
+      .btn--ghost { background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+      .btn--ghost:hover { background: var(--ghost-hover); }
+      .cta {
+        --c: #b8f7d2; --c-soft: rgba(52, 199, 120, 0.88); --c-hover: rgba(52, 199, 120, 1); --c-glow: rgba(52, 199, 120, 0.32);
+        position: relative; overflow: hidden; isolation: isolate;
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        height: 36px; padding: 0 22px; border: 0; border-radius: 999px;
+        background: var(--c-soft); box-shadow: inset 0 0 0 2px var(--c), 0 4px 12px -6px var(--c-glow);
+        color: #0b0b0c; font-family: inherit; font-size: 14px; font-weight: 500; letter-spacing: -0.01em;
+        text-decoration: none; white-space: nowrap; cursor: pointer;
+        backdrop-filter: blur(24px) saturate(140%); -webkit-backdrop-filter: blur(24px) saturate(140%);
+        transition: background-color 0.35s var(--ease), box-shadow 0.4s var(--ease), transform 0.3s var(--ease);
+      }
+      .cta > * { position: relative; z-index: 2; }
+      .cta svg { width: 15px; height: 15px; flex: none; transition: transform 0.3s var(--ease); }
+      .cta::after {
+        content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; z-index: 1; pointer-events: none;
+        background: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.55) 50%, rgba(255, 255, 255, 0) 100%);
+        transform: translateX(-140%) skewX(-14deg); animation: cta-shine 3.8s var(--ease) infinite;
+      }
+      .cta:hover { background: var(--c-hover); box-shadow: inset 0 0 0 2px var(--c), 0 6px 16px -8px var(--c-glow); transform: translateY(-1px); }
+      .cta:hover svg { transform: translateX(2px); }
+      .cta:hover::after { animation-duration: 1.9s; }
+      .cta:active { transform: scale(0.98); transition-duration: 0.12s; }
+      .cta:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--c), 0 0 0 3px var(--ring); }
+      .cta--sm { height: 30px; padding: 0 18px; font-size: 13px; }
+      @keyframes cta-shine { 0% { transform: translateX(-140%) skewX(-14deg); } 50%, 100% { transform: translateX(320%) skewX(-14deg); } }
 
       /* ------------------------------------------------------------ layout */
-      section { position: relative; padding: 130px clamp(18px, 4vw, 44px); }
-      .wrap { max-width: 1140px; margin: 0 auto; }
-      h1, h2, h3 { margin: 0; font-family: var(--display); font-weight: 500; color: var(--white); }
-      h2 { font-size: clamp(36px, 5vw, 60px); line-height: 1.04; letter-spacing: -0.025em; }
+      section { position: relative; padding: 140px clamp(18px, 4vw, 44px); }
+      .wrap { max-width: 1080px; margin: 0 auto; }
+      h1, h2, h3 { margin: 0; font-weight: 500; color: var(--white); }
+      h2 { font-size: clamp(40px, 6.4vw, 76px); line-height: 1.02; letter-spacing: -0.045em; }
       h2 em { font-style: normal; color: var(--g-300); }
-      .kicker { font-family: var(--mono); font-size: 12.5px; color: var(--g-300); letter-spacing: 0.02em; margin-bottom: 18px; display: inline-flex; gap: 10px; align-items: center; }
-      .kicker::before { content: ""; width: 18px; height: 1px; background: var(--g-300); }
-      .lead { font-size: clamp(17px, 1.6vw, 19.5px); line-height: 1.6; color: var(--muted); max-width: 620px; margin: 20px 0 0; }
-      .lead, .note, .kicker, h1, h2 { text-shadow: 0 0 3px var(--bg), 0 0 14px var(--bg), 0 0 28px var(--bg); }
+      .kicker { font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--g-300); margin-bottom: 18px; display: inline-flex; }
+      .lead { font-size: clamp(19px, 2vw, 23px); line-height: 1.38; letter-spacing: -0.02em; font-weight: 500; color: var(--muted); max-width: 640px; margin: 22px 0 0; }
+      .lead, .note, .kicker, h1, h2, .step, .works { text-shadow: 0 0 3px var(--bg), 0 0 14px var(--bg), 0 0 28px var(--bg); }
       .mono { font-family: var(--mono); }
       .center { text-align: center; }
       .center .lead { margin-left: auto; margin-right: auto; }
       .center .kicker { justify-content: center; }
 
       /* ------------------------------------------------------------ hero */
-      .hero { min-height: 100vh; display: grid; align-items: center; padding-top: 120px; padding-bottom: 90px; }
-      .hero .wrap { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); gap: 56px; align-items: center; }
-      .hero h1 { font-size: clamp(42px, 5.6vw, 74px); line-height: 1.02; letter-spacing: -0.03em; }
-      .hero h1 span { color: var(--g-300); }
-      .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
-      .note { margin-top: 18px; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+      .hero {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        padding-top: clamp(100px, 15vh, 190px);
+        padding-bottom: clamp(140px, 22vh, 300px);
+        overflow: hidden;
+      }
+      .hero .wrap { width: 100%; position: relative; }
+      /* a soft calm area behind the headline so the ASCII field never fights the text */
+      .hero .wrap::before {
+        content: "";
+        position: absolute;
+        inset: -60px -40px -50px -80px;
+        z-index: -1;
+        pointer-events: none;
+        background: radial-gradient(ellipse 62% 60% at 32% 50%, rgba(15, 54, 36, 0.82), rgba(15, 54, 36, 0.5) 55%, rgba(15, 54, 36, 0) 78%);
+      }
+      .hero h1 { font-size: clamp(44px, min(7vw, 9.5vh), 88px); line-height: 1; letter-spacing: -0.05em; font-weight: 600; max-width: 900px; }
+      .hero .lead { color: var(--white); }
+      .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 34px; }
+      .note { margin-top: 18px; font-size: 13.5px; color: var(--muted); }
+      .wordmark {
+        position: absolute;
+        right: -0.06em;
+        bottom: -0.2em;
+        font-size: clamp(96px, min(21vw, 26vh), 300px);
+        font-weight: 600;
+        letter-spacing: -0.07em;
+        line-height: 1;
+        color: var(--white);
+        text-shadow: 0 0 40px rgba(15, 54, 36, 0.6);
+        pointer-events: none;
+        user-select: none;
+      }
+      .scroll-hint { position: absolute; left: clamp(18px, 4vw, 44px); bottom: 28px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
 
       /* ------------------------------------------------------------ app window mockups */
       .win {
@@ -163,13 +233,14 @@
       .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--g-400); box-shadow: 0 0 8px var(--g-400); flex: none; }
       .dot.wait { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
       .pointer { position: absolute; top: 14px; left: calc(30% - 8px); width: 13px; height: 13px; border-left: 2px solid var(--white); border-top: 2px solid var(--white); transform: rotate(-12deg); filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7)); }
-      .hero .win .body { min-height: 290px; }
+      .stage { margin: 64px auto 0; max-width: 760px; }
+      .stage .win .body { min-height: 290px; }
       .hero-visual { position: relative; }
       .hero-visual .badge {
         position: absolute;
         right: -14px;
         bottom: -26px;
-        background: #071a10;
+        background: var(--panel);
         border: 1px solid var(--line-strong);
         border-radius: 10px;
         padding: 12px 14px;
@@ -182,11 +253,11 @@
       .badge .m { color: var(--muted); }
 
       /* ------------------------------------------------------------ diagram */
-      .diagram { margin-top: 56px; border: 1px solid var(--line); border-radius: 16px; background: rgba(5, 20, 12, 0.7); padding: clamp(14px, 3vw, 34px); }
+      .diagram { margin-top: 56px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); padding: clamp(14px, 3vw, 34px); }
       .diagram svg { width: 100%; height: auto; display: block; }
-      .diagram text { font-family: Inter, system-ui, sans-serif; fill: var(--text); }
-      .diagram .t-title { font-family: "Space Grotesk", system-ui, sans-serif; font-size: 17px; font-weight: 500; fill: var(--white); }
-      .diagram .t-mono { font-family: "JetBrains Mono", monospace; font-size: 11.5px; fill: var(--muted); }
+      .diagram text { font-family: Geist, system-ui, sans-serif; fill: var(--text); }
+      .diagram .t-title { font-family: Geist, system-ui, sans-serif; font-size: 17px; font-weight: 500; fill: var(--white); }
+      .diagram .t-mono { font-family: "Geist Mono", monospace; font-size: 11.5px; fill: var(--muted); }
       .diagram .t-small { font-size: 12.5px; fill: var(--muted); }
       .diagram .box { fill: #0a1f14; stroke: rgba(160, 255, 200, 0.32); stroke-width: 1.2; }
       .diagram .box-strong { fill: #0d281a; stroke: #7fe8ab; stroke-width: 1.4; }
@@ -215,28 +286,30 @@
         border: 1px solid var(--line);
         border-radius: 12px;
         padding: 20px;
-        background: rgba(7, 26, 16, 0.82);
+        background: var(--card);
         min-height: 210px;
         display: flex;
         flex-direction: column;
         transition: border-color 0.2s, background 0.2s;
       }
       .block:hover { border-color: var(--line-strong); }
-      .block[aria-pressed="true"] { border-color: var(--g-300); background: rgba(16, 52, 32, 0.9); }
+      .block[aria-pressed="true"] { border-color: var(--g-300); background: rgba(20, 70, 44, 0.92); }
       .block .ascii { font-family: var(--mono); font-size: 11px; line-height: 1.15; color: var(--g-400); white-space: pre; margin: 0 0 14px; }
       .block h3 { font-size: 21px; margin-bottom: 8px; }
       .block p { margin: 0; color: var(--muted); font-size: 14.5px; line-height: 1.55; }
       .block .state { position: absolute; top: 16px; right: 16px; width: 18px; height: 18px; border-radius: 5px; border: 1px solid var(--line-strong); display: grid; place-items: center; font-family: var(--mono); font-size: 12px; color: transparent; }
       .block[aria-pressed="true"] .state { background: var(--g-300); border-color: var(--g-300); color: #03140a; }
-      .composer { margin-top: 12px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px; align-items: center; border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; background: #03100a; }
+      .composer { margin-top: 12px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px; align-items: center; border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; background: var(--panel); }
       .composer code { font-family: var(--mono); font-size: 14px; color: var(--g-100); }
       .composer code::before { content: "$ "; color: var(--g-400); }
       .composer span { color: var(--muted); font-size: 15px; }
 
       /* ------------------------------------------------------------ gallery */
-      .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 40px; }
-      .tab { font: 500 14px Inter, system-ui, sans-serif; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 8px 15px; cursor: pointer; }
-      .tab[aria-selected="true"] { color: #03140a; background: var(--g-300); border-color: var(--g-300); }
+      .group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 3px; border-radius: 999px; box-shadow: var(--sheen); background: var(--glass); backdrop-filter: blur(24px) saturate(120%); -webkit-backdrop-filter: blur(24px) saturate(120%); }
+      .tabs { margin-top: 40px; }
+      .tab { height: 28px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font-family: inherit; font-size: 13px; font-weight: 450; cursor: pointer; transition: background-color 0.35s var(--ease), color 0.28s var(--ease); }
+      .tab:hover { color: var(--white); }
+      .tab[aria-selected="true"] { color: var(--white); background: var(--seg-on); box-shadow: var(--sheen); }
       .shots { margin-top: 22px; }
       .shot { display: none; }
       .shot.on { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 34px; align-items: center; animation: fade 0.4s ease; }
@@ -259,7 +332,7 @@
         font-family: var(--mono);
         font-size: 12.5px;
         line-height: 1.7;
-        background: #020b06;
+        background: #061d11;
         border: 1px solid var(--line);
         border-radius: 10px;
         padding: 16px 18px;
@@ -267,7 +340,7 @@
         white-space: pre;
         overflow-x: auto;
       }
-      .term .c { color: #5f8a71; }
+      .term .c { color: #7fae93; }
       .term .g { color: var(--g-300); }
       .term .w { color: var(--white); }
       .term .y { color: var(--amber); }
@@ -279,7 +352,7 @@
 
       /* ------------------------------------------------------------ agents */
       .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 48px; }
-      .card { border: 1px solid var(--line); border-radius: 14px; padding: 26px; background: rgba(7, 26, 16, 0.85); }
+      .card { border: 1px solid var(--line); border-radius: 14px; padding: 26px; background: var(--card); }
       .card .tagline { font-family: var(--mono); font-size: 12px; color: var(--g-300); }
       .card h3 { font-size: 26px; margin: 10px 0 10px; }
       .card p { color: var(--muted); line-height: 1.6; margin: 0 0 18px; }
@@ -287,7 +360,7 @@
 
       /* ------------------------------------------------------------ features */
       .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 48px; }
-      .feat { border: 1px solid var(--line); border-radius: 12px; padding: 22px; background: rgba(7, 26, 16, 0.85); }
+      .feat { border: 1px solid var(--line); border-radius: 12px; padding: 22px; background: var(--card); }
       .feat h3 { font-size: 19px; display: flex; justify-content: space-between; align-items: baseline; }
       .feat h3 small { font-family: var(--mono); font-size: 11.5px; color: var(--muted); font-weight: 400; }
       .feat ul { list-style: none; padding: 0; margin: 14px 0 0; }
@@ -297,7 +370,7 @@
 
       /* ------------------------------------------------------------ security */
       .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 48px; }
-      .list { border: 1px solid var(--line); border-radius: 14px; padding: 24px 26px; background: rgba(7, 26, 16, 0.85); }
+      .list { border: 1px solid var(--line); border-radius: 14px; padding: 24px 26px; background: var(--card); }
       .list h3 { font-size: 20px; margin-bottom: 8px; }
       .list ul { list-style: none; margin: 0; padding: 0; }
       .list li { padding: 11px 0; border-bottom: 1px solid var(--line); color: var(--muted); display: flex; gap: 12px; }
@@ -306,9 +379,10 @@
 
       /* ------------------------------------------------------------ quick start */
       .quick { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 52px; align-items: center; }
+      .quick h2 { font-size: clamp(40px, 4.8vw, 60px); }
       .copy { position: relative; min-width: 0; }
       #quickstart { white-space: pre-wrap; overflow-wrap: anywhere; padding-right: 64px; }
-      .copy button { position: absolute; top: 10px; right: 10px; font-family: var(--mono); font-size: 11.5px; padding: 5px 10px; border-radius: 6px; background: var(--panel-2); color: var(--text); border: 1px solid var(--line-strong); cursor: pointer; }
+      .copy #copy { position: absolute; top: 12px; right: 12px; }
 
       /* ------------------------------------------------------------ faq */
       .faq { max-width: 820px; margin: 44px auto 0; }
@@ -336,7 +410,7 @@
       @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 
       @media (max-width: 960px) {
-        .hero .wrap, .shot.on, .split, .two, .quick { grid-template-columns: minmax(0, 1fr); }
+        .shot.on, .split, .two, .quick { grid-template-columns: minmax(0, 1fr); }
         .blocks, .steps { grid-template-columns: 1fr 1fr; }
         .grid { grid-template-columns: 1fr 1fr; }
         .hero-visual .badge { right: 8px; }
@@ -362,28 +436,39 @@
 
     <header class="top" id="top-bar">
       <a class="brand" href="#hero"><img src="assets/logo.png" alt="" />OpenShell</a>
-      <a class="btn" href="#start">Get started <span class="arrow">→</span></a>
+      <a class="cta cta--sm" href="#start"><span>Get started</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
     </header>
 
     <main>
       <!-- ============================================================ hero -->
       <section class="hero" id="hero">
         <div class="wrap">
-          <div>
-            <div class="kicker rise">open source · rust + tauri 2</div>
-            <h1 class="rise">Any web app.<br />A native desktop app.<br /><span>Agents included.</span></h1>
-            <p class="lead rise">
-              Describe your app in one file. OpenShell runs the frontend, services, database and AI functions as a
-              real desktop app – and gives AI agents a safe way to use and improve it.
-            </p>
-            <div class="actions rise">
-              <a class="btn big" href="https://github.com/RobinsSuperSchmiede/EDA/releases/latest">Download</a>
-              <a class="btn big line" href="#how">How it works</a>
-            </div>
-            <div class="note rise">MIT licensed · Windows · macOS · Linux</div>
+          <h1 class="rise">Any web app.<br />A native desktop app.<br />Agents included.</h1>
+          <p class="lead rise">
+            OpenShell runs your frontend, backends, database and AI functions as one desktop app – supervised,
+            packaged, and open to the AI agents you choose.
+          </p>
+          <div class="actions rise">
+            <a class="cta" href="https://github.com/RobinsSuperSchmiede/EDA/releases/latest"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            <a class="btn btn--lg" href="#how">How it works</a>
           </div>
+          <p class="note rise">Free and open source · MIT · Windows, macOS and Linux</p>
+        </div>
+        <div class="wordmark" aria-hidden="true">openshell</div>
+        <div class="scroll-hint" aria-hidden="true">scroll ↓</div>
+      </section>
 
-          <div class="hero-visual rise" aria-label="An OpenShell app window with the service menu open">
+      <!-- ============================================================ how it works -->
+      <section id="how">
+        <div class="wrap">
+          <div class="kicker reveal">how it works</div>
+          <h2 class="reveal">The shell is not your app.<br /><em>It runs your app.</em></h2>
+          <p class="lead reveal">
+            OpenShell sits between the people and agents using your app and the parts it is made of. Your code stays a
+            normal project; OpenShell never compiles it in.
+          </p>
+
+          <div class="hero-visual stage reveal" aria-label="An OpenShell app window with the service menu open">
             <div class="win">
               <div class="bar"><img src="assets/logo.png" alt="" />Field Notes<span class="ctl">— ▢ ✕</span></div>
               <div class="body">
@@ -412,18 +497,6 @@
               <div class="m">✓ saved · id 41</div>
             </div>
           </div>
-        </div>
-      </section>
-
-      <!-- ============================================================ how it works -->
-      <section id="how">
-        <div class="wrap">
-          <div class="kicker reveal">how it works</div>
-          <h2 class="reveal">The shell is not your app.<br /><em>It runs your app.</em></h2>
-          <p class="lead reveal">
-            OpenShell sits between the people and agents using your app and the parts it is made of. Your code stays a
-            normal project; OpenShell never compiles it in.
-          </p>
 
           <figure class="diagram reveal" aria-label="Architecture diagram of OpenShell">
             <svg viewBox="0 0 1000 600" role="img">
@@ -553,7 +626,7 @@
         <div class="wrap">
           <div class="kicker reveal">what it looks like</div>
           <h2 class="reveal">One shell,<br /><em>four ways to see it.</em></h2>
-          <div class="tabs reveal" role="tablist">
+          <div class="tabs group reveal" role="tablist">
             <button class="tab" role="tab" aria-selected="true" data-shot="window">App window</button>
             <button class="tab" role="tab" aria-selected="false" data-shot="console">Console</button>
             <button class="tab" role="tab" aria-selected="false" data-shot="terminal">Terminal</button>
@@ -724,7 +797,7 @@ openshell mcp --app --start</div>
             <p class="lead reveal">Create, run, ship. Or point OpenShell at the web app you already have – it detects the stack.</p>
           </div>
           <div class="copy reveal">
-            <button type="button" id="copy">copy</button>
+            <button type="button" class="btn btn--sm" id="copy">Copy</button>
             <div class="term" id="quickstart"><span class="c"># install (Windows: scripts/install.ps1)</span>
 curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/scripts/install.sh | sh
 
@@ -760,8 +833,8 @@ curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/script
           <h2 class="reveal">Build the shell once.</h2>
           <p class="lead reveal">Build applications on top of it. Let agents use and evolve them.</p>
           <div class="actions reveal">
-            <a class="btn big" href="https://github.com/RobinsSuperSchmiede/EDA/releases/latest">Download OpenShell</a>
-            <a class="btn big line" href="https://github.com/RobinsSuperSchmiede/EDA">View on GitHub</a>
+            <a class="cta" href="https://github.com/RobinsSuperSchmiede/EDA/releases/latest"><span>Download OpenShell</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            <a class="btn btn--lg" href="https://github.com/RobinsSuperSchmiede/EDA">View on GitHub</a>
           </div>
         </div>
       </section>
@@ -898,7 +971,7 @@ curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/script
       const canvas = document.getElementById("field");
       const ctx = canvas.getContext("2d");
       const RAMP = " .,:;-=+*%#";
-      const COLORS = ["#0d2e1c", "#14472b", "#1f6a40", "#2f9a5c", "#4fc67f", "#93ecb8", "#dfffea"];
+      const COLORS = ["#174a32", "#1e5d3f", "#2a7a52", "#3a9a69", "#5ebd89", "#a3e6c0", "#f6fff9"];
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
       const PERM = new Uint8Array(512);
@@ -933,7 +1006,7 @@ curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/script
         canvas.width = Math.floor(window.innerWidth * dpr);
         canvas.height = Math.floor(window.innerHeight * dpr);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.font = `${size}px "JetBrains Mono", ui-monospace, monospace`;
+        ctx.font = `${size}px "Geist Mono", ui-monospace, monospace`;
         ctx.textBaseline = "top";
       }
 
@@ -949,7 +1022,7 @@ curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/script
         const out = clamp01((window.scrollY - 0.3 * window.innerHeight) / (0.9 * window.innerHeight));
         const end = clamp01((p - 0.9) / 0.1);
         const calm = 1 - 0.45 * out + 0.25 * end;
-        ctx.fillStyle = "#04110a";
+        ctx.fillStyle = "#0f3624";
         ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
         buckets.forEach((b) => (b.length = 0));
         for (let y = 0; y < rows; y++) {
