@@ -16,6 +16,8 @@
     "allow-resolve-approval",
     "allow-open-runtime-panel",
     "allow-show-window-menu",
+    "allow-db-rows",
+    "allow-call-function",
     "core:window:allow-start-dragging",
     "core:window:allow-internal-toggle-maximize",
     "core:window:allow-minimize",

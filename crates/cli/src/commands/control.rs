@@ -60,6 +60,30 @@ pub async fn status(dir: &Path, as_json: bool) -> Result<()> {
             info
         );
     }
+    let dbs = s["databases"].as_array().cloned().unwrap_or_default();
+    if !dbs.is_empty() {
+        println!();
+        for db in &dbs {
+            let tables: Vec<String> = db["tables"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .map(|t| format!("{} ({})", t["name"].as_str().unwrap_or("?"), t["rows"]))
+                .collect();
+            println!(
+                "  {} {:<12} {}  {}",
+                dim("database"),
+                db["name"].as_str().unwrap_or("?"),
+                dim(&format!("agents: {}", db["agent_access"].as_str().unwrap_or("?"))),
+                if tables.is_empty() { dim("no tables") } else { tables.join(", ") }
+            );
+        }
+    }
+    let caps = s["capabilities"].as_array().cloned().unwrap_or_default();
+    if !caps.is_empty() {
+        let names: Vec<&str> = caps.iter().filter_map(|c| c["name"].as_str()).collect();
+        println!("\n{} {}", dim("functions for agents:"), names.join(", "));
+    }
     let pages = s["ui_pages"].as_array().map(|a| a.len()).unwrap_or(0);
     println!();
     println!("{} {pages} page(s) connected", dim("ui bridge:"));

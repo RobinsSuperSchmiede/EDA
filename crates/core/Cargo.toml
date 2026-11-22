@@ -20,6 +20,7 @@ tracing.workspace = true
 chrono.workspace = true
 uuid.workspace = true
 futures.workspace = true
+rusqlite = { version = "0.43", features = ["bundled"] }
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_Console"] }

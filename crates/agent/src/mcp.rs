@@ -30,6 +30,14 @@ pub trait ToolProvider: Send + Sync {
     fn list_tools(&self) -> Vec<ToolDef>;
     fn call_tool<'a>(&'a self, name: &'a str, args: Value, ctx: CallContext) -> BoxFuture<'a, ToolOutcome>;
     /// Server instructions shown to the model.
+    /// MCP resources (`{uri, name, description, mimeType}`) – read-only context for the model.
+    fn resources(&self) -> Vec<Value> {
+        vec![]
+    }
+    /// Contents of a resource (`[{uri, mimeType, text}]`).
+    fn read_resource<'a>(&'a self, uri: &'a str) -> BoxFuture<'a, Result<Vec<Value>, String>> {
+        Box::pin(async move { Err(format!("unknown resource `{uri}`")) })
+    }
     fn instructions(&self) -> String {
         INSTRUCTIONS.to_string()
     }
@@ -118,7 +126,7 @@ pub async fn handle_message(provider: &dyn ToolProvider, msg: Value, ctx: CallCo
                 &id,
                 json!({
                     "protocolVersion": version,
-                    "capabilities": { "tools": { "listChanged": false } },
+                    "capabilities": { "tools": { "listChanged": true }, "resources": {} },
                     "serverInfo": { "name": "openshell", "title": "OpenShell", "version": env!("CARGO_PKG_VERSION") },
                     "instructions": provider.instructions(),
                 }),
@@ -140,7 +148,16 @@ pub async fn handle_message(provider: &dyn ToolProvider, msg: Value, ctx: CallCo
             let outcome = provider.call_tool(name, args, ctx).await;
             rpc_result(&id, mcp_call_result(&outcome))
         }
-        "resources/list" => rpc_result(&id, json!({ "resources": [] })),
+        "resources/list" => rpc_result(&id, json!({ "resources": provider.resources() })),
+        "resources/read" => {
+            let Some(uri) = params.get("uri").and_then(|u| u.as_str()) else {
+                return Some(rpc_error(&id, -32602, "missing resource uri"));
+            };
+            match provider.read_resource(uri).await {
+                Ok(contents) => rpc_result(&id, json!({ "contents": contents })),
+                Err(e) => rpc_error(&id, -32002, e),
+            }
+        }
         "resources/templates/list" => rpc_result(&id, json!({ "resourceTemplates": [] })),
         "prompts/list" => rpc_result(&id, json!({ "prompts": [] })),
         other => rpc_error(&id, -32601, format!("method not found: {other}")),
@@ -217,6 +234,16 @@ mod tests {
         .unwrap();
         assert_eq!(denied["result"]["isError"], true);
         assert_eq!(denied["result"]["content"][0]["text"], "denied");
+
+        let res = handle_message(
+            &Echo,
+            json!({"jsonrpc":"2.0","id":6,"method":"resources/read","params":{"uri":"x://y"}}),
+            ctx(),
+        )
+        .await
+        .unwrap();
+        assert_eq!(res["error"]["code"], -32002);
+        assert_eq!(init["result"]["capabilities"]["tools"]["listChanged"], true);
 
         let unknown =
             handle_message(&Echo, json!({"jsonrpc":"2.0","id":5,"method":"nope"}), ctx()).await.unwrap();

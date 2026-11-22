@@ -318,3 +318,119 @@ async fn openapi_import_and_app_profile() {
     assert!(init["result"]["instructions"].as_str().unwrap().contains("Api App"));
     shell.shutdown().await;
 }
+
+/// An app without frontend and backend: a database plus script functions only.
+#[tokio::test]
+async fn database_and_functions_without_services() {
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::create_dir_all(dir.path().join("db")).unwrap();
+    std::fs::write(dir.path().join("db/001.sql"), "CREATE TABLE notes (id INTEGER PRIMARY KEY, title TEXT);")
+        .unwrap();
+    let script = "import sys, json, os, sqlite3\n\
+                  data = json.load(sys.stdin)\n\
+                  con = sqlite3.connect(os.environ['OPENSHELL_DB_MAIN'])\n\
+                  con.execute('INSERT INTO notes (title) VALUES (?)', (data['title'],))\n\
+                  con.commit()\n\
+                  print(json.dumps({'saved': data['title'], 'count': con.execute('SELECT COUNT(*) FROM notes').fetchone()[0]}))";
+    std::fs::write(dir.path().join("save.py"), script).unwrap();
+    std::fs::write(dir.path().join("fail.py"), "import sys\nprint('boom', file=sys.stderr)\nsys.exit(3)")
+        .unwrap();
+    let cfg = json!({
+        "app": { "name": "Data App" },
+        "databases": [{ "name": "main", "migrations": "db", "agent_access": "write" }],
+        "capabilities": [
+            { "name": "save_note", "description": "Save a note", "permission": "actions", "run": ["python", "save.py"] },
+            { "name": "fail", "description": "Always fails", "run": ["python", "fail.py"] }
+        ]
+    });
+    let project = Project {
+        root: dir.path().to_path_buf(),
+        config_path: dir.path().join("openshell.json"),
+        config: parse_json(&cfg.to_string()).unwrap(),
+        state_dir_override: None,
+    };
+    let shell = Shell::launch(project, Mode::Production, Arc::new(HeadlessHost::default())).await.unwrap();
+    shell.start();
+    let client = ControlClient::connect(&dir.path().join(".openshell")).await.unwrap();
+
+    // function through the app profile
+    let call = client
+        .post("/mcp/app", &json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"save_note","arguments":{"title":"hello"}}}))
+        .await
+        .unwrap();
+    assert_eq!(call["result"]["structuredContent"]["saved"], "hello", "{call}");
+    assert_eq!(call["result"]["structuredContent"]["count"], 1);
+
+    let fail = tool(&client, "cap_fail", json!({})).await;
+    assert_eq!(fail["ok"], false);
+    assert!(fail["result"]["error"].as_str().unwrap().contains("boom"), "{fail}");
+
+    // database tools (app profile lists them because agent_access = write)
+    let list = client.post("/mcp/app", &json!({"jsonrpc":"2.0","id":2,"method":"tools/list"})).await.unwrap();
+    let names: Vec<&str> =
+        list["result"]["tools"].as_array().unwrap().iter().map(|t| t["name"].as_str().unwrap()).collect();
+    for n in ["app_status", "save_note", "db_query", "db_execute", "db_schema"] {
+        assert!(names.contains(&n), "{names:?}");
+    }
+    let q = tool(&client, "db_query", json!({ "sql": "SELECT title FROM notes" })).await;
+    assert_eq!(q["result"]["rows"][0]["title"], "hello", "{q}");
+    let bad = tool(&client, "db_query", json!({ "sql": "DELETE FROM notes" })).await;
+    assert_eq!(bad["ok"], false);
+    let w = tool(
+        &client,
+        "db_execute",
+        json!({ "sql": "INSERT INTO notes (title) VALUES (?)", "params": ["two"] }),
+    )
+    .await;
+    assert_eq!(w["result"]["changes"], 1, "{w}");
+
+    // resources
+    let res =
+        client.post("/mcp/app", &json!({"jsonrpc":"2.0","id":3,"method":"resources/list"})).await.unwrap();
+    assert!(res["result"]["resources"].to_string().contains("openshell://db/main/schema"));
+    let read = client
+        .post("/mcp", &json!({"jsonrpc":"2.0","id":4,"method":"resources/read","params":{"uri":"openshell://db/main/schema"}}))
+        .await
+        .unwrap();
+    assert!(read["result"]["contents"][0]["text"].as_str().unwrap().contains("notes"));
+
+    let status = client.get("/v1/status").await.unwrap();
+    assert_eq!(status["databases"][0]["tables"][0]["rows"], 2);
+    assert_eq!(status["capabilities"].as_array().unwrap().len(), 2);
+    shell.shutdown().await;
+}
+
+#[tokio::test]
+async fn database_agent_access_is_enforced() {
+    let dir = tempfile::tempdir().unwrap();
+    let cfg = json!({ "app": { "name": "x" }, "databases": [{ "name": "secret", "agent_access": "none" }, { "name": "main" }] });
+    let project = Project {
+        root: dir.path().to_path_buf(),
+        config_path: dir.path().join("openshell.json"),
+        config: parse_json(&cfg.to_string()).unwrap(),
+        state_dir_override: None,
+    };
+    let shell = Shell::launch(project, Mode::Development, Arc::new(HeadlessHost::default())).await.unwrap();
+    let client = ControlClient::connect(&dir.path().join(".openshell")).await.unwrap();
+    let r = tool(&client, "db_query", json!({ "sql": "SELECT 1", "database": "secret" })).await;
+    assert!(r["result"]["error"].as_str().unwrap().contains("not accessible"), "{r}");
+    let r = tool(&client, "db_execute", json!({ "sql": "CREATE TABLE t (x)" })).await;
+    assert!(r["result"]["error"].as_str().unwrap().contains("read-only"), "{r}");
+    let list = tool(&client, "db_list", json!({})).await;
+    assert_eq!(list["result"]["databases"].as_array().unwrap().len(), 1);
+
+    // the app's own frontend (SDK channel) may write – governed by sdk_permissions
+    let http = reqwest::Client::builder().no_proxy().build().unwrap();
+    let r: Value = http
+        .post(format!("{}/v1/sdk/call/db_query", client.info.url))
+        .bearer_auth(&shell.inner.app_token)
+        .json(&json!({ "sql": "SELECT 1 AS one", "database": "secret" }))
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(r["result"]["rows"][0]["one"], 1, "{r}");
+    shell.shutdown().await;
+}

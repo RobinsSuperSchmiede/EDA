@@ -138,6 +138,35 @@ pub async fn run(dir: &Path) -> Result<()> {
             }
         }
 
+        if !p.config.databases.is_empty() || p.config.capabilities.iter().any(|c| c.run.is_some()) {
+            println!("\n{}", bold("Databases and functions"));
+            for db in &p.config.databases {
+                match &db.migrations {
+                    Some(m) if !p.resolve_path(m).is_dir() => {
+                        r.err(&format!("database `{}`: migrations folder {m} does not exist", db.name))
+                    }
+                    _ => r.ok(&format!(
+                        "database `{}` -> {}",
+                        db.name,
+                        p.data_dir().join(db.file_name()).display()
+                    )),
+                }
+            }
+            for c in p.config.capabilities.iter().filter(|c| c.run.is_some()) {
+                let run = c.run.as_ref().unwrap().normalized();
+                let cwd = run.cwd.as_ref().map(|d| p.resolve_path(d)).unwrap_or_else(|| p.root.clone());
+                if program_exists(&run.command, &cwd) {
+                    r.ok(&format!("function `{}` -> {}", c.name, run.command.display()));
+                } else {
+                    r.err(&format!(
+                        "function `{}`: `{}` not found in PATH",
+                        c.name,
+                        run.command.program().unwrap_or_default()
+                    ));
+                }
+            }
+        }
+
         println!("\n{}", bold("Runtime"));
         match running {
             Some(c) => r.ok(&format!("running: {} mode, pid {}, {}", c.info.mode, c.info.pid, c.info.url)),

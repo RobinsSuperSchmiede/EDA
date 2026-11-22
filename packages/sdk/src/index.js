@@ -96,6 +96,25 @@ export const OpenShell = {
   /** AI providers configured for the app / detected locally. Requires `read`. */
   providers: () => call("providers_list"),
 
+  /**
+   * The app's built-in databases (SQLite, `databases` in openshell.json). Lets a frontend-only
+   * app store data without a backend. Reads need `read`, writes need `actions` in
+   * `agents.sdk_permissions` (`openshell add database` sets that up).
+   */
+  db: {
+    /** `{ databases: [{ name, tables: [{ name, rows }] }] }` */
+    list: () => call("db_list"),
+    /** Tables, columns and CREATE statements. */
+    schema: (table, database) => call("db_schema", { table, database }),
+    /** Read-only query: `{ columns, rows: [{col: value}], row_count, truncated }`. Params: array for `?`, object for `:name`. */
+    query: (sql, params, database) => call("db_query", { sql, params, database }),
+    /** INSERT / UPDATE / DELETE / DDL: `{ changes, last_insert_rowid }`. */
+    execute: (sql, params, database) => call("db_execute", { sql, params, database }),
+  },
+
+  /** Call one of the app's functions (capabilities) – the same ones AI agents use. */
+  invoke: (name, input) => call("app_invoke", { name, input: input || {} }),
+
   agent: {
     /**
      * Expose a frontend function to AI agents. Agents discover it via

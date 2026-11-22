@@ -3,8 +3,9 @@
 ## Learn
 
 1. [Getting started](getting-started.md) – install, create a first app, bring an existing project
-2. [Tutorial](tutorial.md) – build a complete app (frontend, backend, agent functions, installer) step by step
-3. [Languages](languages.md) – C++, Java, Go, Rust, .NET, Python, Node.js backends
+2. [Building blocks](building-blocks.md) – frontend, backend, database, functions: use only what you need
+3. [Tutorial](tutorial.md) – build a complete app (frontend, backend, agent functions, installer) step by step
+4. [Languages](languages.md) – C++, Java, Go, Rust, .NET, Python, Node.js backends
 
 ## Use
 

@@ -15,6 +15,7 @@ openshell logs <service> -n 50
 openshell restart <service>   # usually not needed: watched files restart services automatically
 openshell call <tool> '<json>'  # e.g. ui_snapshot, ui_click, cap_<capability>, capabilities_list
 openshell doctor              # config + toolchain check
+openshell add frontend | backend [--lang node] | database [name] | function <name>   # add a building block
 openshell stop
 openshell build && openshell package   # production build + native installer
 ```
@@ -30,6 +31,9 @@ openshell build && openshell package   # production build + native installer
    (HTTP endpoint or task), import it via `"openapi"`, or register it in the frontend with
    `OpenShell.agent.registerAction`. Test with `openshell call cap_<name> '<json>'`.
 7. Do not edit `.openshell/` (runtime state).
+8. Use only the building blocks the task needs: a frontend can store data in the built-in database
+   (`OpenShell.db`), agent functions can be plain scripts (`"run"`), no backend is required for either.
+   Schema changes go into new files in the migrations folder.
 
 ## Verify a change
 

@@ -66,7 +66,14 @@ openshell dev                    # opens the native window, streams logs, hot-re
 ```
 
 **3. Make it yours** – edit `web/` or `backend/`. The window reloads and the backend restarts automatically.
-Other stacks: `openshell create --list` (React, Vue, Svelte, Node.js, Go, Java, C++).
+Other stacks: `openshell create --list` (React, Vue, Svelte, Node.js, Go, Java, C++). Or pick only the building
+blocks you need:
+
+```bash
+openshell create notes --with frontend,database     # UI + built-in SQLite, no backend
+openshell create tools --with functions             # functions for AI agents only – no UI, no server
+openshell add backend --lang node                   # add blocks later, in any order
+```
 
 **4. Ship it**
 
@@ -107,6 +114,9 @@ claude mcp add my-app -- openshell mcp --app --start --project .
 - **The shell is not your app.** It is the runtime and management layer around it. Your frontend and backend stay
   normal, independent projects – change them (by hand or by an agent) and the running app picks it up. The shell is
   never rebuilt.
+- **Free choice of building blocks.** Frontend, backend, database and functions for AI agents are independent:
+  build a UI that stores data without a backend, an AI interface over a database without any UI, a pure background
+  service – or everything together. See [building blocks](docs/building-blocks.md).
 - **One config file** describes the app: which frontend to show, which services to run, how to check their health,
   what agents may do. See the [configuration reference](docs/configuration.md).
 - **One runtime, three modes:** development (hot reload, broad agent access), production (stable, restricted agents)
@@ -197,7 +207,7 @@ OpenShell offers agents two profiles over [MCP](https://modelcontextprotocol.io)
 | | **App profile** – *use* the app | **Full profile** – *develop* the app |
 |---|---|---|
 | For | assistants working with your application | coding agents building / fixing it |
-| Tools | the app's own functions: declared capabilities, imported OpenAPI operations, frontend actions, `app_status` | 28 tools: status, logs, services, files, UI automation, tasks, capabilities |
+| Tools | the app's own functions: declared capabilities, imported OpenAPI operations, frontend actions, `app_status` | 32 tools: status, logs, services, files, UI automation, tasks, capabilities |
 | Connect | `openshell mcp --app --start` · installed app: `my-app.exe --mcp` | `openshell mcp` |
 
 ```bash
@@ -229,6 +239,9 @@ ui_snapshot`, …) and the packaging steps on its own. See [docs/ai/README.md](d
 
 ## Features
 
+- **Building blocks** – frontend, backend, built-in SQLite database (migrations, SDK and agent access) and script
+  functions for AI agents; combine freely with `openshell create --with …` / `openshell add …`. Apps without a
+  frontend get a console window (services, data browser, functions) or run tray-only.
 - **Runtime manager** – dependency-ordered start, one-time setup (`npm install`), build steps, HTTP/TCP health checks,
   restart policies with backoff and crash-loop protection, dynamic ports and `${services.x.url}` variables, logs,
   CPU/memory per process tree, process-tree cleanup (Windows job objects, Unix process groups), external services.
@@ -251,6 +264,7 @@ ui_snapshot`, …) and the packaging steps on its own. See [docs/ai/README.md](d
 |---|---|
 | [Getting started](docs/getting-started.md) | Install, first app, existing projects |
 | [Tutorial](docs/tutorial.md) | Build a complete app step by step |
+| [Building blocks](docs/building-blocks.md) | Frontend, backend, database, functions – use only what you need |
 | [Configuration](docs/configuration.md) | Every field of `openshell.json` |
 | [Languages](docs/languages.md) | C++, Java, Go, Rust, .NET, Python, Node |
 | [AI agents](docs/agents.md) | MCP profiles, tools, UI automation, capabilities, permissions |

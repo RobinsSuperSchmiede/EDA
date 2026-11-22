@@ -1,7 +1,7 @@
 # OpenShell – full documentation for LLMs
 
 Generated from the repository by scripts/gen-llms-full.py. Source: https://github.com/RobinsSuperSchmiede/EDA
-Contents: README.md, docs/ai/app-development.md, docs/getting-started.md, docs/tutorial.md, docs/configuration.md, docs/languages.md, docs/agents.md, docs/installers.md, docs/cli.md, docs/sdk.md, docs/control-api.md
+Contents: README.md, docs/ai/app-development.md, docs/getting-started.md, docs/building-blocks.md, docs/tutorial.md, docs/configuration.md, docs/languages.md, docs/agents.md, docs/installers.md, docs/cli.md, docs/sdk.md, docs/control-api.md
 
 
 ================================================================================
@@ -76,7 +76,14 @@ openshell dev                    # opens the native window, streams logs, hot-re
 ```
 
 **3. Make it yours** – edit `web/` or `backend/`. The window reloads and the backend restarts automatically.
-Other stacks: `openshell create --list` (React, Vue, Svelte, Node.js, Go, Java, C++).
+Other stacks: `openshell create --list` (React, Vue, Svelte, Node.js, Go, Java, C++). Or pick only the building
+blocks you need:
+
+```bash
+openshell create notes --with frontend,database     # UI + built-in SQLite, no backend
+openshell create tools --with functions             # functions for AI agents only – no UI, no server
+openshell add backend --lang node                   # add blocks later, in any order
+```
 
 **4. Ship it**
 
@@ -117,6 +124,9 @@ claude mcp add my-app -- openshell mcp --app --start --project .
 - **The shell is not your app.** It is the runtime and management layer around it. Your frontend and backend stay
   normal, independent projects – change them (by hand or by an agent) and the running app picks it up. The shell is
   never rebuilt.
+- **Free choice of building blocks.** Frontend, backend, database and functions for AI agents are independent:
+  build a UI that stores data without a backend, an AI interface over a database without any UI, a pure background
+  service – or everything together. See [building blocks](docs/building-blocks.md).
 - **One config file** describes the app: which frontend to show, which services to run, how to check their health,
   what agents may do. See the [configuration reference](docs/configuration.md).
 - **One runtime, three modes:** development (hot reload, broad agent access), production (stable, restricted agents)
@@ -207,7 +217,7 @@ OpenShell offers agents two profiles over [MCP](https://modelcontextprotocol.io)
 | | **App profile** – *use* the app | **Full profile** – *develop* the app |
 |---|---|---|
 | For | assistants working with your application | coding agents building / fixing it |
-| Tools | the app's own functions: declared capabilities, imported OpenAPI operations, frontend actions, `app_status` | 28 tools: status, logs, services, files, UI automation, tasks, capabilities |
+| Tools | the app's own functions: declared capabilities, imported OpenAPI operations, frontend actions, `app_status` | 32 tools: status, logs, services, files, UI automation, tasks, capabilities |
 | Connect | `openshell mcp --app --start` · installed app: `my-app.exe --mcp` | `openshell mcp` |
 
 ```bash
@@ -239,6 +249,9 @@ ui_snapshot`, …) and the packaging steps on its own. See [docs/ai/README.md](d
 
 ## Features
 
+- **Building blocks** – frontend, backend, built-in SQLite database (migrations, SDK and agent access) and script
+  functions for AI agents; combine freely with `openshell create --with …` / `openshell add …`. Apps without a
+  frontend get a console window (services, data browser, functions) or run tray-only.
 - **Runtime manager** – dependency-ordered start, one-time setup (`npm install`), build steps, HTTP/TCP health checks,
   restart policies with backoff and crash-loop protection, dynamic ports and `${services.x.url}` variables, logs,
   CPU/memory per process tree, process-tree cleanup (Windows job objects, Unix process groups), external services.
@@ -261,6 +274,7 @@ ui_snapshot`, …) and the packaging steps on its own. See [docs/ai/README.md](d
 |---|---|
 | [Getting started](docs/getting-started.md) | Install, first app, existing projects |
 | [Tutorial](docs/tutorial.md) | Build a complete app step by step |
+| [Building blocks](docs/building-blocks.md) | Frontend, backend, database, functions – use only what you need |
 | [Configuration](docs/configuration.md) | Every field of `openshell.json` |
 | [Languages](docs/languages.md) | C++, Java, Go, Rust, .NET, Python, Node |
 | [AI agents](docs/agents.md) | MCP profiles, tools, UI automation, capabilities, permissions |
@@ -348,7 +362,25 @@ openshell create --list      # available templates
 
 If `openshell` is missing, tell the user to install it (see the OpenShell README) – do not try to re-implement it.
 
-### 2. Start from a template (new app) or `init` (existing web app)
+### 2. Choose the building blocks (new app), a template, or `init` (existing web app)
+
+An app needs **only the blocks the task requires** – frontend, backend, database, functions for AI agents
+(docs/building-blocks.md). Pick the smallest set:
+
+| User wants | Blocks |
+|---|---|
+| A UI that stores data locally | `frontend,database` (the page uses `OpenShell.db`; no backend) |
+| Tools/an AI interface for agents, no UI | `functions` (+ `database` if data must persist) |
+| An API / background service | `backend` (+ `database`) |
+| A full app | `frontend,backend,database` (+ `functions`) |
+
+```bash
+openshell create <name> --with frontend,database --lang python   # compose; files + openshell.json + AGENTS.md
+openshell add function <name>                                    # add blocks later, in any order
+openshell add database [name] | openshell add backend --lang node | openshell add frontend
+```
+
+Use a framework template when the user wants a specific stack:
 
 | User wants | Template |
 |---|---|
@@ -416,7 +448,12 @@ If you are connected over MCP (full profile: `openshell mcp`), the same tools ex
 ### 6. Make the app usable for agents (capabilities)
 
 Design capabilities like a small, task-oriented API: verbs, clear descriptions, JSON Schema inputs, `read` for
-queries and `actions` for changes. Three ways:
+queries and `actions` for changes. Four ways:
+
+**0) Script functions** – no server needed (`openshell add function <name>` scaffolds one): a script reads a JSON
+object from stdin and prints JSON to stdout; declare it with `"run": ["python", "tools/<name>.py"]`. Use the database
+from scripts through `OPENSHELL_DB_<NAME>`. Errors: message on stderr + non-zero exit. Logs: `openshell logs fn:<name>`.
+
 
 **a) Declared in `openshell.json`** (HTTP endpoint or task):
 
@@ -515,6 +552,14 @@ Variables: `${port}`, `${services.<name>.port|url}`, `${frontend.url}`, `${proje
 Env vars every service gets: `PORT`, `OPENSHELL_DATA_DIR`, `OPENSHELL_MODE`, `OPENSHELL_SERVICE`,
 `OPENSHELL_PROJECT_ROOT`, `OPENSHELL_CONTROL_URL`. Full reference: `openshell schema` or docs/configuration.md.
 
+## Databases
+
+`databases: [{ "name": "main", "migrations": "db/migrations", "agent_access": "write" }]` gives the app a SQLite file
+in `OPENSHELL_DATA_DIR`. Schema changes: add `db/migrations/002_….sql` (never edit applied migrations; they run once,
+in order, at startup). Access: services/functions `OPENSHELL_DB_MAIN` (+ `DATABASE_URL`), frontend `OpenShell.db.query
+/ execute` (needs `actions` in `agents.sdk_permissions` to write), agents `db_query` / `db_execute`. Inspect with
+`openshell call db_list`, `openshell call db_query '{"sql": "SELECT …"}'` or the console's data browser.
+
 ## Pitfalls
 
 - **Hard-coded ports** (`8000`, `5173`) → conflicts. Use `"port": "auto"` and `$PORT`.
@@ -529,6 +574,7 @@ Env vars every service gets: `PORT`, `OPENSHELL_DATA_DIR`, `OPENSHELL_MODE`, `OP
 
 ## Definition of done
 
+- [ ] Only the building blocks the task needs (no backend just to store data, no UI for a pure agent tool)
 - [ ] `openshell doctor` shows no errors
 - [ ] `openshell dev --headless` → `openshell status`: all services `running`; `openshell logs --errors` clean
 - [ ] Main user flows verified through the API and, where possible, `ui_snapshot` / `ui_click` / `ui_fill`
@@ -668,6 +714,135 @@ claude mcp add my-app     -- openshell mcp --app --start --project /path/to/my-a
 ```
 
 See [agents.md](agents.md) for other agents, the tool list and permissions.
+
+
+================================================================================
+FILE: docs/building-blocks.md
+================================================================================
+
+# Building blocks: build only what you need
+
+An OpenShell app is assembled from four independent building blocks. Every block is optional – use one, several or
+all of them:
+
+| Block | What it is | Add it |
+|---|---|---|
+| **Frontend** | A web UI in the native window (static files, a dev server or a URL) | `openshell add frontend` |
+| **Backend** | An HTTP service in any language, supervised by OpenShell | `openshell add backend [--lang python\|node]` |
+| **Database** | A built-in SQLite database with migrations, managed by OpenShell | `openshell add database [name]` |
+| **Functions** | Functions for AI agents (MCP tools) implemented as scripts – no server | `openshell add function <name> [--lang python\|node]` |
+
+Start a new app with any combination:
+
+```bash
+openshell create my-app --with frontend,database          # UI that stores data – no backend
+openshell create my-app --with database,functions         # an AI interface over a database – no UI, no server
+openshell create my-app --with backend                    # a supervised API service
+openshell create my-app --with frontend,backend,database,functions
+openshell create my-app                                   # in a terminal: asks which blocks you want
+```
+
+Blocks can be added later in any order; they connect themselves (a frontend added to an app with a backend proxies
+`/api` to it, the backend receives the database path, the frontend gets write access to the database, …).
+
+## Typical combinations
+
+| You want | Blocks | How it works |
+|---|---|---|
+| A desktop UI with local storage | frontend + database | The page uses `OpenShell.db.query/execute` from the [SDK](sdk.md). |
+| An AI interface to your data | database + functions | Agents get your functions plus `db_query` / `db_execute` (as allowed by `agent_access`). |
+| Tools for AI agents only | functions | Each function is a script: JSON in, JSON out. The app has no UI and no server. |
+| A background service | backend | Runs headless or in the tray (`"window": {"enabled": false}`). |
+| A classic web app as desktop app | frontend + backend (+ database) | As before; the backend can use `OPENSHELL_DB_MAIN`. |
+
+Apps **without a frontend** show OpenShell's console in the window: services, databases (with a data browser),
+functions (with a "Run" button), logs and the commands to connect AI agents. Set `"window": {"enabled": false}` to
+run only in the tray instead.
+
+## Frontend
+
+```json
+"frontend": { "dist": "web", "watch": ["web"] }
+```
+
+Any frontend works – static files, a Vite/Next dev server (`command` + `url`) or an external URL; see
+[configuration.md](configuration.md#frontend). The starter page from `openshell add frontend` adapts to the other
+blocks: it shows a backend call, a notes list from the database and the app's functions.
+
+## Backend
+
+```json
+{
+  "name": "backend",
+  "command": ["python", "main.py"],
+  "cwd": "backend",
+  "port": "auto",
+  "healthcheck": "http://127.0.0.1:${port}/health",
+  "watch": ["backend"]
+}
+```
+
+Any language ([languages.md](languages.md)). Read `PORT`, bind `127.0.0.1`, answer `/health`.
+
+## Database
+
+```json
+"databases": [
+  { "name": "main", "migrations": "db/migrations", "agent_access": "write" }
+]
+```
+
+- **File**: `<name>.db` in the app's data directory (`OPENSHELL_DATA_DIR`, per user for installed apps). Override
+  with `"path"` (relative to the data directory, or absolute).
+- **Migrations**: every `*.sql` file in `migrations` is applied once, in file-name order, inside a transaction.
+  Add new files (`002_add_tags.sql`) – never edit applied ones.
+- **Services and functions** get the path as `OPENSHELL_DB_<NAME>` (e.g. `OPENSHELL_DB_MAIN`) and the main database
+  as `DATABASE_URL=sqlite:///…`. Any SQLite library works (Python `sqlite3`, `better-sqlite3`, JDBC, …).
+- **Frontend**: `OpenShell.db.query(sql, params)` / `OpenShell.db.execute(sql, params)`. Writing needs `actions` in
+  `agents.sdk_permissions` (`openshell add` sets it).
+- **Agents**: `db_list`, `db_schema`, `db_query` (read-only, enforced by SQLite) and `db_execute`, controlled per
+  database by `agent_access`: `none`, `read` (default) or `write`. The schema is also an MCP resource
+  (`openshell://db/<name>/schema`).
+- WAL mode and a busy timeout are set, so the shell, services and functions can use the file at the same time.
+- The console's data browser shows every table.
+
+PostgreSQL, MySQL & co. run as services (`"external": true` with a TCP health check, or a container command) and are
+used from your backend.
+
+## Functions
+
+```json
+"capabilities": [
+  {
+    "name": "summarize_notes",
+    "description": "Summarize all open notes",
+    "permission": "read",
+    "input_schema": { "type": "object", "properties": { "limit": { "type": "integer" } } },
+    "run": ["python", "tools/summarize_notes.py"]
+  }
+]
+```
+
+```python
+import json, os, sqlite3, sys
+
+args = json.load(sys.stdin)                       # input object
+con = sqlite3.connect(os.environ["OPENSHELL_DB_MAIN"])
+rows = con.execute("SELECT title FROM notes WHERE done = 0 LIMIT ?", (args.get("limit", 20),)).fetchall()
+print(json.dumps({"open": [r[0] for r in rows]})) # result
+```
+
+- Input: JSON object on stdin (also in `OPENSHELL_INPUT`). Output: JSON or text on stdout. Errors: message on stderr
+  and a non-zero exit code. `"run": {"command": …, "cwd": …, "env": {…}, "timeout_ms": 60000}` for more control.
+- Any language: `["node", "tools/x.mjs"]`, `["java", "-cp", "build", "Tool"]`, a compiled binary, …
+- Agents see functions as MCP tools in the app profile (`openshell mcp --app`) under their own names, and as
+  `cap_<name>` in the developer profile. The frontend calls them with `OpenShell.invoke(name, input)`, the console
+  has a "Run" button, the CLI `openshell call cap_<name> '<json>'`.
+- `stderr` output is in the logs (`openshell logs fn:<name>`).
+
+Other function sources, also listed as capabilities: HTTP endpoints of a backend (`"http"`), declared tasks
+(`"task"`), operations imported from an OpenAPI document (`"openapi"` on a service) and actions registered by the
+frontend (`OpenShell.agent.registerAction`). See [agents.md](agents.md#capabilities-the-applications-own-functions).
 
 
 ================================================================================
@@ -862,9 +1037,10 @@ Editor completion: add `"$schema": "https://raw.githubusercontent.com/RobinsSupe
 | `window` | object | Native window settings. |
 | `frontend` | object | What the window shows. |
 | `services` | array | Backends, databases, workers, AI servers, … |
+| `databases` | array | Built-in SQLite databases managed by OpenShell. |
 | `runtime` | object | Runtime manager behaviour. |
 | `agents` | object | Agent Interaction Layer: permissions, approvals, providers. |
-| `capabilities` | array | Functions the app exposes to agents. |
+| `capabilities` | array | Functions the app exposes to agents (HTTP endpoint, script, task). |
 | `tasks` | object | Named commands (`"test": "pytest"`), runnable by agents with the `system` scope. |
 | `package` | object | Installer settings – see [installers.md](installers.md). |
 
@@ -881,6 +1057,7 @@ Editor completion: add `"$schema": "https://raw.githubusercontent.com/RobinsSupe
 | `title_bar` | `"native"` | `"overlay"`: the frontend draws the title bar (see [sdk.md](sdk.md#own-title-bar)). No system title bar on Windows/Linux; window buttons over the content on macOS |
 | `tray` | `true` | Show a tray icon (show, reload, runtime panel, restart services, quit) |
 | `devtools` | dev mode only | Allow WebView devtools |
+| `enabled` | `true` | `false`: no window – the app runs in the tray / background (services, databases, agent functions). Apps without a frontend show OpenShell's console in the window |
 
 ## `frontend`
 
@@ -961,6 +1138,7 @@ Usable in commands, args, env values, URLs, health checks and proxy targets:
 | `control_port` | random | Fixed port for the control API |
 | `log_buffer_lines` | 10000 | Lines kept in memory (files in `.openshell/logs/`) |
 | `shutdown_timeout_ms` | 5000 | Default grace period when stopping |
+| `launch_at_login` | `false` | Start the installed app when the user logs in (installed apps only) |
 
 ## `agents`
 
@@ -988,8 +1166,34 @@ Permission scopes: `read`, `ui`, `actions` (alias `write`), `services`, `files`,
 }
 ```
 
-Targets: `http` (`service` + `path`, or `url`; GET/DELETE send the input as query parameters, other methods as JSON
-body) or `task` (name of a task). Agents see each capability as a tool `cap_<name>` and via `app_invoke`.
+Exactly one target:
+
+- `http` – `service` + `path`, or `url`; GET/DELETE send the input as query parameters, other methods as JSON body.
+- `run` – a script/program: `["python", "tools/x.py"]` or `{ "command", "cwd", "env", "timeout_ms" }`. It receives the
+  input as JSON on stdin (and in `OPENSHELL_INPUT`) and prints its result (JSON or text) on stdout; a non-zero exit
+  code is an error (message from stderr). No server needed – see [building-blocks.md](building-blocks.md#functions).
+- `task` – name of a task (input is ignored).
+
+Agents see each capability as a tool `cap_<name>` (developer profile), under its plain name (app profile) and via
+`app_invoke`. The frontend calls them with `OpenShell.invoke(name, input)`.
+
+## `databases[]`
+
+```json
+{ "name": "main", "migrations": "db/migrations", "agent_access": "write" }
+```
+
+| Field | Default | Description |
+|---|---|---|
+| `name` | – | `[a-z0-9_]`; services get the path as `OPENSHELL_DB_<NAME>` |
+| `type` | `"sqlite"` | Engine (SQLite is built in) |
+| `path` | `<name>.db` | File, relative to the app's data directory (`OPENSHELL_DATA_DIR`) or absolute |
+| `migrations` | – | Folder of `*.sql` files, applied once each in file-name order |
+| `agent_access` | `"read"` | `none`, `read` (`db_list`, `db_schema`, `db_query`) or `write` (also `db_execute`) |
+| `description` | – | Shown to agents |
+
+The main (or only) database is also exported as `DATABASE_URL=sqlite:///…`. Details:
+[building-blocks.md](building-blocks.md#database).
 
 ## TOML
 
@@ -1229,8 +1433,19 @@ Send `X-OpenShell-Agent: <name>` to identify the agent in the audit log. From a 
 | `service_start` / `service_stop` / `service_restart` | services | Waits until the service is healthy and returns recent logs on failure |
 | `fs_list` / `fs_read` / `fs_search` | files | Project files |
 | `fs_write` | code | Create/overwrite a project file |
+| `db_list` / `db_schema` / `db_query` | read | Databases, schema, read-only SQL (per database `agent_access` ≥ `read`) |
+| `db_execute` | actions | SQL that changes data or schema (`agent_access: write`) |
 | `task_run` | system | Run a task from `tasks` and return its output |
 | `ui_eval` | system | Evaluate JavaScript in the page |
+
+## Resources and notifications
+
+Besides tools, the MCP server offers read-only **resources**: `openshell://status`, `openshell://config`,
+`openshell://logs`, `openshell://capabilities` (developer profile), `openshell://app` (app profile) and
+`openshell://db/<name>/schema` for every database agents may read.
+
+`openshell mcp` (stdio) sends `notifications/tools/list_changed` whenever the tool list changes – for example when the
+frontend registers an action, an OpenAPI document is imported or the app is started after the agent connected.
 
 ## UI automation
 
@@ -1265,7 +1480,10 @@ exposes. Three sources:
   `"/swagger/v1/swagger.json"` (ASP.NET) or a file/URL on a service. When the service becomes healthy, every operation
   becomes a tool: name from `operationId`, input schema from path/query parameters and the JSON request body,
   `GET` → scope `read`, other methods → `actions`. Filter with `{ "location": "...", "include": [...], "exclude": [...], "prefix": "shop" }`.
-- **Declared** in `openshell.json` (`capabilities`), backed by an HTTP endpoint or a task.
+- **Declared** in `openshell.json` (`capabilities`), backed by an HTTP endpoint, a **script** (`run` – JSON in on
+  stdin, JSON out on stdout, no server needed) or a task.
+- **Databases**: with `agent_access` `read`/`write`, the app profile also offers `db_list`, `db_schema`, `db_query`
+  and `db_execute` – an app can be *only* a database plus functions.
 - **Registered by the frontend** at runtime with the SDK:
 
 ```js
@@ -1430,6 +1648,8 @@ binary), `NO_COLOR`.
 | Command | Description |
 |---|---|
 | `openshell create <name> [-t <template>]` | New project from a template (`vanilla-python` default, `react-python`, `react-node`, `vue-python`, `svelte-go`, `vanilla-java`, `vanilla-cpp`, `custom`). `--list` shows all. |
+| `openshell create <name> --with frontend,backend,database,functions [--lang python\|node]` | New project composed of [building blocks](building-blocks.md). Without `--template`/`--with` the terminal asks. |
+| `openshell add frontend \| backend [--lang …] \| database [name] \| function <name> [--lang …]` | Add a building block to the current app (files + `openshell.json`). |
 | `openshell init [--name <n>] [--toml] [--force]` | Generate a config for an existing project (auto-detection) and an `AGENTS.md` for coding agents if none exists. |
 | `openshell doctor` | Validate config, commands, directories, ports, desktop binary, WebView2, toolchain. Exit code 1 on errors. |
 | `openshell schema` | Print the JSON Schema of the configuration. |
@@ -1509,14 +1729,25 @@ await OpenShell.window.minimize() / maximize() / unmaximize() / show() / hide() 
 await OpenShell.notify("Export finished", "Saved to reports/q3.pdf")                       // ui
 await OpenShell.providers()             // read – configured and local AI providers
 
+// built-in databases (databases in openshell.json) – a frontend-only app can store data without a backend
+await OpenShell.db.list()                                            // read
+await OpenShell.db.query("SELECT * FROM notes WHERE done = ?", [0])  // read  → { columns, rows, row_count }
+await OpenShell.db.execute("INSERT INTO notes (title) VALUES (:t)", { t: "Hi" })   // actions → { changes, last_insert_rowid }
+await OpenShell.db.schema("notes")                                   // read
+
+// the app's functions (capabilities) – the same ones agents use
+await OpenShell.invoke("summarize_notes", { limit: 10 })            // the capability's own scope
+
 const unregister = OpenShell.agent.registerAction(name, { description, input_schema, permission }, handler)
 OpenShell.agent.unregisterAction(name)
 
 await OpenShell.call(tool, args)        // any tool allowed by agents.sdk_permissions
 ```
 
-Calls are checked against `agents.sdk_permissions` (default `["read", "ui"]`). To let the frontend restart services,
-add `"services"`. Failures throw `OpenShellError`.
+Calls are checked against `agents.sdk_permissions` (default `["read", "ui"]`). To let the frontend write to a
+database or call `actions` functions, add `"actions"` (`openshell add database` does this when the app has a
+frontend); to restart services, add `"services"`. A database's `agent_access` limits agents only, not the app's own
+frontend. Failures throw `OpenShellError`.
 
 ## Exposing frontend actions to agents
 

@@ -52,6 +52,10 @@ pub struct Config {
     /// Installer settings (`openshell package`).
     #[serde(default)]
     pub package: PackageConfig,
+    /// Built-in databases (SQLite), managed by OpenShell: created, migrated, exposed to services
+    /// (`OPENSHELL_DB_<NAME>`, `DATABASE_URL`), to the frontend SDK and – if allowed – to agents.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub databases: Vec<DatabaseConfig>,
 }
 
 fn default_version() -> u32 {
@@ -107,6 +111,10 @@ pub struct WindowConfig {
     /// frontend gets `window.__OPENSHELL__.window` (drag, minimize, maximize, close, runtime menu).
     #[serde(default)]
     pub title_bar: TitleBar,
+    /// Open a window. `false`: no window – the app runs in the tray / background (services,
+    /// databases, agent tools). Apps without a frontend show OpenShell's console in the window.
+    #[serde(default = "default_true")]
+    pub enabled: bool,
 }
 
 /// Who draws the window's title bar.
@@ -141,6 +149,7 @@ impl Default for WindowConfig {
             tray: true,
             devtools: None,
             title_bar: TitleBar::Native,
+            enabled: true,
         }
     }
 }
@@ -542,6 +551,9 @@ pub struct RuntimeConfig {
     /// Grace period for stopping services before they are killed.
     #[serde(default = "default_shutdown_timeout")]
     pub shutdown_timeout_ms: u64,
+    /// Start the installed app when the user logs in (applies to installed apps only).
+    #[serde(default)]
+    pub launch_at_login: bool,
 }
 
 impl Default for RuntimeConfig {
@@ -552,6 +564,7 @@ impl Default for RuntimeConfig {
             control_port: None,
             log_buffer_lines: default_log_lines(),
             shutdown_timeout_ms: default_shutdown_timeout(),
+            launch_at_login: false,
         }
     }
 }
@@ -757,6 +770,10 @@ pub struct CapabilityConfig {
     /// Invoke by running a declared task.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub task: Option<String>,
+    /// Invoke by running a script/program: it receives the input as JSON on stdin (and in
+    /// `OPENSHELL_INPUT`) and prints its result (JSON or text) on stdout. No server needed.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub run: Option<RunSpec>,
 }
 
 fn default_cap_permission() -> Permission {
@@ -838,6 +855,7 @@ impl Config {
             capabilities: vec![],
             tasks: BTreeMap::new(),
             package: PackageConfig::default(),
+            databases: vec![],
         }
     }
 
@@ -983,5 +1001,98 @@ pub fn slug(name: &str) -> String {
         "app".into()
     } else {
         s
+    }
+}
+
+/// A function implemented as a program: a command (`["python", "tools/greet.py"]`) or a detailed object.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(untagged)]
+pub enum RunSpec {
+    Command(CommandSpec),
+    Detailed(RunConfig),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RunConfig {
+    pub command: CommandSpec,
+    /// Working directory relative to the project root (default: project root).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cwd: Option<String>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub env: BTreeMap<String, String>,
+    #[serde(default = "default_run_timeout")]
+    pub timeout_ms: u64,
+}
+
+fn default_run_timeout() -> u64 {
+    60_000
+}
+
+impl RunSpec {
+    pub fn normalized(&self) -> RunConfig {
+        match self {
+            RunSpec::Command(c) => RunConfig {
+                command: c.clone(),
+                cwd: None,
+                env: BTreeMap::new(),
+                timeout_ms: default_run_timeout(),
+            },
+            RunSpec::Detailed(r) => r.clone(),
+        }
+    }
+}
+
+/// Database engines OpenShell manages itself.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum DatabaseKind {
+    #[default]
+    Sqlite,
+}
+
+/// What agents may do with a database (the app's own frontend always has access via the SDK
+/// within `agents.sdk_permissions`).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum DatabaseAccess {
+    None,
+    /// `db_list`, `db_schema`, `db_query` (SELECT only).
+    #[default]
+    Read,
+    /// Additionally `db_execute` (INSERT/UPDATE/DELETE/DDL) – needs the `actions` scope.
+    Write,
+}
+
+/// A database managed by OpenShell.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct DatabaseConfig {
+    /// Unique name (`[a-z0-9_]`), e.g. `main`.
+    pub name: String,
+    #[serde(rename = "type", default)]
+    pub kind: DatabaseKind,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    /// Database file. Relative paths are inside the app's data directory (`OPENSHELL_DATA_DIR`),
+    /// so installed apps keep their data per user. Default: `<name>.db`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
+    /// Directory (relative to the project) with `*.sql` migrations, applied once each, in file-name order.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub migrations: Option<String>,
+    /// Agent access: `none`, `read` (default) or `write`.
+    #[serde(default)]
+    pub agent_access: DatabaseAccess,
+}
+
+impl DatabaseConfig {
+    pub fn file_name(&self) -> String {
+        self.path.clone().unwrap_or_else(|| format!("{}.db", self.name))
+    }
+
+    /// Environment variable that carries the database path to services and functions.
+    pub fn env_var(&self) -> String {
+        format!("OPENSHELL_DB_{}", self.name.to_uppercase())
     }
 }

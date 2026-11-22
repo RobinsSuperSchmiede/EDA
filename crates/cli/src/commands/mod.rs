@@ -1,3 +1,4 @@
+mod add;
 mod control;
 mod create;
 mod doctor;
@@ -6,7 +7,9 @@ mod mcp;
 mod package;
 mod run;
 
-use crate::Cmd;
+pub use add::Lang;
+
+use crate::{AddBlock, Cmd};
 use anyhow::Result;
 use openshell_core::config::Project;
 use openshell_core::state::ControlClient;
@@ -19,9 +22,18 @@ pub async fn run(project: Option<PathBuf>, cmd: Cmd) -> Result<()> {
     let dir = project.clone().unwrap_or_else(|| PathBuf::from("."));
     match cmd {
         Cmd::Init { force, name, toml } => init::run(&dir, force, name, toml),
-        Cmd::Create { name, template, list } => {
-            create::run(name.as_deref().unwrap_or_default(), &template, list)
+        Cmd::Create { name, template, with, lang, list } => {
+            create::run_command(name.as_deref().unwrap_or_default(), template, with, lang, list)
         }
+        Cmd::Add { block } => add::run(
+            &dir,
+            match block {
+                AddBlock::Frontend => add::Block::Frontend,
+                AddBlock::Backend { lang } => add::Block::Backend(lang),
+                AddBlock::Database { name } => add::Block::Database(name),
+                AddBlock::Function { name, lang } => add::Block::Function(name, lang),
+            },
+        ),
         Cmd::Guide => {
             print!("{}", GUIDE);
             Ok(())

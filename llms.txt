@@ -8,6 +8,7 @@ Key facts for building apps: services read `PORT` and bind `127.0.0.1`, answer `
 
 - [AI app development guide](https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/ai/app-development.md): app contract, workflow, verification commands, config cheat sheet, pitfalls (also `openshell guide`)
 - [Getting started](https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/getting-started.md): install, create, run
+- [Building blocks](https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/building-blocks.md): frontend, backend, built-in database, script functions – combine freely (`openshell create --with`, `openshell add`)
 - [Tutorial](https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/tutorial.md): a complete app step by step
 - [Configuration reference](https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/configuration.md): every field of openshell.json
 - [Languages](https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/languages.md): Java, Spring Boot, C++/CMake, Go, Rust, .NET

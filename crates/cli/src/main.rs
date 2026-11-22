@@ -37,16 +37,30 @@ enum Command {
         toml: bool,
     },
     /// Create a new project from a template
+    ///
+    /// Either from a template (`--template react-python`) or composed from building blocks
+    /// (`--with frontend,database,functions`). Without both, the terminal asks which blocks you want.
     Create {
         /// Directory / name of the new project
         #[arg(required_unless_present = "list")]
         name: Option<String>,
-        /// Template to use
-        #[arg(short, long, default_value = "vanilla-python")]
-        template: String,
+        /// Template to use (see --list)
+        #[arg(short, long, conflicts_with = "with")]
+        template: Option<String>,
+        /// Compose the app from building blocks: frontend, backend, database, functions (comma-separated)
+        #[arg(short, long, value_delimiter = ',')]
+        with: Vec<String>,
+        /// Language of the backend and functions when using --with
+        #[arg(long, value_enum, default_value = "python")]
+        lang: commands::Lang,
         /// List available templates
         #[arg(long)]
         list: bool,
+    },
+    /// Add a building block to the app: frontend, backend, database or function
+    Add {
+        #[command(subcommand)]
+        block: AddBlock,
     },
     /// Run the app in development mode (hot reload, file watching, broad agent access)
     Dev {
@@ -142,6 +156,31 @@ enum Command {
     Schema,
     /// Print the guide for AI coding agents that build apps on OpenShell
     Guide,
+}
+
+#[derive(Subcommand)]
+enum AddBlock {
+    /// A web UI in web/ (static HTML/JS, served by OpenShell)
+    Frontend,
+    /// An HTTP service in backend/ (port, health check, restart on change)
+    Backend {
+        #[arg(long, value_enum, default_value = "python")]
+        lang: commands::Lang,
+    },
+    /// A built-in SQLite database with migrations (agents and the frontend can use it)
+    Database {
+        /// Database name
+        #[arg(default_value = "main")]
+        name: String,
+    },
+    /// A function for AI agents (MCP tool) implemented as a script – no server needed
+    #[command(alias = "tool")]
+    Function {
+        /// Function name (lowercase, digits, `_`)
+        name: String,
+        #[arg(long, value_enum, default_value = "python")]
+        lang: commands::Lang,
+    },
 }
 
 fn main() {

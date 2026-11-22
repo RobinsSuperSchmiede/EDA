@@ -11,6 +11,7 @@ DOCS = [
     "README.md",
     "docs/ai/app-development.md",
     "docs/getting-started.md",
+    "docs/building-blocks.md",
     "docs/tutorial.md",
     "docs/configuration.md",
     "docs/languages.md",

@@ -360,6 +360,25 @@ impl Runtime {
         self.inner.extra_env.write().unwrap().insert(key.into(), value.into());
     }
 
+    /// Environment every process started by OpenShell gets (without service-specific variables):
+    /// `OPENSHELL_*`, `OPENSHELL_DATA_DIR`, database paths, control URL, `PYTHONUNBUFFERED`.
+    pub fn base_env(&self) -> BTreeMap<String, String> {
+        let mut env = BTreeMap::new();
+        env.insert("OPENSHELL".into(), "1".into());
+        env.insert("OPENSHELL_MODE".into(), self.inner.mode.to_string());
+        env.insert("OPENSHELL_PROJECT_ROOT".into(), self.inner.root.display().to_string());
+        if std::env::var_os("PYTHONUNBUFFERED").is_none() {
+            env.insert("PYTHONUNBUFFERED".into(), "1".into());
+        }
+        if std::env::var_os("PYTHONIOENCODING").is_none() {
+            env.insert("PYTHONIOENCODING".into(), "utf-8".into());
+        }
+        for (k, v) in self.inner.extra_env.read().unwrap().iter() {
+            env.insert(k.clone(), v.clone());
+        }
+        env
+    }
+
     /// HTML snippet injected into pages served by the static frontend server.
     pub fn set_html_injection(&self, snippet: Option<String>) {
         *self.inner.html_injection.write().unwrap() = snippet;

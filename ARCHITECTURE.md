@@ -52,11 +52,12 @@ permission defaults (development vs. production).
 | **Permission scopes + approval queue + audit log** | Agents never get blanket OS access. Production defaults to read/ui/actions. Critical scopes require a human decision (dialog or CLI); everything is logged to `.openshell/audit.jsonl`. |
 | **Project-scoped file tools** | `fs_*` tools resolve paths relative to the project root, reject `..`, absolute paths, symlink escapes and `.openshell/`. |
 | **No arbitrary shell commands for agents** | Only tasks declared in the config (`task_run`, scope `system`). |
-| **Two agent profiles** (`/mcp` full, `/mcp/app` app) | Agents that *use* an application should see a small, domain-specific tool list (its capabilities, OpenAPI operations, frontend actions), not 28 developer tools. |
+| **Two agent profiles** (`/mcp` full, `/mcp/app` app) | Agents that *use* an application should see a small, domain-specific tool list (its capabilities, OpenAPI operations, frontend actions), not 32 developer tools. |
 | **OpenAPI import** | Most backend frameworks already describe their API; importing it makes apps agent-usable without extra code. |
 | **Installers re-brand the generic binary** (`openshell-package`) | Copy `openshell-desktop`, replace the exe icon (editpe), put the app into `app/`, run the Tauri bundler. No per-app compilation, so every app gets shell updates by re-packaging. |
 | **Per-user state for installed apps** | `runtime.json`, logs, audit and `OPENSHELL_DATA_DIR` go to the user's local data directory (bundle identifier), never into the install directory. |
 | **Title bar menu via window subclassing (Windows)** | Right-clicking the caption (`WM_NCRBUTTONUP`/`HTCAPTION`) opens a Tauri popup menu with live service data instead of the system menu; Alt+Space keeps the system menu. Tray (all platforms) and menu bar (macOS) show the same menu. |
+| **Independent building blocks** (frontend, backend, database, functions) | No part is mandatory. A database is managed by the shell itself (SQLite, migrations, WAL) so a frontend or agent functions can store data without a backend; functions are scripts run per call (JSON over stdin/stdout) so an AI interface needs no server. `openshell add` edits `openshell.json` while keeping key order. |
 | **Build steps run inside the supervisor** | Compile → start → watch → recompile is one lifecycle; build errors become a `failed` state with compiler output in the logs, retried on the next change. |
 
 ## Lifecycle of `openshell dev`

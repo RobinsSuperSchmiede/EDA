@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{app_name}}</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>{{app_name}}</h1>
+        <p class="muted">An OpenShell app. Edit <code>web/</code> – the window reloads automatically.</p>
+      </header>
+
+      <!-- shown when the app has a backend service (GET /api/hello) -->
+      <section id="backend" hidden>
+        <h2>Backend</h2>
+        <button type="button" id="hello">Call the backend</button>
+        <pre id="hello-result" class="muted"></pre>
+      </section>
+
+      <!-- shown when the app has a database with a `notes` table -->
+      <section id="notes" hidden>
+        <h2>Notes <span class="muted">(stored in the app database)</span></h2>
+        <form id="note-form">
+          <label for="note" class="sr-only">New note</label>
+          <input id="note" name="note" placeholder="Write a note…" autocomplete="off" />
+          <button type="submit">Add</button>
+        </form>
+        <ul id="note-list"></ul>
+      </section>
+
+      <!-- shown when the app has functions for AI agents -->
+      <section id="functions" hidden>
+        <h2>Functions for AI agents</h2>
+        <ul id="function-list"></ul>
+      </section>
+
+      <p id="error" role="alert" hidden></p>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

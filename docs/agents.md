@@ -107,8 +107,19 @@ Send `X-OpenShell-Agent: <name>` to identify the agent in the audit log. From a 
 | `service_start` / `service_stop` / `service_restart` | services | Waits until the service is healthy and returns recent logs on failure |
 | `fs_list` / `fs_read` / `fs_search` | files | Project files |
 | `fs_write` | code | Create/overwrite a project file |
+| `db_list` / `db_schema` / `db_query` | read | Databases, schema, read-only SQL (per database `agent_access` ≥ `read`) |
+| `db_execute` | actions | SQL that changes data or schema (`agent_access: write`) |
 | `task_run` | system | Run a task from `tasks` and return its output |
 | `ui_eval` | system | Evaluate JavaScript in the page |
+
+## Resources and notifications
+
+Besides tools, the MCP server offers read-only **resources**: `openshell://status`, `openshell://config`,
+`openshell://logs`, `openshell://capabilities` (developer profile), `openshell://app` (app profile) and
+`openshell://db/<name>/schema` for every database agents may read.
+
+`openshell mcp` (stdio) sends `notifications/tools/list_changed` whenever the tool list changes – for example when the
+frontend registers an action, an OpenAPI document is imported or the app is started after the agent connected.
 
 ## UI automation
 
@@ -143,7 +154,10 @@ exposes. Three sources:
   `"/swagger/v1/swagger.json"` (ASP.NET) or a file/URL on a service. When the service becomes healthy, every operation
   becomes a tool: name from `operationId`, input schema from path/query parameters and the JSON request body,
   `GET` → scope `read`, other methods → `actions`. Filter with `{ "location": "...", "include": [...], "exclude": [...], "prefix": "shop" }`.
-- **Declared** in `openshell.json` (`capabilities`), backed by an HTTP endpoint or a task.
+- **Declared** in `openshell.json` (`capabilities`), backed by an HTTP endpoint, a **script** (`run` – JSON in on
+  stdin, JSON out on stdout, no server needed) or a task.
+- **Databases**: with `agent_access` `read`/`write`, the app profile also offers `db_list`, `db_schema`, `db_query`
+  and `db_execute` – an app can be *only* a database plus functions.
 - **Registered by the frontend** at runtime with the SDK:
 
 ```js

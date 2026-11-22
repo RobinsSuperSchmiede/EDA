@@ -10,6 +10,8 @@ fn main() {
             "resolve_approval",
             "open_runtime_panel",
             "show_window_menu",
+            "db_rows",
+            "call_function",
         ]),
     ))
     .expect("failed to run tauri-build");

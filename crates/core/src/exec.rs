@@ -65,6 +65,8 @@ impl Capability {
                 "source": "config",
                 "target": if let Some(h) = &c.http {
                     format!("{} {}{}", h.method.to_uppercase(), h.service.clone().map(|s| format!("{s}:")).unwrap_or_default(), if h.path.is_empty() { h.url.clone().unwrap_or_default() } else { h.path.clone() })
+                } else if let Some(r) = &c.run {
+                    format!("run {}", r.normalized().command.display())
                 } else {
                     format!("task {}", c.task.clone().unwrap_or_default())
                 },
@@ -116,6 +118,17 @@ impl Shell {
             }
         }
         caps
+    }
+
+    /// Short list of capabilities (name, source, permission) for status views.
+    pub fn capabilities_summary(&self) -> Vec<Value> {
+        self.capabilities()
+            .iter()
+            .map(|c| {
+                let j = c.to_json();
+                json!({ "name": j["name"], "description": j["description"], "permission": j["permission"], "source": j["source"] })
+            })
+            .collect()
     }
 
     pub(crate) fn capability(&self, name: &str) -> Option<Capability> {
@@ -200,7 +213,7 @@ impl Shell {
             Decision::Allow => {}
         }
 
-        let result = self.execute(name, &args).await;
+        let result = self.execute(name, &args, &ctx).await;
         match result {
             Ok(v) => {
                 audit(AuditOutcome::Ok, None, approved);
@@ -223,7 +236,7 @@ impl Shell {
         self.inner.hub.call(arg_str(args, "page"), method, params, timeout).await
     }
 
-    async fn execute(&self, name: &str, args: &Value) -> Result<Value, String> {
+    async fn execute(&self, name: &str, args: &Value, ctx: &CallContext) -> Result<Value, String> {
         let rt = &self.inner.runtime;
         let root = self.inner.project.root.clone();
         let ui_timeout = Duration::from_secs(15);
@@ -338,6 +351,25 @@ impl Shell {
                 fs::write(&root, require(args, "path")?, content)
             }
             "task_run" => self.run_task(require(args, "name")?).await,
+            "db_list" => Ok(json!({ "databases": self.visible_databases(ctx) })),
+            "db_schema" | "db_query" | "db_execute" => {
+                let db = self.inner.dbs.get(arg_str(args, "database"))?;
+                // the app's own frontend (SDK) is governed by sdk_permissions only
+                if ctx.channel != "sdk" {
+                    db.agent_allowed(name == "db_execute")?;
+                }
+                let sql = || require(args, "sql");
+                let params = args.get("params").cloned().unwrap_or(Value::Null);
+                match name {
+                    "db_schema" => db.schema(arg_str(args, "table")),
+                    "db_query" => db.query(sql()?, &params),
+                    _ => db.execute(
+                        sql()?,
+                        &params,
+                        args.get("script").and_then(|v| v.as_bool()).unwrap_or(false),
+                    ),
+                }
+            }
             "app_invoke" => {
                 let cap = require(args, "name")?;
                 self.invoke_capability(cap, args.get("input").cloned().unwrap_or(json!({}))).await
@@ -379,6 +411,74 @@ impl Shell {
                 "Use ui_snapshot to see the UI and get element refs for ui_click / ui_fill.",
             ],
         })
+    }
+
+    /// Databases an agent may see (all of them for the app's own frontend).
+    fn visible_databases(&self, ctx: &CallContext) -> Vec<Value> {
+        self.inner
+            .dbs
+            .all()
+            .iter()
+            .filter(|d| ctx.channel == "sdk" || d.agent_allowed(false).is_ok())
+            .map(|d| d.summary())
+            .collect()
+    }
+
+    /// A `run` function: input as JSON on stdin (and in `OPENSHELL_INPUT`), result on stdout.
+    async fn run_function(
+        &self,
+        name: &str,
+        run: &openshell_config::RunConfig,
+        input: Value,
+    ) -> Result<Value, String> {
+        use tokio::io::AsyncWriteExt;
+        let cwd = run
+            .cwd
+            .as_ref()
+            .map(|c| self.inner.project.resolve_path(c))
+            .unwrap_or_else(|| self.inner.project.root.clone());
+        let input_text = input.to_string();
+        let mut env = self.inner.runtime.base_env();
+        env.insert("OPENSHELL_FUNCTION".into(), name.to_string());
+        env.insert("OPENSHELL_INPUT".into(), input_text.clone());
+        env.extend(run.env.clone());
+        let mut cmd = build_command(&run.command, &[], &cwd, &env).map_err(|e| e.to_string())?;
+        cmd.stdin(std::process::Stdio::piped());
+        let started = Instant::now();
+        let mut child = cmd.spawn().map_err(|e| format!("cannot run `{}`: {e}", run.command.display()))?;
+        if let Some(mut stdin) = child.stdin.take() {
+            let _ = stdin.write_all(input_text.as_bytes()).await;
+            drop(stdin);
+        }
+        let output = tokio::time::timeout(Duration::from_millis(run.timeout_ms), child.wait_with_output())
+            .await
+            .map_err(|_| format!("function `{name}` timed out after {}ms", run.timeout_ms))?
+            .map_err(|e| e.to_string())?;
+        let logs = self.inner.runtime.logs();
+        let log_name = format!("fn:{name}");
+        let stderr = openshell_runtime::logs::strip_ansi(&String::from_utf8_lossy(&output.stderr));
+        for line in stderr.lines().filter(|l| !l.trim().is_empty()) {
+            logs.push(&log_name, openshell_runtime::LogStream::Stderr, line);
+        }
+        logs.system(
+            &log_name,
+            format!(
+                "exit {} after {}ms",
+                output.status.code().map(|c| c.to_string()).unwrap_or_else(|| "?".into()),
+                started.elapsed().as_millis()
+            ),
+        );
+        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !output.status.success() {
+            let detail = if stderr.trim().is_empty() { stdout } else { stderr.trim().to_string() };
+            let tail: String =
+                detail.chars().rev().take(4000).collect::<Vec<_>>().into_iter().rev().collect();
+            return Err(format!("function `{name}` failed ({}): {tail}", output.status));
+        }
+        if stdout.is_empty() {
+            return Ok(Value::Null);
+        }
+        Ok(serde_json::from_str(&stdout).unwrap_or(Value::String(stdout)))
     }
 
     async fn run_task(&self, name: &str) -> Result<Value, String> {
@@ -456,6 +556,9 @@ impl Shell {
                     .await
             }
             Capability::Config(c) => {
+                if let Some(run) = &c.run {
+                    return self.run_function(&c.name, &run.normalized(), input).await;
+                }
                 if let Some(task) = &c.task {
                     return self.run_task(task).await;
                 }
@@ -555,6 +658,20 @@ impl ToolProvider for AppTools {
                 input_schema: cap.input_schema(),
             });
         }
+        // databases the app shares with agents
+        let dbs = self.0.inner.dbs.all();
+        let readable = dbs.iter().any(|d| d.agent_allowed(false).is_ok());
+        let writable = dbs.iter().any(|d| d.agent_allowed(true).is_ok());
+        for t in openshell_agent::tools::builtin_tools() {
+            let include = match t.name.as_str() {
+                "db_list" | "db_schema" | "db_query" => readable,
+                "db_execute" => writable,
+                _ => false,
+            };
+            if include && !tools.iter().any(|x| x.name == t.name) {
+                tools.push(t);
+            }
+        }
         tools
     }
 
@@ -574,7 +691,39 @@ impl ToolProvider for AppTools {
                     json!({ "app": self.0.runtime().app_name(), "healthy": healthy, "services": services }),
                 );
             }
+            if name.starts_with("db_") && !self.0.capabilities().iter().any(|c| c.name() == name) {
+                return self.0.call_tool(name, args, ctx, &policy).await;
+            }
             self.0.call_tool(&format!("{CAPABILITY_TOOL_PREFIX}{name}"), args, ctx, &policy).await
+        })
+    }
+
+    fn resources(&self) -> Vec<Value> {
+        let mut r = vec![resource(
+            "openshell://app",
+            "About this app",
+            "Name, description and functions of the application",
+        )];
+        r.extend(self.0.db_resources(true));
+        r
+    }
+
+    fn read_resource<'a>(&'a self, uri: &'a str) -> BoxFuture<'a, Result<Vec<Value>, String>> {
+        Box::pin(async move {
+            let s = &self.0;
+            if uri == "openshell://app" {
+                let cfg = &s.project().config;
+                return Ok(json_contents(
+                    uri,
+                    &json!({
+                        "name": cfg.app.name,
+                        "description": cfg.app.description,
+                        "version": cfg.app.version,
+                        "functions": s.capabilities_summary(),
+                    }),
+                ));
+            }
+            s.read_db_resource(uri, true).unwrap_or_else(|| Err(format!("unknown resource `{uri}`")))
         })
     }
 
@@ -590,9 +739,83 @@ impl ToolProvider for AppTools {
     }
 }
 
+fn resource(uri: &str, name: &str, description: &str) -> Value {
+    json!({ "uri": uri, "name": name, "description": description, "mimeType": "application/json" })
+}
+
+fn json_contents(uri: &str, value: &Value) -> Vec<Value> {
+    vec![
+        json!({ "uri": uri, "mimeType": "application/json", "text": serde_json::to_string_pretty(value).unwrap_or_default() }),
+    ]
+}
+
+impl Shell {
+    fn db_resources(&self, only_agent_visible: bool) -> Vec<Value> {
+        self.inner
+            .dbs
+            .all()
+            .iter()
+            .filter(|d| !only_agent_visible || d.agent_allowed(false).is_ok())
+            .map(|d| {
+                resource(
+                    &format!("openshell://db/{}/schema", d.config.name),
+                    &format!("{} database schema", d.config.name),
+                    "Tables and columns of the database",
+                )
+            })
+            .collect()
+    }
+
+    fn read_db_resource(&self, uri: &str, only_agent_visible: bool) -> Option<Result<Vec<Value>, String>> {
+        let name = uri.strip_prefix("openshell://db/")?.strip_suffix("/schema")?;
+        Some(self.inner.dbs.get(Some(name)).and_then(|d| {
+            if only_agent_visible {
+                d.agent_allowed(false)?;
+            }
+            d.schema(None).map(|v| json_contents(uri, &v))
+        }))
+    }
+}
+
 impl ToolProvider for AgentTools {
     fn list_tools(&self) -> Vec<ToolDef> {
         self.0.tools()
+    }
+    fn resources(&self) -> Vec<Value> {
+        let mut r = vec![
+            resource(
+                "openshell://status",
+                "Runtime status",
+                "Services with state, ports, URLs, metrics and errors",
+            ),
+            resource("openshell://config", "openshell.json", "The effective app configuration"),
+            resource("openshell://logs", "Recent logs", "The last 200 log lines of all services"),
+            resource("openshell://capabilities", "Capabilities", "Functions the app exposes to agents"),
+        ];
+        r.extend(self.0.db_resources(true));
+        r
+    }
+    fn read_resource<'a>(&'a self, uri: &'a str) -> BoxFuture<'a, Result<Vec<Value>, String>> {
+        Box::pin(async move {
+            let s = &self.0;
+            match uri {
+                "openshell://status" => Ok(json_contents(uri, &json!({ "services": s.runtime().status() }))),
+                "openshell://config" => {
+                    Ok(json_contents(uri, &serde_json::to_value(&s.project().config).unwrap_or_default()))
+                }
+                "openshell://logs" => {
+                    let lines =
+                        s.runtime().logs().query(&LogQuery { limit: Some(200), ..Default::default() });
+                    let text: Vec<String> =
+                        lines.iter().map(|l| format!("[{}] {}", l.service, l.text)).collect();
+                    Ok(vec![json!({ "uri": uri, "mimeType": "text/plain", "text": text.join("\n") })])
+                }
+                "openshell://capabilities" => Ok(json_contents(uri, &json!(s.capabilities_summary()))),
+                other => s
+                    .read_db_resource(other, true)
+                    .unwrap_or_else(|| Err(format!("unknown resource `{other}`"))),
+            }
+        })
     }
     fn call_tool<'a>(&'a self, name: &'a str, args: Value, ctx: CallContext) -> BoxFuture<'a, ToolOutcome> {
         Box::pin(async move {

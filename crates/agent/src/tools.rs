@@ -165,6 +165,31 @@ pub fn builtin_tools() -> Vec<ToolDef> {
         tool("fs_write", Code,
             "Create or overwrite a project file. Changes to watched paths restart services / reload the frontend automatically.",
             object(json!({ "path": { "type": "string" }, "content": { "type": "string" } }), &["path", "content"])),
+        // --- databases -----------------------------------------------------
+        tool("db_list", Read,
+            "List the app's databases with their tables and row counts.",
+            object(json!({}), &[])),
+        tool("db_schema", Read,
+            "Columns and CREATE statements of a database's tables.",
+            object(json!({
+                "database": { "type": "string", "description": "Database name (default: the main/only database)" },
+                "table": { "type": "string", "description": "Only this table" }
+            }), &[])),
+        tool("db_query", Read,
+            "Run a read-only SQL query (SELECT) on an app database (SQLite). Use ? or :name placeholders with `params`.",
+            object(json!({
+                "sql": { "type": "string" },
+                "params": { "description": "Array for ? placeholders or object for :name placeholders" },
+                "database": { "type": "string" }
+            }), &["sql"])),
+        tool("db_execute", Actions,
+            "Run an SQL statement that changes data or schema (INSERT, UPDATE, DELETE, CREATE …) on an app database. `script: true` runs several statements.",
+            object(json!({
+                "sql": { "type": "string" },
+                "params": { "description": "Array for ? placeholders or object for :name placeholders" },
+                "database": { "type": "string" },
+                "script": { "type": "boolean" }
+            }), &["sql"])),
         // --- system --------------------------------------------------------
         tool("task_run", System,
             "Run a task declared in openshell.json (e.g. tests, linting, migrations) and return its output.",

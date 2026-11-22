@@ -99,7 +99,7 @@ fn detects_semantic_errors() {
         "reserved",
         "needs a `command`",
         "expected a number or \"auto\"",
-        "needs an `http` or `task` target",
+        "needs an `http`, `task` or `run` target",
     ] {
         assert!(text.contains(needle), "missing `{needle}` in:\n{text}");
     }
@@ -194,4 +194,36 @@ fn title_bar_defaults_to_native() {
     let cfg = parse_json(r#"{ "app": { "name": "A" }, "window": { "title_bar": "overlay" } }"#).unwrap();
     assert_eq!(cfg.window.title_bar, TitleBar::Overlay);
     assert!(parse_json(r#"{ "app": { "name": "A" }, "window": { "title_bar": "hidden" } }"#).is_err());
+}
+
+#[test]
+fn composable_apps() {
+    // database + function only: no frontend, no backend
+    let cfg = parse_json(
+        r#"{"app":{"name":"Tools"},
+            "databases":[{"name":"main","migrations":"db/migrations","agent_access":"write"}],
+            "capabilities":[{"name":"greet","description":"Greet","run":["python","tools/greet.py"]},
+                            {"name":"slow","description":"Slow","run":{"command":"node slow.js","timeout_ms":1000}}],
+            "window":{"enabled":false}}"#,
+    )
+    .unwrap();
+    let issues = validate(&cfg);
+    assert!(issues.iter().all(|i| !i.is_error()), "{issues:?}");
+    assert_eq!(cfg.databases[0].file_name(), "main.db");
+    assert_eq!(cfg.databases[0].env_var(), "OPENSHELL_DB_MAIN");
+    assert_eq!(cfg.databases[0].agent_access, DatabaseAccess::Write);
+    assert!(!cfg.window.enabled);
+    assert_eq!(cfg.capabilities[1].run.as_ref().unwrap().normalized().timeout_ms, 1000);
+
+    let bad = parse_json(
+        r#"{"app":{"name":"x"},"databases":[{"name":"a"},{"name":"a"}],
+            "capabilities":[{"name":"c","description":"d","run":"x","task":"t"}],"tasks":{"t":"x"}}"#,
+    )
+    .unwrap();
+    let text = validate(&bad).iter().map(|i| i.to_string()).collect::<Vec<_>>().join("\n");
+    assert!(text.contains("duplicate database `a`"), "{text}");
+    assert!(text.contains("only one of"), "{text}");
+
+    let empty = parse_json(r#"{"app":{"name":"x"}}"#).unwrap();
+    assert!(validate(&empty).iter().any(|i| !i.is_error() && i.message.contains("openshell add")));
 }

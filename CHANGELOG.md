@@ -5,6 +5,22 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Building blocks**: frontend, backend, database and agent functions are independent and freely combinable.
+  `openshell add frontend | backend [--lang] | database [name] | function <name>` adds a block to an app;
+  `openshell create <name> --with frontend,database,…` composes a new one (interactive selection in a terminal).
+- **Built-in databases** (`databases` in openshell.json): SQLite files in the app's data directory, migrations,
+  `OPENSHELL_DB_<NAME>` / `DATABASE_URL` for services, `OpenShell.db.query/execute/schema/list` for the frontend,
+  agent tools `db_list`, `db_schema`, `db_query` (read-only), `db_execute`, per-database `agent_access`.
+- **Script functions**: capabilities with `"run"` execute a program per call (JSON on stdin, result on stdout) – an app
+  can offer an AI interface without any server. `OpenShell.invoke(name, input)` in the SDK.
+- Apps without a frontend show a console in the window (services, database browser, functions with "Run", agent
+  commands, logs); `window.enabled: false` runs an app in the tray only.
+- MCP resources (status, config, logs, capabilities, database schemas) and `notifications/tools/list_changed` from
+  `openshell mcp`.
+- `runtime.launch_at_login` for installed apps.
+- `openshell status` and `openshell doctor` show databases and functions.
+
 ## [0.2.1] - 2026-11-19
 
 ### Fixed

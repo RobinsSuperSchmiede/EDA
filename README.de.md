@@ -48,9 +48,10 @@ Rust, Java/Maven/Gradle/Spring Boot, C++/CMake) und schreibt die Konfiguration. 
 
 | Bereich | Was OpenShell übernimmt |
 |---|---|
+| Bausteine | Frontend, Backend, eingebaute SQLite-Datenbank und KI-Funktionen (Skripte) frei kombinierbar: `openshell create --with frontend,database`, `openshell add function …` – z. B. eine Oberfläche ohne Backend oder eine reine KI-Schnittstelle ohne Oberfläche |
 | Runtime | Start in Abhängigkeitsreihenfolge, Health Checks, Neustarts mit Backoff, Logs, dynamische Ports, Build-Schritte für C++/Java, CPU/RAM pro Service |
 | Desktop | Fenster, Ladebildschirm, Runtime-Panel, Tray, Benachrichtigungen, Rechtsklick auf die Titelleiste zur Service-Überwachung |
-| KI-Agenten | MCP mit zwei Profilen: **App** (nur die Funktionen der App – zum Benutzen) und **Full** (28 Werkzeuge – zum Entwickeln), OpenAPI-Import, UI-Automatisierung, Berechtigungen, Freigaben, Audit-Log |
+| KI-Agenten | MCP mit zwei Profilen: **App** (nur die Funktionen der App – zum Benutzen) und **Full** (32 Werkzeuge – zum Entwickeln), OpenAPI-Import, UI-Automatisierung, Berechtigungen, Freigaben, Audit-Log |
 | Auslieferung | `openshell package`: Installer mit Name und Icon der App; installierte Apps sind selbst MCP-Server (`meine-app.exe --mcp`) |
 
 ## Mit einem KI-Coding-Agenten eine neue App bauen

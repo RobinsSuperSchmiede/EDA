@@ -6,7 +6,7 @@ harnesses productive with it.
 | Role of the agent | What it gets | Start here |
 |---|---|---|
 | **Builds** a new app on OpenShell (coding agent) | app contract, workflow, verification commands, config cheat sheet | [app-development.md](app-development.md) · `openshell guide` |
-| **Develops** a running app (coding agent connected to it) | 28 MCP tools: status, logs, services, files, UI automation | [../agents.md](../agents.md) · `openshell mcp` |
+| **Develops** a running app (coding agent connected to it) | 32 MCP tools: status, logs, services, databases, files, UI automation | [../agents.md](../agents.md) · `openshell mcp` |
 | **Uses** an app (assistant) | only the app's own functions | [../agents.md](../agents.md#connecting) · `openshell mcp --app` / `my-app.exe --mcp` |
 
 ## How the repository supports AI harnesses

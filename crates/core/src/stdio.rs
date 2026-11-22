@@ -84,7 +84,8 @@ pub async fn serve(
     let mut client: Option<ControlClient> = None;
     let mut autostarted = false;
     let mut stdin = BufReader::new(tokio::io::stdin()).lines();
-    let mut stdout = tokio::io::stdout();
+    let stdout = std::sync::Arc::new(tokio::sync::Mutex::new(tokio::io::stdout()));
+    let mut watcher: Option<tokio::task::JoinHandle<()>> = None;
 
     while let Some(line) = stdin.next_line().await? {
         let line = line.trim();
@@ -95,10 +96,11 @@ pub async fn serve(
             Ok(v) => v,
             Err(e) => {
                 let err = json!({"jsonrpc":"2.0","id":null,"error":{"code":-32700,"message":format!("parse error: {e}")}});
-                write_line(&mut stdout, &err).await?;
+                write_line(&mut *stdout.lock().await, &err).await?;
                 continue;
             }
         };
+        let line_method = msg.get("method").and_then(|m| m.as_str()).unwrap_or("").to_string();
         if let Some(name) = msg.pointer("/params/clientInfo/name").and_then(|n| n.as_str()) {
             agent = name.to_string();
         }
@@ -140,11 +142,63 @@ pub async fn serve(
             },
             None => handle_message(&Offline(profile), msg, ctx).await,
         };
+        // after the handshake: tell the client when the tool list changes (frontend actions,
+        // OpenAPI imports, an app that was started later)
+        if watcher.is_none() && msg_is_initialized(&line_method) {
+            watcher = Some(tokio::spawn(watch_tool_list(state_dir.clone(), endpoint, stdout.clone())));
+        }
         if let Some(r) = reply {
-            write_line(&mut stdout, &r).await?;
+            write_line(&mut *stdout.lock().await, &r).await?;
         }
     }
+    if let Some(w) = watcher {
+        w.abort();
+    }
     Ok(())
+}
+
+fn msg_is_initialized(method: &str) -> bool {
+    method == "notifications/initialized"
+}
+
+/// Poll the shell's tool list and emit `notifications/tools/list_changed` on changes.
+async fn watch_tool_list(
+    state_dir: Option<PathBuf>,
+    endpoint: &'static str,
+    stdout: std::sync::Arc<tokio::sync::Mutex<tokio::io::Stdout>>,
+) {
+    let mut last: Option<Vec<String>> = None;
+    loop {
+        tokio::time::sleep(Duration::from_secs(3)).await;
+        let names = match connect(&state_dir, "openshell-mcp").await {
+            Some(c) => match c
+                .post(endpoint, &json!({"jsonrpc":"2.0","id":"openshell-poll","method":"tools/list"}))
+                .await
+            {
+                Ok(v) => {
+                    let mut n: Vec<String> = v["result"]["tools"]
+                        .as_array()
+                        .into_iter()
+                        .flatten()
+                        .filter_map(|t| t["name"].as_str().map(str::to_string))
+                        .collect();
+                    n.sort();
+                    n
+                }
+                Err(_) => continue,
+            },
+            None => vec![],
+        };
+        if let Some(prev) = &last {
+            if *prev != names {
+                let note = json!({"jsonrpc":"2.0","method":"notifications/tools/list_changed"});
+                if write_line(&mut *stdout.lock().await, &note).await.is_err() {
+                    return;
+                }
+            }
+        }
+        last = Some(names);
+    }
 }
 
 async fn write_line(out: &mut tokio::io::Stdout, v: &Value) -> Result<()> {

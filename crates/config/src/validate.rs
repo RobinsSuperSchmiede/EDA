@@ -225,14 +225,15 @@ pub fn validate(config: &Config) -> Vec<Issue> {
         if !cap_names.insert(c.name.clone()) {
             issues.push(Issue::error(format!("{p}.name"), format!("duplicate capability `{}`", c.name)));
         }
-        match (&c.http, &c.task) {
-            (None, None) => {
-                issues.push(Issue::error(p.clone(), "a capability needs an `http` or `task` target"))
+        match [c.http.is_some(), c.task.is_some(), c.run.is_some()].iter().filter(|x| **x).count() {
+            0 => issues.push(Issue::error(p.clone(), "a capability needs an `http`, `task` or `run` target")),
+            1 => {}
+            _ => issues.push(Issue::error(p.clone(), "use only one of `http`, `task` and `run`")),
+        }
+        if let Some(r) = &c.run {
+            if r.normalized().command.is_empty() {
+                issues.push(Issue::error(format!("{p}.run"), "must not be empty"));
             }
-            (Some(_), Some(_)) => {
-                issues.push(Issue::error(p.clone(), "use either `http` or `task`, not both"))
-            }
-            _ => {}
         }
         if let Some(h) = &c.http {
             match (&h.service, &h.url) {
@@ -262,6 +263,38 @@ pub fn validate(config: &Config) -> Vec<Issue> {
                 issues.push(Issue::error(format!("{p}.input_schema"), "must be a JSON Schema object"));
             }
         }
+    }
+
+    // --- databases ----------------------------------------------------------
+    let mut db_names = BTreeSet::new();
+    for (i, d) in config.databases.iter().enumerate() {
+        let p = format!("databases[{i}]");
+        if !valid_name(&d.name) || d.name.contains('-') {
+            issues.push(Issue::error(
+                format!("{p}.name"),
+                format!("`{}` is not a valid database name (use lowercase letters, digits, `_`)", d.name),
+            ));
+        }
+        if !db_names.insert(d.name.clone()) {
+            issues.push(Issue::error(format!("{p}.name"), format!("duplicate database `{}`", d.name)));
+        }
+        if let Some(path) = &d.path {
+            if path.trim().is_empty() {
+                issues.push(Issue::error(format!("{p}.path"), "must not be empty"));
+            }
+        }
+    }
+
+    // --- nothing to run -----------------------------------------------------
+    if config.frontend.is_none()
+        && config.services.is_empty()
+        && config.capabilities.is_empty()
+        && config.databases.is_empty()
+    {
+        issues.push(Issue::warning(
+            "app",
+            "the app has no frontend, services, databases or capabilities yet – add one with `openshell add`",
+        ));
     }
 
     // --- tasks --------------------------------------------------------------

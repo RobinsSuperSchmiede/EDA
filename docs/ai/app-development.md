@@ -38,7 +38,25 @@ openshell create --list      # available templates
 
 If `openshell` is missing, tell the user to install it (see the OpenShell README) – do not try to re-implement it.
 
-### 2. Start from a template (new app) or `init` (existing web app)
+### 2. Choose the building blocks (new app), a template, or `init` (existing web app)
+
+An app needs **only the blocks the task requires** – frontend, backend, database, functions for AI agents
+(docs/building-blocks.md). Pick the smallest set:
+
+| User wants | Blocks |
+|---|---|
+| A UI that stores data locally | `frontend,database` (the page uses `OpenShell.db`; no backend) |
+| Tools/an AI interface for agents, no UI | `functions` (+ `database` if data must persist) |
+| An API / background service | `backend` (+ `database`) |
+| A full app | `frontend,backend,database` (+ `functions`) |
+
+```bash
+openshell create <name> --with frontend,database --lang python   # compose; files + openshell.json + AGENTS.md
+openshell add function <name>                                    # add blocks later, in any order
+openshell add database [name] | openshell add backend --lang node | openshell add frontend
+```
+
+Use a framework template when the user wants a specific stack:
 
 | User wants | Template |
 |---|---|
@@ -106,7 +124,12 @@ If you are connected over MCP (full profile: `openshell mcp`), the same tools ex
 ### 6. Make the app usable for agents (capabilities)
 
 Design capabilities like a small, task-oriented API: verbs, clear descriptions, JSON Schema inputs, `read` for
-queries and `actions` for changes. Three ways:
+queries and `actions` for changes. Four ways:
+
+**0) Script functions** – no server needed (`openshell add function <name>` scaffolds one): a script reads a JSON
+object from stdin and prints JSON to stdout; declare it with `"run": ["python", "tools/<name>.py"]`. Use the database
+from scripts through `OPENSHELL_DB_<NAME>`. Errors: message on stderr + non-zero exit. Logs: `openshell logs fn:<name>`.
+
 
 **a) Declared in `openshell.json`** (HTTP endpoint or task):
 
@@ -205,6 +228,14 @@ Variables: `${port}`, `${services.<name>.port|url}`, `${frontend.url}`, `${proje
 Env vars every service gets: `PORT`, `OPENSHELL_DATA_DIR`, `OPENSHELL_MODE`, `OPENSHELL_SERVICE`,
 `OPENSHELL_PROJECT_ROOT`, `OPENSHELL_CONTROL_URL`. Full reference: `openshell schema` or docs/configuration.md.
 
+## Databases
+
+`databases: [{ "name": "main", "migrations": "db/migrations", "agent_access": "write" }]` gives the app a SQLite file
+in `OPENSHELL_DATA_DIR`. Schema changes: add `db/migrations/002_….sql` (never edit applied migrations; they run once,
+in order, at startup). Access: services/functions `OPENSHELL_DB_MAIN` (+ `DATABASE_URL`), frontend `OpenShell.db.query
+/ execute` (needs `actions` in `agents.sdk_permissions` to write), agents `db_query` / `db_execute`. Inspect with
+`openshell call db_list`, `openshell call db_query '{"sql": "SELECT …"}'` or the console's data browser.
+
 ## Pitfalls
 
 - **Hard-coded ports** (`8000`, `5173`) → conflicts. Use `"port": "auto"` and `$PORT`.
@@ -219,6 +250,7 @@ Env vars every service gets: `PORT`, `OPENSHELL_DATA_DIR`, `OPENSHELL_MODE`, `OP
 
 ## Definition of done
 
+- [ ] Only the building blocks the task needs (no backend just to store data, no UI for a pure agent tool)
 - [ ] `openshell doctor` shows no errors
 - [ ] `openshell dev --headless` → `openshell status`: all services `running`; `openshell logs --errors` clean
 - [ ] Main user flows verified through the API and, where possible, `ui_snapshot` / `ui_click` / `ui_fill`

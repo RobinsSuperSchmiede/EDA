@@ -196,6 +196,8 @@ async fn status(State(shell): State<Shell>) -> ApiResult {
         "control_url": i.control_url,
         "frontend_url": i.runtime.frontend_url(),
         "services": i.runtime.status(),
+        "databases": i.dbs.list(),
+        "capabilities": shell.capabilities_summary(),
         "ui_pages": i.hub.pages(),
         "pending_approvals": i.approvals.pending(),
         "agent_permissions": i.agent_policy,
@@ -230,7 +232,8 @@ struct LogParams {
 async fn logs(State(shell): State<Shell>, Query(p): Query<LogParams>) -> ApiResult {
     let rt = &shell.inner.runtime;
     if let Some(s) = &p.service {
-        if !rt.has_service(s) {
+        // functions (`fn:<name>`) and databases (`db:<name>`) log under their own names
+        if !rt.has_service(s) && !s.starts_with("fn:") && !s.starts_with("db:") {
             return Err(ApiError(StatusCode::NOT_FOUND, format!("unknown service `{s}`")));
         }
     }

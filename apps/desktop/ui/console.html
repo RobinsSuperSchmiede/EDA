@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>OpenShell</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <!-- Shown in the main window for apps without a frontend (backend, database or functions only). -->
+  <body class="panel console">
+    <main>
+      <header>
+        <h1 id="app">OpenShell</h1>
+        <p id="subtitle" class="muted"></p>
+      </header>
+      <section id="error" class="error" hidden></section>
+      <section id="approvals" hidden></section>
+
+      <h2 class="section" id="services-title" hidden>Services</h2>
+      <ul id="services" class="services"></ul>
+
+      <h2 class="section" id="databases-title" hidden>Databases</h2>
+      <div id="databases"></div>
+      <div id="table-view" hidden>
+        <p class="muted" id="table-caption"></p>
+        <div class="table-scroll"><table id="rows"></table></div>
+      </div>
+
+      <h2 class="section" id="functions-title" hidden>Functions for AI agents</h2>
+      <div id="functions"></div>
+
+      <h2 class="section">Connect AI agents</h2>
+      <p class="muted">Use the app through its own functions:</p>
+      <code id="mcp-app"></code>
+      <p class="muted">Develop the app (runtime, logs, files):</p>
+      <code id="mcp-full"></code>
+
+      <h2 class="section">Logs</h2>
+      <div class="filters">
+        <label>Service <select id="filter"><option value="">all</option></select></label>
+        <label><input type="checkbox" id="errors" /> errors only</label>
+      </div>
+      <pre id="logs" class="logs" aria-label="Logs"></pre>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

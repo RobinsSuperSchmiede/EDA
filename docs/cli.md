@@ -9,6 +9,8 @@ binary), `NO_COLOR`.
 | Command | Description |
 |---|---|
 | `openshell create <name> [-t <template>]` | New project from a template (`vanilla-python` default, `react-python`, `react-node`, `vue-python`, `svelte-go`, `vanilla-java`, `vanilla-cpp`, `custom`). `--list` shows all. |
+| `openshell create <name> --with frontend,backend,database,functions [--lang python\|node]` | New project composed of [building blocks](building-blocks.md). Without `--template`/`--with` the terminal asks. |
+| `openshell add frontend \| backend [--lang …] \| database [name] \| function <name> [--lang …]` | Add a building block to the current app (files + `openshell.json`). |
 | `openshell init [--name <n>] [--toml] [--force]` | Generate a config for an existing project (auto-detection) and an `AGENTS.md` for coding agents if none exists. |
 | `openshell doctor` | Validate config, commands, directories, ports, desktop binary, WebView2, toolchain. Exit code 1 on errors. |
 | `openshell schema` | Print the JSON Schema of the configuration. |

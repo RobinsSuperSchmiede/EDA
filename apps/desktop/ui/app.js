@@ -1,6 +1,8 @@
 // OpenShell's own pages: loading screen (index.html) and runtime panel (runtime.html).
 const invoke = window.__TAURI__.core.invoke;
 const isPanel = document.body.classList.contains("panel");
+// console.html: the main window of apps without a frontend
+const isConsole = document.body.classList.contains("console");
 const $ = (s) => document.querySelector(s);
 const ACTIVE = ["running", "unhealthy", "starting", "pending", "setup", "building", "backoff"];
 
@@ -97,6 +99,13 @@ function renderLogs() {
 }
 
 function subtitle(s) {
+  if (isConsole) {
+    const parts = [s.mode + " mode"];
+    if (s.services.length) parts.push(s.services.length + " service(s)");
+    if (s.databases && s.databases.length) parts.push(s.databases.length + " database(s)");
+    if (s.capabilities && s.capabilities.length) parts.push(s.capabilities.length + " function(s) for AI agents");
+    return parts.join(" · ");
+  }
   if (isPanel) {
     return s.mode + " mode · control API " + s.control_url + " · " + s.pages + " page(s) bridged";
   }
@@ -112,7 +121,7 @@ async function tick() {
   try {
     const s = await invoke("get_state", { since: lastSeq || null });
     $("#app").textContent = s.app || "OpenShell";
-    document.title = isPanel ? (s.app || "OpenShell") + " – Runtime" : s.app || "OpenShell";
+    document.title = isPanel && !isConsole ? (s.app || "OpenShell") + " – Runtime" : s.app || "OpenShell";
     $("#error").hidden = !s.error;
     if (s.error) {
       $("#error").textContent = s.error;
@@ -136,6 +145,7 @@ async function tick() {
       $("#mcp-app").textContent = s.mcp_commands[0];
       $("#mcp-full").textContent = s.mcp_commands[1];
     }
+    if (isConsole && s.services) renderConsole(s);
     if (s.logs) {
       logLines = logLines.concat(s.logs).slice(-5000);
       lastSeq = s.last_seq;
@@ -155,7 +165,7 @@ $("#errors")?.addEventListener("change", renderLogs);
 // this page brings a minimal one to move, minimize, maximize and close the window while the app starts.
 function titleBar() {
   const win = window.__OPENSHELL__ && window.__OPENSHELL__.window;
-  if (isPanel || !win || win.title_bar !== "overlay") return;
+  if ((isPanel && !isConsole) || !win || win.title_bar !== "overlay") return;
   const svg = (path) => {
     const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     s.setAttribute("viewBox", "0 0 10 10");
@@ -179,3 +189,81 @@ function titleBar() {
 
 titleBar();
 tick();
+
+// --- console: databases and functions ----------------------------------------------------------
+let consoleSignature = "";
+
+function renderConsole(s) {
+  $("#services-title").hidden = !s.services.length;
+  const dbs = s.databases || [];
+  const fns = s.capabilities || [];
+  // rebuild only when the structure changes, so inputs keep their content
+  const signature = JSON.stringify([dbs.map((d) => [d.name, d.tables.map((t) => [t.name, t.rows])]), fns.map((f) => f.name)]);
+  if (signature === consoleSignature) return;
+  consoleSignature = signature;
+
+  $("#databases-title").hidden = !dbs.length;
+  $("#databases").replaceChildren(
+    ...dbs.map((d) =>
+      el(
+        "div",
+        { class: "db" },
+        el("strong", {}, d.name),
+        el("span", { class: "muted" }, " · agents: " + d.agent_access + " · " + d.path),
+        el(
+          "div",
+          { class: "chips" },
+          ...(d.tables.length
+            ? d.tables.map((t) =>
+                el("button", { type: "button", onclick: () => showTable(d.name, t.name) }, t.name + " (" + t.rows + ")"),
+              )
+            : [el("span", { class: "muted" }, "no tables yet – add a migration")]),
+        ),
+      ),
+    ),
+  );
+
+  $("#functions-title").hidden = !fns.length;
+  $("#functions").replaceChildren(
+    ...fns.map((f) => {
+      const input = el("textarea", { rows: "2", spellcheck: "false", "aria-label": "Input for " + f.name }, "{}");
+      const output = el("pre", { class: "fn-output muted" });
+      const run = el(
+        "button",
+        {
+          type: "button",
+          onclick: async () => {
+            output.textContent = "…";
+            try {
+              const result = await invoke("call_function", { name: f.name, input: JSON.parse(input.value || "{}") });
+              output.textContent = typeof result === "string" ? result : JSON.stringify(result, null, 2);
+            } catch (e) {
+              output.textContent = "Error: " + e;
+            }
+          },
+        },
+        "Run",
+      );
+      return el(
+        "div",
+        { class: "fn" },
+        el("div", {}, el("code", {}, f.name), " ", el("span", { class: "muted" }, f.description + " · " + f.permission + " · " + f.source)),
+        el("div", { class: "fn-row" }, input, run),
+        output,
+      );
+    }),
+  );
+}
+
+async function showTable(database, table) {
+  try {
+    const r = await invoke("db_rows", { database, table, limit: 100 });
+    $("#table-view").hidden = false;
+    $("#table-caption").textContent = database + "." + table + " – " + r.row_count + " row(s)" + (r.truncated ? " (first 100)" : "");
+    const head = el("tr", {}, ...r.columns.map((c) => el("th", {}, c)));
+    const rows = r.rows.map((row) => el("tr", {}, ...r.columns.map((c) => el("td", {}, row[c] === null ? "∅" : String(row[c])))));
+    $("#rows").replaceChildren(el("thead", {}, head), el("tbody", {}, ...rows));
+  } catch (e) {
+    alert(e);
+  }
+}

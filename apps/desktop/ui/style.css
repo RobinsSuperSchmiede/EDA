@@ -144,3 +144,22 @@ select { font: inherit; }
 .titlebar button:hover { background: var(--line); }
 .titlebar button.close:hover { background: #c42b1c; color: #fff; }
 .titlebar svg { width: 10px; height: 10px; stroke: currentColor; stroke-width: 1; fill: none; }
+
+/* console (apps without a frontend) */
+.console main { max-width: 980px; margin: 0 auto; }
+h2.section { font-size: 15px; font-weight: 600; margin: 28px 0 8px; }
+.console code { display: block; margin: 4px 0 8px; padding: 6px 10px; background: var(--code); border-radius: 4px;
+  font-family: ui-monospace, "Cascadia Code", Menlo, monospace; font-size: 12px; user-select: all; }
+.db { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.table-scroll { overflow: auto; max-height: 320px; border: 1px solid var(--line); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+th, td { text-align: left; padding: 5px 9px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { position: sticky; top: 0; background: var(--bg); }
+.fn { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.fn code { display: inline; padding: 1px 6px; margin: 0; }
+.fn-row { display: flex; gap: 8px; margin-top: 8px; align-items: flex-start; }
+.fn-row textarea { flex: 1; font-family: ui-monospace, "Cascadia Code", Menlo, monospace; font-size: 12px;
+  background: var(--code); color: inherit; border: 1px solid var(--line); border-radius: 5px; padding: 6px; }
+.fn-output { margin: 6px 0 0; white-space: pre-wrap; font-size: 12px; }
+.console .logs { height: 220px; }

@@ -261,7 +261,38 @@ fn get_state(state: State<'_, AppState>, since: Option<u64>) -> Value {
         "pages": shell.hub().pages().len(),
         "focus_service": focus,
         "mcp_commands": *state.mcp_commands.lock().unwrap(),
+        "has_frontend": rt.has_service("frontend"),
+        "databases": shell.databases().list(),
+        "capabilities": shell.capabilities_summary(),
     })
+}
+
+/// Rows of a database table (console data browser).
+#[tauri::command]
+fn db_rows(
+    state: State<'_, AppState>,
+    database: String,
+    table: String,
+    limit: Option<u32>,
+) -> Result<Value, String> {
+    let shell = state.shell().ok_or("the runtime is not running")?;
+    let db = shell.databases().get(Some(&database))?;
+    let quoted = format!("\"{}\"", table.replace('"', "\"\""));
+    db.query(&format!("SELECT * FROM {quoted} LIMIT {}", limit.unwrap_or(100).min(1000)), &Value::Null)
+}
+
+/// Run an app function from the console (as the user: full access, audited as `console`).
+#[tauri::command]
+async fn call_function(state: State<'_, AppState>, name: String, input: Value) -> Result<Value, String> {
+    let shell = state.shell().ok_or("the runtime is not running")?;
+    let policy = openshell_core::agent::policy::Policy::admin(shell.mode());
+    let ctx = openshell_core::agent::mcp::CallContext { agent: "console".into(), channel: "console".into() };
+    let outcome = shell.call_tool(&format!("cap_{name}"), input, ctx, &policy).await;
+    if outcome.ok {
+        Ok(outcome.result)
+    } else {
+        Err(outcome.error_message().unwrap_or_else(|| "failed".into()))
+    }
 }
 
 #[tauri::command]
@@ -461,7 +492,19 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let cfg = project.config.clone();
     *state.app_name.lock().unwrap() = cfg.app.name.clone();
     *state.mcp_commands.lock().unwrap() = mcp_commands(&project, packaged);
-    state.hide_on_close.store(cfg.window.close_to_tray || cfg.runtime.background_mode, Ordering::SeqCst);
+    // without a window (window.enabled = false) the app lives in the tray; closing only hides
+    state.hide_on_close.store(
+        cfg.window.close_to_tray || cfg.runtime.background_mode || !cfg.window.enabled,
+        Ordering::SeqCst,
+    );
+    if packaged {
+        use tauri_plugin_autostart::ManagerExt;
+        let autolaunch = handle.autolaunch();
+        let result = if cfg.runtime.launch_at_login { autolaunch.enable() } else { autolaunch.disable() };
+        if let Err(e) = result {
+            tracing::debug!("launch at login: {e}");
+        }
+    }
     let icon_path = cfg.app.icon.as_ref().map(|i| project.resolve_path(i));
 
     let host = Arc::new(DesktopHost { app: handle.clone() });
@@ -483,6 +526,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         .resizable(w.resizable)
         .maximized(w.maximized)
         .devtools(w.devtools.unwrap_or(mode == Mode::Development))
+        .visible(w.enabled)
         .initialization_script(shell.webview_init_script())
         // Tauri's own drag and drop handler (file drops as Tauri events) swallows the HTML5 drag events
         // on Windows: `dragover` and `drop` never reach the page, so dragging inside the app and dropping
@@ -521,8 +565,14 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         menus::titlebar::install(&handle, &window);
     }
 
+    // Apps without a frontend (backend, database or functions only) show OpenShell's console.
+    if !shell.runtime().has_service("frontend") {
+        let _ = navigate(&handle, &local_page("console.html"));
+    }
+
     *state.shell.lock().unwrap() = Some(shell.clone());
-    if w.tray {
+    // a window-less app needs the tray to be reachable at all
+    if w.tray || !w.enabled {
         if let Err(e) = build_tray(&handle, &cfg.app.name) {
             tracing::warn!("tray icon unavailable: {e}");
         }
@@ -672,6 +722,7 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
         .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
             get_state,
@@ -679,7 +730,9 @@ fn main() {
             open_app,
             resolve_approval,
             open_runtime_panel,
-            show_window_menu
+            show_window_menu,
+            db_rows,
+            call_function
         ])
         .on_menu_event(menus::on_menu_event)
         .setup(setup)

@@ -36,14 +36,25 @@ await OpenShell.window.minimize() / maximize() / unmaximize() / show() / hide() 
 await OpenShell.notify("Export finished", "Saved to reports/q3.pdf")                       // ui
 await OpenShell.providers()             // read – configured and local AI providers
 
+// built-in databases (databases in openshell.json) – a frontend-only app can store data without a backend
+await OpenShell.db.list()                                            // read
+await OpenShell.db.query("SELECT * FROM notes WHERE done = ?", [0])  // read  → { columns, rows, row_count }
+await OpenShell.db.execute("INSERT INTO notes (title) VALUES (:t)", { t: "Hi" })   // actions → { changes, last_insert_rowid }
+await OpenShell.db.schema("notes")                                   // read
+
+// the app's functions (capabilities) – the same ones agents use
+await OpenShell.invoke("summarize_notes", { limit: 10 })            // the capability's own scope
+
 const unregister = OpenShell.agent.registerAction(name, { description, input_schema, permission }, handler)
 OpenShell.agent.unregisterAction(name)
 
 await OpenShell.call(tool, args)        // any tool allowed by agents.sdk_permissions
 ```
 
-Calls are checked against `agents.sdk_permissions` (default `["read", "ui"]`). To let the frontend restart services,
-add `"services"`. Failures throw `OpenShellError`.
+Calls are checked against `agents.sdk_permissions` (default `["read", "ui"]`). To let the frontend write to a
+database or call `actions` functions, add `"actions"` (`openshell add database` does this when the app has a
+frontend); to restart services, add `"services"`. A database's `agent_access` limits agents only, not the app's own
+frontend. Failures throw `OpenShellError`.
 
 ## Exposing frontend actions to agents
 

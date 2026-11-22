@@ -125,6 +125,15 @@ fn append_services(app: &AppHandle, menu: &dyn MenuLike) -> tauri::Result<()> {
     for st in &statuses {
         menu.add(&service_submenu(app, st)?)?;
     }
+    for db in shell.databases().all() {
+        let summary = db.summary();
+        let tables = summary["tables"].as_array().map(|t| t.len()).unwrap_or(0);
+        menu.add(&info(app, format!("\u{25a3}  database {}  \u{2014}  {tables} table(s)", db.config.name))?)?;
+    }
+    let functions = shell.capabilities_summary().len();
+    if functions > 0 {
+        menu.add(&info(app, format!("\u{2699}  {functions} function(s) for AI agents"))?)?;
+    }
     menu.add(&PredefinedMenuItem::separator(app)?)?;
     menu.add(&MenuItem::with_id(app, "rt:restart-all", "Restart all services", true, None::<&str>)?)?;
     menu.add(&MenuItem::with_id(app, "rt:panel", "Runtime panel\u{2026}", true, None::<&str>)?)?;

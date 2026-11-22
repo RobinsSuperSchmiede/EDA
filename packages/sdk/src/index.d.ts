@@ -76,6 +76,21 @@ export interface OpenShellApi {
   };
   notify(title: string, body?: string): Promise<unknown>;
   providers(): Promise<{ providers: Array<{ name: string; kind: string; url?: string; available: boolean; models: string[] }> }>;
+  db: {
+    list(): Promise<{ databases: Array<{ name: string; path: string; agent_access: string; tables: Array<{ name: string; rows: number }> }> }>;
+    schema(table?: string, database?: string): Promise<{ database: string; tables: Array<{ table: string; columns: object[]; sql: string | null }> }>;
+    query<Row = Record<string, unknown>>(
+      sql: string,
+      params?: unknown[] | Record<string, unknown>,
+      database?: string,
+    ): Promise<{ columns: string[]; rows: Row[]; row_count: number; truncated: boolean }>;
+    execute(
+      sql: string,
+      params?: unknown[] | Record<string, unknown>,
+      database?: string,
+    ): Promise<{ ok: true; changes: number; last_insert_rowid?: number }>;
+  };
+  invoke<T = unknown>(name: string, input?: object): Promise<T>;
   agent: {
     registerAction<I = any, O = any>(name: string, meta: ActionMeta, handler: (input: I) => O | Promise<O>): () => void;
     registerAction<I = any, O = any>(name: string, handler: (input: I) => O | Promise<O>): () => void;

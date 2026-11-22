@@ -8,6 +8,7 @@
 //! * the desktop app (Tauri) launches a [`Shell`] with a desktop [`Host`],
 //! * `openshell start --headless` launches it with a [`HeadlessHost`].
 
+pub mod db;
 mod exec;
 mod fs;
 pub mod headless;
@@ -88,6 +89,8 @@ pub(crate) struct ShellInner {
     pub allowed_origins: Vec<String>,
     /// Operations imported from services' OpenAPI documents.
     pub imported: std::sync::RwLock<Vec<openapi::ApiOperation>>,
+    /// Built-in databases.
+    pub dbs: db::Databases,
 }
 
 /// A running OpenShell instance: runtime + control API + agent layer.
@@ -111,6 +114,10 @@ impl Shell {
     /// Services are started with [`Shell::start`].
     pub async fn launch(project: Project, mode: Mode, host: Arc<dyn Host>) -> Result<Shell> {
         let runtime = Runtime::new(&project, mode)?;
+        let dbs = db::Databases::open(&project, runtime.logs())?;
+        for (k, v) in dbs.env() {
+            runtime.set_extra_env(k, v);
+        }
         let state_dir = project.state_dir();
         std::fs::create_dir_all(&state_dir)
             .with_context(|| format!("cannot create {}", state_dir.display()))?;
@@ -147,6 +154,7 @@ impl Shell {
             control_url: control_url.clone(),
             allowed_origins,
             imported: std::sync::RwLock::new(Vec::new()),
+            dbs,
             mode,
             runtime,
             project,
@@ -218,6 +226,10 @@ impl Shell {
     }
     pub fn control_url(&self) -> &str {
         &self.inner.control_url
+    }
+    /// Built-in databases of the app.
+    pub fn databases(&self) -> &db::Databases {
+        &self.inner.dbs
     }
     pub fn approvals(&self) -> &Arc<Approvals> {
         &self.inner.approvals

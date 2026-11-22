@@ -23,7 +23,9 @@ Legend: ✅ done · 🚧 partial · ⏳ planned
 - ✅ Resource monitoring (CPU/memory per service process tree) in CLI, runtime panel, title bar and tray menus
 - ✅ Development mode with file watching (service restart / window reload)
 - ⏳ Publish CLI binaries (GitHub releases, `cargo install`, npm wrapper `npx openshell`)
-- ⏳ Interactive `openshell init`
+- ✅ Building blocks: `openshell add frontend|backend|database|function`, `openshell create --with …` (interactive)
+- ✅ Built-in SQLite databases with migrations, SDK and agent access; script functions (`run`) without a server
+- ✅ Apps without frontend (console window) or without window (tray only); launch at login
 
 ## Phase 4 – Production 🚧
 - ✅ Production mode, tray, close-to-tray / background mode, headless mode (`--headless`, `--detach`)
@@ -34,7 +36,7 @@ Legend: ✅ done · 🚧 partial · ⏳ planned
 - ⏳ Single-instance handling, deep links
 
 ## Phase 5 – Agent Interaction Layer 🚧
-- ✅ Tool catalogue (28 built-in tools), HTTP/JSON API, MCP over stdio and Streamable HTTP
+- ✅ Tool catalogue (32 built-in tools), HTTP/JSON API, MCP over stdio and Streamable HTTP
 - ✅ Semantic UI bridge (snapshot, click, fill, press, read, wait, navigate, reload, eval)
 - ✅ Capability discovery (config, OpenAPI import, frontend-registered actions)
 - ✅ App profile ("use the app"): only the application's functions as MCP tools; installed apps start headless on demand
@@ -43,7 +45,7 @@ Legend: ✅ done · 🚧 partial · ⏳ planned
 - ⏳ Screenshot / vision fallback for canvas-heavy UIs
 - ⏳ Agent sessions with individual permissions and tokens (instead of one agent policy)
 - ⏳ Agent runner integration (hand tasks to a configured agent, stream progress into the UI)
-- ⏳ MCP resources (logs, config) and notifications (`tools/list_changed` when pages register actions)
+- ✅ MCP resources (status, config, logs, capabilities, database schemas) and `tools/list_changed` notifications
 
 ## Phase 6 – Ecosystem ⏳
 - 🚧 SDK (`@openshell/sdk`) – runtime, window, notifications, agent actions; publish to npm

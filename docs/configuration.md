@@ -14,9 +14,10 @@ Editor completion: add `"$schema": "https://raw.githubusercontent.com/RobinsSupe
 | `window` | object | Native window settings. |
 | `frontend` | object | What the window shows. |
 | `services` | array | Backends, databases, workers, AI servers, … |
+| `databases` | array | Built-in SQLite databases managed by OpenShell. |
 | `runtime` | object | Runtime manager behaviour. |
 | `agents` | object | Agent Interaction Layer: permissions, approvals, providers. |
-| `capabilities` | array | Functions the app exposes to agents. |
+| `capabilities` | array | Functions the app exposes to agents (HTTP endpoint, script, task). |
 | `tasks` | object | Named commands (`"test": "pytest"`), runnable by agents with the `system` scope. |
 | `package` | object | Installer settings – see [installers.md](installers.md). |
 
@@ -33,6 +34,7 @@ Editor completion: add `"$schema": "https://raw.githubusercontent.com/RobinsSupe
 | `title_bar` | `"native"` | `"overlay"`: the frontend draws the title bar (see [sdk.md](sdk.md#own-title-bar)). No system title bar on Windows/Linux; window buttons over the content on macOS |
 | `tray` | `true` | Show a tray icon (show, reload, runtime panel, restart services, quit) |
 | `devtools` | dev mode only | Allow WebView devtools |
+| `enabled` | `true` | `false`: no window – the app runs in the tray / background (services, databases, agent functions). Apps without a frontend show OpenShell's console in the window |
 
 ## `frontend`
 
@@ -113,6 +115,7 @@ Usable in commands, args, env values, URLs, health checks and proxy targets:
 | `control_port` | random | Fixed port for the control API |
 | `log_buffer_lines` | 10000 | Lines kept in memory (files in `.openshell/logs/`) |
 | `shutdown_timeout_ms` | 5000 | Default grace period when stopping |
+| `launch_at_login` | `false` | Start the installed app when the user logs in (installed apps only) |
 
 ## `agents`
 
@@ -140,8 +143,34 @@ Permission scopes: `read`, `ui`, `actions` (alias `write`), `services`, `files`,
 }
 ```
 
-Targets: `http` (`service` + `path`, or `url`; GET/DELETE send the input as query parameters, other methods as JSON
-body) or `task` (name of a task). Agents see each capability as a tool `cap_<name>` and via `app_invoke`.
+Exactly one target:
+
+- `http` – `service` + `path`, or `url`; GET/DELETE send the input as query parameters, other methods as JSON body.
+- `run` – a script/program: `["python", "tools/x.py"]` or `{ "command", "cwd", "env", "timeout_ms" }`. It receives the
+  input as JSON on stdin (and in `OPENSHELL_INPUT`) and prints its result (JSON or text) on stdout; a non-zero exit
+  code is an error (message from stderr). No server needed – see [building-blocks.md](building-blocks.md#functions).
+- `task` – name of a task (input is ignored).
+
+Agents see each capability as a tool `cap_<name>` (developer profile), under its plain name (app profile) and via
+`app_invoke`. The frontend calls them with `OpenShell.invoke(name, input)`.
+
+## `databases[]`
+
+```json
+{ "name": "main", "migrations": "db/migrations", "agent_access": "write" }
+```
+
+| Field | Default | Description |
+|---|---|---|
+| `name` | – | `[a-z0-9_]`; services get the path as `OPENSHELL_DB_<NAME>` |
+| `type` | `"sqlite"` | Engine (SQLite is built in) |
+| `path` | `<name>.db` | File, relative to the app's data directory (`OPENSHELL_DATA_DIR`) or absolute |
+| `migrations` | – | Folder of `*.sql` files, applied once each in file-name order |
+| `agent_access` | `"read"` | `none`, `read` (`db_list`, `db_schema`, `db_query`) or `write` (also `db_execute`) |
+| `description` | – | Shown to agents |
+
+The main (or only) database is also exported as `DATABASE_URL=sqlite:///…`. Details:
+[building-blocks.md](building-blocks.md#database).
 
 ## TOML
 
