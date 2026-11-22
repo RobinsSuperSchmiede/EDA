@@ -1,0 +1,853 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenShell – any web app, a native desktop app, agents included</title>
+    <meta
+      name="description"
+      content="OpenShell is an open-source desktop shell built on Rust and Tauri 2. Bring a web frontend, any backend, a database or just functions – OpenShell runs them as a native desktop app that people and AI agents can use."
+    />
+    <meta property="og:title" content="OpenShell – the desktop shell for agent-native apps" />
+    <meta property="og:description" content="Any web app. A native desktop app. Agents included. Free and open source." />
+    <meta name="theme-color" content="#5b84e8" />
+    <link rel="icon" href="assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #0e0f12;
+        --white: #ffffff;
+        --soft: rgba(255, 255, 255, 0.78);
+        --faint: rgba(255, 255, 255, 0.55);
+        --line: rgba(255, 255, 255, 0.18);
+        --glass: rgba(16, 32, 86, 0.28);
+        --accent: #b8ccff;
+        --panel: #07080c;
+        --panel-2: #12141b;
+        --green: #5fe3a1;
+        --amber: #ffcf6b;
+        --mono: "Geist Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
+        font-family: Geist, "SF Pro Text", system-ui, -apple-system, "Segoe UI", sans-serif;
+        font-size: 17px;
+        letter-spacing: -0.005em;
+        -webkit-font-smoothing: antialiased;
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body { margin: 0; color: var(--white); background: #05060a; overflow-x: hidden; }
+      a { color: inherit; }
+      ::selection { background: rgba(184, 204, 255, 0.45); }
+
+      /* the dithered sky behind everything */
+      #sky {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        image-rendering: pixelated;
+        z-index: -1;
+      }
+
+      /* ------------------------------------------------------------ nav */
+      .nav {
+        position: fixed;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 28px;
+        width: min(1080px, calc(100% - 32px));
+        padding: 12px 14px 12px 24px;
+        border-radius: 999px;
+        background: var(--glass);
+        border: 1px solid var(--line);
+        backdrop-filter: blur(18px) saturate(1.3);
+        -webkit-backdrop-filter: blur(18px) saturate(1.3);
+        transition: background 0.4s;
+      }
+      .nav.solid { background: rgba(8, 12, 30, 0.62); }
+      .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 600; font-size: 21px; letter-spacing: -0.04em; }
+      .brand img { width: 26px; height: 26px; image-rendering: pixelated; }
+      .nav nav { display: flex; gap: 26px; margin-left: auto; font-size: 14.5px; font-weight: 500; }
+      .nav nav a { text-decoration: none; opacity: 0.88; }
+      .nav nav a:hover { opacity: 1; }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 20px;
+        border-radius: 999px;
+        background: var(--white);
+        color: var(--ink);
+        font-weight: 500;
+        font-size: 14.5px;
+        text-decoration: none;
+        border: 0;
+        cursor: pointer;
+        transition: transform 0.15s, box-shadow 0.2s;
+      }
+      .pill:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(255, 255, 255, 0.25); }
+      .pill.ghost { background: rgba(16, 36, 110, 0.22); color: var(--white); border: 1px solid rgba(255, 255, 255, 0.6); }
+      .pill.ghost:hover { box-shadow: none; background: rgba(255, 255, 255, 0.1); }
+
+      /* ------------------------------------------------------------ layout */
+      section { position: relative; padding: 140px 24px; }
+      .wrap { max-width: 1080px; margin: 0 auto; }
+      h1, h2, h3 { margin: 0; font-weight: 500; }
+      h2 { font-size: clamp(40px, 6.4vw, 76px); line-height: 1.02; letter-spacing: -0.045em; }
+      h2 .dim { color: var(--accent); }
+      /* keep type readable on the bright day sky */
+      section h2, section .lead, .works {
+        text-shadow: 0 1px 2px rgba(10, 26, 84, 0.45), 0 0 28px rgba(14, 38, 118, 0.42);
+      }
+      #product h2 .dim, #blocks h2 .dim { color: #dce6ff; }
+      .lead { font-size: clamp(19px, 2vw, 23px); line-height: 1.38; letter-spacing: -0.02em; color: var(--soft); max-width: 640px; margin: 22px 0 0; font-weight: 500; }
+      .center { text-align: center; }
+      .center .lead { margin-left: auto; margin-right: auto; }
+      .mono { font-family: var(--mono); }
+      .tag { font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--faint); }
+
+      /* ------------------------------------------------------------ hero */
+      /* the wordmark sits in the bottom band; content stays above it */
+      .hero {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        padding-top: clamp(130px, 18vh, 190px);
+        padding-bottom: clamp(150px, 21vw, 300px);
+        overflow: hidden;
+      }
+      .hero h1 { font-size: clamp(44px, 7vw, 88px); line-height: 1; letter-spacing: -0.05em; font-weight: 600; max-width: 900px; text-shadow: 0 2px 30px rgba(20, 50, 140, 0.3); }
+      .hero .lead, .hero .small {
+        color: #fff;
+        text-shadow: 0 1px 2px rgba(12, 32, 100, 0.55), 0 0 22px rgba(20, 52, 150, 0.55);
+      }
+      .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+      .small { margin-top: 18px; font-size: 13.5px; color: rgba(255, 255, 255, 0.85); }
+      .wordmark {
+        position: absolute;
+        right: -0.06em;
+        bottom: -0.2em;
+        font-size: clamp(110px, 21vw, 300px);
+        font-weight: 600;
+        letter-spacing: -0.07em;
+        line-height: 1;
+        color: #fff;
+        pointer-events: none;
+        user-select: none;
+      }
+      .scroll-hint { position: absolute; left: 24px; bottom: 28px; font-family: var(--mono); font-size: 12px; opacity: 0.8; }
+
+      /* ------------------------------------------------------------ product mockup */
+      .stage { margin-top: 64px; display: grid; grid-template-columns: 1.55fr 1fr; gap: 18px; align-items: start; }
+      .window {
+        background: var(--panel);
+        border-radius: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 40px 120px rgba(5, 10, 40, 0.55);
+        overflow: visible;
+        position: relative;
+        font-size: 13.5px;
+      }
+      .titlebar { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.07); color: #cfd3df; }
+      .titlebar img { width: 16px; height: 16px; }
+      .titlebar .controls { margin-left: auto; display: flex; gap: 16px; color: #7c8294; font-family: var(--mono); font-size: 12px; }
+      .app-body { padding: 22px 24px 26px; color: #e6e8ef; min-height: 300px; }
+      .app-body h3 { font-size: 22px; letter-spacing: -0.03em; }
+      .note { display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
+      .note .who { color: #8a90a2; font-family: var(--mono); font-size: 11.5px; }
+      .input { margin: 16px 0 6px; padding: 10px 12px; border-radius: 10px; background: var(--panel-2); color: #8a90a2; border: 1px solid rgba(255, 255, 255, 0.07); }
+      .menu {
+        position: absolute;
+        top: 30px;
+        left: 34%;
+        width: 360px;
+        background: rgba(24, 26, 34, 0.96);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+        padding: 6px;
+        font-size: 12.5px;
+        color: #dfe2ea;
+        backdrop-filter: blur(10px);
+      }
+      .menu .item { display: flex; gap: 8px; align-items: center; padding: 7px 10px; border-radius: 7px; white-space: nowrap; }
+      .menu .item.head { color: #8a90a2; font-size: 11.5px; }
+      .menu .item:not(.head):hover { background: rgba(255, 255, 255, 0.07); }
+      .menu .sep { height: 1px; background: rgba(255, 255, 255, 0.08); margin: 5px 4px; }
+      .menu .meta { margin-left: auto; color: #8a90a2; font-family: var(--mono); font-size: 11px; }
+      .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); flex: none; }
+      .dot.amber { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+      .cursor { position: absolute; top: 18px; left: calc(34% - 6px); width: 14px; height: 14px; border-left: 2px solid #fff; border-top: 2px solid #fff; transform: rotate(-12deg); filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6)); }
+      .agent-card { background: var(--panel); border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.08); padding: 18px; box-shadow: 0 40px 120px rgba(5, 10, 40, 0.45); font-size: 13px; }
+      .agent-card .row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.07); color: #dfe2ea; }
+      .agent-card .row:last-child { border-bottom: 0; }
+      .agent-card code { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+      .agent-card .out { font-family: var(--mono); font-size: 11.5px; color: #8a90a2; padding: 2px 0 8px 17px; }
+      .features {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 28px;
+        margin-top: 22px;
+        padding: 28px;
+        border-radius: 20px;
+        background: rgba(10, 22, 70, 0.34);
+        border: 1px solid var(--line);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+      }
+      .features p { color: rgba(255, 255, 255, 0.82); }
+      .features h3 { font-size: 19px; letter-spacing: -0.03em; margin-bottom: 8px; }
+      .features p { margin: 0; color: var(--soft); line-height: 1.5; font-size: 15.5px; }
+
+      /* ------------------------------------------------------------ building blocks */
+      .blocks { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 56px; }
+      .block {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 22px;
+        background: rgba(8, 14, 44, 0.32);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        min-height: 230px;
+        display: flex;
+        flex-direction: column;
+        cursor: pointer;
+        transition: border-color 0.2s, background 0.2s, transform 0.2s;
+        text-align: left;
+        color: inherit;
+        font: inherit;
+      }
+      .block:hover { transform: translateY(-2px); }
+      .block[aria-pressed="true"] { border-color: rgba(255, 255, 255, 0.85); background: rgba(255, 255, 255, 0.1); }
+      .block .num { font-family: var(--mono); font-size: 12px; color: var(--faint); }
+      .block h3 { font-size: 24px; letter-spacing: -0.035em; margin: 34px 0 10px; }
+      .block p { margin: 0; color: var(--soft); font-size: 15px; line-height: 1.5; }
+      .block .check { margin-top: auto; padding-top: 16px; font-family: var(--mono); font-size: 12px; color: var(--faint); }
+      .block[aria-pressed="true"] .check { color: #fff; }
+      .composer { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; border: 1px solid var(--line); border-radius: 18px; padding: 18px 22px; background: rgba(5, 8, 24, 0.5); }
+      .composer code { font-family: var(--mono); font-size: 14.5px; }
+      .composer .result { color: var(--soft); font-size: 15px; }
+
+      /* ------------------------------------------------------------ agents */
+      .split { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 56px; }
+      .profile { border-radius: 20px; padding: 28px; background: rgba(6, 10, 30, 0.55); border: 1px solid var(--line); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+      .profile h3 { font-size: 28px; letter-spacing: -0.04em; margin: 14px 0 10px; }
+      .profile p { color: var(--soft); line-height: 1.5; margin: 0 0 18px; }
+      .term {
+        font-family: var(--mono);
+        font-size: 13px;
+        line-height: 1.75;
+        background: #05060a;
+        border-radius: 12px;
+        padding: 16px 18px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: #d7dbe6;
+        overflow-x: auto;
+        white-space: pre;
+      }
+      .term .c { color: #6b7286; }
+      .term .k { color: var(--accent); }
+      .term .g { color: var(--green); }
+      .works { margin-top: 26px; color: var(--faint); font-size: 14px; }
+
+      /* ------------------------------------------------------------ index */
+      .index { columns: 3 300px; column-gap: 56px; margin-top: 64px; }
+      .cat { break-inside: avoid; padding: 22px 0 30px; border-top: 1px solid var(--line); }
+      .cat header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+      .cat h3 { font-size: 23px; letter-spacing: -0.035em; }
+      .cat .count { font-family: var(--mono); font-size: 13px; color: var(--faint); }
+      .cat ul { list-style: none; margin: 0; padding: 0; }
+      .cat li { padding: 6px 0; color: var(--soft); font-size: 16px; }
+      .soon { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; color: var(--accent); border: 1px solid rgba(184, 204, 255, 0.5); border-radius: 4px; padding: 1px 5px; margin-left: 6px; vertical-align: 2px; }
+
+      /* ------------------------------------------------------------ security */
+      .vow .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; margin-top: 64px; text-align: left; }
+      .vow h3 { font-size: 21px; letter-spacing: -0.03em; margin-bottom: 14px; }
+      .vow li { padding: 9px 0; border-bottom: 1px solid var(--line); color: var(--soft); list-style: none; }
+      .vow ul { padding: 0; margin: 0; }
+
+      /* ------------------------------------------------------------ quick start */
+      .quick { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 56px; align-items: center; }
+      .copy { position: relative; min-width: 0; }
+      .split > *, .stage > * { min-width: 0; }
+      .copy button { position: absolute; top: 10px; right: 10px; font-family: var(--mono); font-size: 11.5px; padding: 6px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid var(--line); cursor: pointer; }
+
+      /* ------------------------------------------------------------ faq */
+      .faq { max-width: 820px; margin: 56px auto 0; }
+      .faq details { border-top: 1px solid var(--line); padding: 4px 0; }
+      .faq details:last-child { border-bottom: 1px solid var(--line); }
+      .faq summary { cursor: pointer; list-style: none; padding: 18px 0; font-size: 19px; font-weight: 500; letter-spacing: -0.02em; display: flex; justify-content: space-between; gap: 20px; }
+      .faq summary::-webkit-details-marker { display: none; }
+      .faq summary::after { content: "+"; font-family: var(--mono); color: var(--faint); transition: transform 0.2s; }
+      .faq details[open] summary::after { transform: rotate(45deg); }
+      .faq details p { margin: 0 0 20px; color: var(--soft); line-height: 1.6; max-width: 700px; }
+
+      /* ------------------------------------------------------------ join */
+      .join { min-height: 92vh; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+      .join h2 { font-size: clamp(64px, 12vw, 170px); letter-spacing: -0.06em; font-weight: 600; }
+      .join .actions { justify-content: center; }
+      footer { padding: 36px 24px 48px; color: var(--faint); font-size: 13.5px; }
+      footer .wrap { display: flex; flex-wrap: wrap; gap: 22px; align-items: center; border-top: 1px solid var(--line); padding-top: 26px; }
+      footer a { text-decoration: none; }
+      footer a:hover { color: #fff; }
+      footer .grow { margin-left: auto; }
+
+      /* first screen: visible at once, with a short rise */
+      .rise { animation: rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+      .rise:nth-child(2) { animation-delay: 0.06s; }
+      .rise:nth-child(3) { animation-delay: 0.12s; }
+      .rise:nth-child(4) { animation-delay: 0.18s; }
+      @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+      /* reveal on scroll */
+      .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.9s ease, transform 0.9s ease; }
+      .reveal.in { opacity: 1; transform: none; }
+
+      @media (max-width: 900px) {
+        .nav nav { display: none; }
+        .stage, .split, .quick, .vow .cols { grid-template-columns: 1fr; }
+        .features, .blocks { grid-template-columns: 1fr 1fr; }
+        .menu { left: 8%; width: min(360px, 84%); }
+        .cursor { left: calc(8% - 6px); }
+      }
+      @media (max-width: 560px) {
+        section { padding: 110px 18px; }
+        .features, .blocks { grid-template-columns: 1fr; }
+        .nav .pill.ghost { display: none; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html { scroll-behavior: auto; }
+        .reveal { opacity: 1; transform: none; transition: none; }
+        .rise { animation: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="sky" aria-hidden="true"></canvas>
+
+    <header class="nav" id="nav">
+      <a class="brand" href="#top" aria-label="OpenShell home"><img src="assets/logo.png" alt="" />openshell</a>
+      <nav aria-label="Main">
+        <a href="#product">Product</a>
+        <a href="#blocks">Building blocks</a>
+        <a href="#agents">Agents</a>
+        <a href="#everything">Everything</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <a class="pill ghost" href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+      <a class="pill" href="#start">Get started</a>
+    </header>
+
+    <main>
+      <!-- ============================================================ hero -->
+      <section class="hero" id="top">
+        <div class="wrap" style="width: 100%">
+          <h1 class="rise">Any web app.<br />A native desktop app.<br />Agents included.</h1>
+          <p class="lead  rise">
+            OpenShell runs your frontend, backends, database and AI functions as one desktop app – supervised,
+            packaged, and open to the AI agents you choose.
+          </p>
+          <div class="actions  rise">
+            <a class="pill" href="https://github.com/RobinsSuperSchmiede/EDA/releases/latest">Download</a>
+            <a class="pill ghost" href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/getting-started.md">Read the docs</a>
+          </div>
+          <p class="small  rise">Free and open source · MIT · Windows, macOS and Linux</p>
+        </div>
+        <div class="wordmark" aria-hidden="true">openshell</div>
+        <div class="scroll-hint" aria-hidden="true">scroll ↓</div>
+      </section>
+
+      <!-- ============================================================ product -->
+      <section id="product">
+        <div class="wrap">
+          <div class="center">
+            <h2 class="reveal">The shell is not your app.<br /><span class="dim">It runs your app.</span></h2>
+            <p class="lead reveal">
+              Describe your app in one <span class="mono">openshell.json</span>. OpenShell starts it, watches it,
+              restarts it, shows it in a native window and hands it to your agents.
+            </p>
+          </div>
+
+          <div class="stage reveal">
+            <div class="window" aria-label="OpenShell window with the service menu open">
+              <div class="titlebar">
+                <img src="assets/logo.png" alt="" /> Notes
+                <span class="controls">— ▢ ✕</span>
+              </div>
+              <div class="app-body">
+                <h3>Notes</h3>
+                <div class="input">Write a note…</div>
+                <div class="note"><span>Ship the installer</span><span class="who">you · 2m</span></div>
+                <div class="note"><span>Summarize this week's notes</span><span class="who">agent · 5m</span></div>
+                <div class="note"><span>Add tags to notes</span><span class="who">you · 1h</span></div>
+              </div>
+              <div class="cursor" aria-hidden="true"></div>
+              <div class="menu" role="presentation">
+                <div class="item head">Notes · development · 2/2 healthy · 0.6% CPU · 54 MB</div>
+                <div class="sep"></div>
+                <div class="item"><span class="dot"></span>backend — running<span class="meta">0.4% · 31 MB ›</span></div>
+                <div class="item"><span class="dot"></span>frontend — running<span class="meta">static ›</span></div>
+                <div class="item"><span class="dot amber"></span>database main — 2 tables<span class="meta">sqlite</span></div>
+                <div class="item"><span class="dot"></span>3 functions for AI agents<span class="meta">mcp</span></div>
+                <div class="sep"></div>
+                <div class="item">Restart all services</div>
+                <div class="item">Runtime panel…</div>
+                <div class="item">AI agents<span class="meta">›</span></div>
+              </div>
+            </div>
+            <div class="agent-card" aria-label="An AI agent using the app">
+              <div class="tag">Agent · using the app</div>
+              <div class="row"><span class="dot"></span><code>add_note</code></div>
+              <div class="out">{ "title": "Call the bank" } → saved, id 12</div>
+              <div class="row"><span class="dot"></span><code>search_notes</code></div>
+              <div class="out">{ "q": "installer" } → 1 result</div>
+              <div class="row"><span class="dot amber"></span><code>db_execute</code></div>
+              <div class="out">waiting for your approval…</div>
+              <div class="row"><span class="dot"></span><code>app_status</code></div>
+              <div class="out">healthy · 2 services · 1 database</div>
+            </div>
+          </div>
+
+          <div class="features">
+            <div class="reveal"><h3>Supervised</h3><p>Start order, health checks, restarts with backoff, logs, CPU and memory for every service.</p></div>
+            <div class="reveal"><h3>Native</h3><p>A Tauri 2 window with tray, notifications and a right-click service menu in the title bar.</p></div>
+            <div class="reveal"><h3>Live</h3><p>Edit code and the window reloads, the backend restarts, compiled services rebuild.</p></div>
+            <div class="reveal"><h3>Shippable</h3><p>One command builds a real installer with your app's name and icon.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ building blocks -->
+      <section id="blocks">
+        <div class="wrap">
+          <h2 class="reveal">Build only<br /><span class="dim">what you need.</span></h2>
+          <p class="lead reveal">
+            Frontend, backend, database and functions for AI agents are independent blocks. A UI that stores data
+            without a backend. An AI interface without any UI. Or everything. Tap the blocks.
+          </p>
+          <div class="blocks" id="block-picker">
+            <button class="block reveal" type="button" data-block="frontend" aria-pressed="true">
+              <span class="num">01</span><h3>Frontend</h3>
+              <p>Any web UI – React, Vue, Svelte, plain HTML – in a native window.</p>
+              <span class="check">openshell add frontend</span>
+            </button>
+            <button class="block reveal" type="button" data-block="backend" aria-pressed="false">
+              <span class="num">02</span><h3>Backend</h3>
+              <p>Python, Node, Java, C++, Go, Rust, .NET – supervised and hot-reloaded.</p>
+              <span class="check">openshell add backend</span>
+            </button>
+            <button class="block reveal" type="button" data-block="database" aria-pressed="true">
+              <span class="num">03</span><h3>Database</h3>
+              <p>Built-in SQLite with migrations. The frontend, services and agents can use it.</p>
+              <span class="check">openshell add database</span>
+            </button>
+            <button class="block reveal" type="button" data-block="functions" aria-pressed="false">
+              <span class="num">04</span><h3>Functions</h3>
+              <p>Tools for AI agents as plain scripts. JSON in, JSON out, no server.</p>
+              <span class="check">openshell add function</span>
+            </button>
+          </div>
+          <div class="composer reveal">
+            <code id="compose-cmd">openshell create my-app --with frontend,database</code>
+            <span class="result" id="compose-result">A desktop UI that stores its data locally – no backend.</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ agents -->
+      <section id="agents">
+        <div class="wrap">
+          <div class="center">
+            <h2 class="reveal">Agents use it.<br /><span class="dim">Agents build it.</span></h2>
+            <p class="lead reveal">
+              Every OpenShell app speaks MCP. Assistants use your app through its own functions. Coding agents
+              develop it with logs, services, files and the live UI. No clicking through screens.
+            </p>
+          </div>
+          <div class="split">
+            <div class="profile reveal">
+              <span class="tag">App profile</span>
+              <h3>Use the app</h3>
+              <p>Only your app's functions: declared capabilities, OpenAPI operations, frontend actions and the database – as you allow. Installed apps start in the background on demand.</p>
+              <div class="term"><span class="c"># an installed app is an MCP server</span>
+<span class="k">notes.exe</span> --mcp
+
+<span class="c"># or a project</span>
+<span class="k">openshell</span> mcp --app --start</div>
+            </div>
+            <div class="profile reveal">
+              <span class="tag">Developer profile</span>
+              <h3>Build the app</h3>
+              <p>32 tools: runtime status, logs, restarts, project files, database, semantic UI automation – click and fill by element, not by pixel.</p>
+              <div class="term"><span class="k">claude</span> mcp add notes -- openshell mcp
+
+<span class="c">› ui_snapshot</span>     <span class="g">e7 button "Add"</span>
+<span class="c">› ui_fill</span> e3 "Ship it"   <span class="g">ok</span>
+<span class="c">› logs_read</span> errors   <span class="g">0 lines</span></div>
+            </div>
+          </div>
+          <p class="works center reveal">Works with Claude Code, Codex, Cursor, Copilot, Ollama, LM Studio and any MCP client. Model-agnostic by design.</p>
+        </div>
+      </section>
+
+      <!-- ============================================================ index -->
+      <section id="everything">
+        <div class="wrap">
+          <h2 class="reveal"><span id="total">55</span> things<br />OpenShell does.</h2>
+          <p class="lead reveal">Everything in OpenShell, in one place. Anything tagged <span class="soon">COMING</span> is on the roadmap.</p>
+          <div class="index" id="index"></div>
+        </div>
+      </section>
+
+      <!-- ============================================================ security -->
+      <section class="vow" id="security">
+        <div class="wrap center">
+          <h2 class="reveal">Agents get exactly<br /><span class="dim">what you allow.</span></h2>
+          <p class="lead reveal">Permission scopes per mode, a human in the loop for anything critical, and a record of every call.</p>
+          <div class="cols">
+            <div class="reveal">
+              <h3>What agents can do</h3>
+              <ul>
+                <li>Read state, logs and capabilities – <span class="mono">read</span></li>
+                <li>Operate the UI – <span class="mono">ui</span></li>
+                <li>Call your app's functions – <span class="mono">actions</span></li>
+                <li>Restart services, edit code – development only</li>
+                <li>Run declared tasks – after you approve</li>
+              </ul>
+            </div>
+            <div class="reveal">
+              <h3>What stays protected</h3>
+              <ul>
+                <li>No arbitrary shell commands, ever</li>
+                <li>Files only inside the project</li>
+                <li>Control API on 127.0.0.1 with tokens, Host and Origin checks</li>
+                <li>Databases closed to agents unless you open them</li>
+                <li>Every call in an append-only audit log</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ quick start -->
+      <section id="start">
+        <div class="wrap quick">
+          <div>
+            <h2 class="reveal">Five minutes<br /><span class="dim">to a desktop app.</span></h2>
+            <p class="lead reveal">Create, run, ship. Or point OpenShell at the web app you already have – it detects the stack.</p>
+          </div>
+          <div class="copy reveal">
+            <button type="button" id="copy">copy</button>
+            <div class="term" id="quickstart"><span class="c"># install (Windows: install.ps1)</span>
+curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/scripts/install.sh | sh
+
+<span class="k">openshell</span> create my-app --with frontend,database
+<span class="k">cd</span> my-app
+<span class="k">openshell</span> dev        <span class="c"># native window, hot reload</span>
+<span class="k">openshell</span> package    <span class="c"># → installer</span>
+
+<span class="c"># existing project</span>
+<span class="k">openshell</span> init</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ faq -->
+      <section id="faq">
+        <div class="wrap">
+          <h2 class="center reveal">Questions people ask</h2>
+          <div class="faq">
+            <details class="reveal">
+              <summary>Is OpenShell a framework I have to rewrite my app for?</summary>
+              <p>No. Your frontend and backend stay normal projects. OpenShell reads an <span class="mono">openshell.json</span> and runs them – the shell is never compiled into your app, so improving the shell improves every app.</p>
+            </details>
+            <details class="reveal">
+              <summary>How is it different from Tauri or Electron?</summary>
+              <p>OpenShell is built on Tauri 2 and adds what you would otherwise write yourself: process supervision, health checks, logs, a database, hot reload, installers and a standard interface for AI agents. You configure instead of coding a desktop shell.</p>
+            </details>
+            <details class="reveal">
+              <summary>Do I need a backend?</summary>
+              <p>Only if you want one. A frontend can store data in the built-in SQLite database, and AI functions can be plain scripts. Pick the building blocks you need.</p>
+            </details>
+            <details class="reveal">
+              <summary>Which AI agents and models work with it?</summary>
+              <p>Any MCP client – Claude Code, Codex, Cursor, Copilot – and anything that speaks HTTP/JSON. OpenShell never ships or requires a model; it also detects local providers like Ollama and LM Studio.</p>
+            </details>
+            <details class="reveal">
+              <summary>Can an agent break my computer?</summary>
+              <p>Agents only get the scopes you grant per mode, critical actions need your approval, file access is limited to the project, arbitrary commands are not possible, and every call is audited.</p>
+            </details>
+            <details class="reveal">
+              <summary>What does it cost?</summary>
+              <p>Nothing. OpenShell is open source under the MIT license.</p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ join -->
+      <section class="join" id="download">
+        <div class="wrap">
+          <h2 class="reveal">Build the<br />shell once.</h2>
+          <p class="lead reveal">Build applications on top of it. Let agents use and evolve them.</p>
+          <div class="actions reveal">
+            <a class="pill" href="https://github.com/RobinsSuperSchmiede/EDA/releases/latest">Download OpenShell</a>
+            <a class="pill ghost" href="https://github.com/RobinsSuperSchmiede/EDA">Star on GitHub</a>
+          </div>
+          <p class="small reveal">Windows · macOS (Apple Silicon and Intel) · Linux</p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <span>© OpenShell contributors · MIT</span>
+        <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/README.md">Docs</a>
+        <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/CHANGELOG.md">Changelog</a>
+        <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/ROADMAP.md">Roadmap</a>
+        <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+        <a class="grow" href="#top">Back to the sky ↑</a>
+      </div>
+    </footer>
+
+    <script>
+      // ---------------------------------------------------------------- feature index
+      const INDEX = [
+        ["Runtime", ["Services in dependency order", "Health checks and restarts", "Crash-loop protection", "Dynamic ports and variables", "Build steps for C++, Java, Go, Rust", "Logs for every service", "CPU and memory per process tree", "File watching and hot reload", "External services"]],
+        ["Desktop", ["Native Tauri 2 window", "Loading screen and runtime panel", "Service menu in the title bar", "Tray and background mode", "Your own title bar", "Native notifications", "Single instance", "Launch at login"]],
+        ["Building blocks", ["Frontend in any framework", "Backend in any language", "Built-in SQLite with migrations", "Functions as plain scripts", "Console for apps without a UI", "openshell add / create --with"]],
+        ["Agents", ["MCP over stdio and HTTP", "App profile: use the app", "Developer profile: build it", "32 built-in tools", "Semantic UI automation", "OpenAPI import", "Frontend actions", "MCP resources", "Live tool-list updates", "Ollama and LM Studio discovery", "Screenshot fallback|COMING", "Agent sessions with own tokens|COMING"]],
+        ["Security", ["Permission scopes per mode", "Human approvals", "Append-only audit log", "Project-scoped file access", "Loopback API with tokens", "Host and Origin checks", "Per-database agent access"]],
+        ["Shipping", ["NSIS, MSI, DMG, DEB, AppImage", "Your name and icon", "Per-user data directory", "Installed apps speak MCP", "Prebuilt releases", "Code signing|COMING", "Auto-updates|COMING"]],
+        ["Developer experience", ["One openshell.json + JSON Schema", "Templates for 7 stacks", "openshell init detects your stack", "openshell doctor", "AGENTS.md in every project", "openshell guide for AI agents", "llms.txt and llms-full.txt", "Frontend SDK"]],
+      ];
+      const index = document.getElementById("index");
+      let total = 0;
+      for (const [title, items] of INDEX) {
+        total += items.length;
+        const cat = document.createElement("div");
+        cat.className = "cat reveal";
+        cat.innerHTML = `<header><h3></h3><span class="count"></span></header><ul></ul>`;
+        cat.querySelector("h3").textContent = title;
+        cat.querySelector(".count").textContent = String(items.length);
+        for (const raw of items) {
+          const [text, soon] = raw.split("|");
+          const li = document.createElement("li");
+          li.textContent = text;
+          if (soon) {
+            const t = document.createElement("span");
+            t.className = "soon";
+            t.textContent = soon;
+            li.append(t);
+          }
+          cat.querySelector("ul").append(li);
+        }
+        index.append(cat);
+      }
+      document.getElementById("total").textContent = total;
+
+      // ---------------------------------------------------------------- block composer
+      const DESCRIBE = {
+        "": "Pick at least one block.",
+        frontend: "A desktop UI – static HTML or any framework.",
+        backend: "A supervised API service. Runs headless or in the tray.",
+        database: "A local database agents can query – shown in the built-in console.",
+        functions: "Tools for AI agents only. No UI, no server.",
+        "frontend,database": "A desktop UI that stores its data locally – no backend.",
+        "database,functions": "An AI interface over your data – no UI, no server.",
+        "frontend,backend": "The classic: your web app as a desktop app.",
+        "backend,database": "An API with built-in storage, ready for agents.",
+        "frontend,functions": "A UI plus tools agents can call.",
+        "backend,functions": "A service plus script tools for agents.",
+      };
+      const picker = document.getElementById("block-picker");
+      function compose() {
+        const on = [...picker.querySelectorAll('[aria-pressed="true"]')].map((b) => b.dataset.block);
+        const key = on.join(",");
+        document.getElementById("compose-cmd").textContent = on.length
+          ? `openshell create my-app --with ${key}`
+          : "openshell create my-app --with …";
+        document.getElementById("compose-result").textContent =
+          DESCRIBE[key] || (on.length === 4 ? "Everything: UI, API, data and agent tools." : "Any combination works – blocks connect themselves.");
+      }
+      picker.addEventListener("click", (ev) => {
+        const b = ev.target.closest(".block");
+        if (!b) return;
+        b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") === "true" ? "false" : "true");
+        compose();
+      });
+      compose();
+
+      // ---------------------------------------------------------------- copy quick start
+      document.getElementById("copy").addEventListener("click", async (ev) => {
+        const text = document.getElementById("quickstart").innerText.split("\n").filter((l) => l.trim() && !l.trim().startsWith("#")).map((l) => l.replace(/\s+#.*$/, "")).join("\n");
+        try {
+          await navigator.clipboard.writeText(text);
+          ev.target.textContent = "copied";
+          setTimeout(() => (ev.target.textContent = "copy"), 1500);
+        } catch {
+          ev.target.textContent = "select & copy";
+        }
+      });
+
+      // ---------------------------------------------------------------- reveal on scroll
+      const io = new IntersectionObserver(
+        (entries) => entries.forEach((e) => e.isIntersecting && (e.target.classList.add("in"), io.unobserve(e.target))),
+        { threshold: 0.12 },
+      );
+      document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+
+      // ---------------------------------------------------------------- dithered sky
+      // A low-resolution canvas, upscaled with hard pixels. Clouds come from value noise, colours from a
+      // palette that moves from day over dusk to night as you scroll; a 4x4 Bayer matrix dithers the bands.
+      const canvas = document.getElementById("sky");
+      const ctx = canvas.getContext("2d");
+      const CELL = 5;
+      const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => (v + 0.5) / 16 - 0.5);
+      const PHASES = [
+        // [deep, mid, light, highlight]
+        [[63, 110, 224], [104, 146, 236], [168, 194, 246], [241, 245, 255]], // day
+        [[30, 66, 168], [52, 96, 204], [92, 132, 226], [170, 194, 244]], // late day
+        [[13, 30, 82], [26, 54, 128], [44, 84, 170], [98, 130, 210]], // dusk
+        [[5, 7, 15], [9, 15, 38], [16, 28, 66], [36, 56, 118]], // night
+      ];
+      const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+      function palette(p) {
+        const f = Math.min(PHASES.length - 1.0001, Math.max(0, p * (PHASES.length - 1)));
+        const i = Math.floor(f);
+        return PHASES[i].map((c, k) => mix(c, PHASES[i + 1][k], f - i));
+      }
+
+      // value noise with a fixed permutation (deterministic, no library)
+      const PERM = new Uint8Array(512);
+      (() => {
+        const p = [...Array(256).keys()];
+        let s = 1234567;
+        for (let i = 255; i > 0; i--) {
+          s = (s * 16807) % 2147483647;
+          const j = s % (i + 1);
+          [p[i], p[j]] = [p[j], p[i]];
+        }
+        for (let i = 0; i < 512; i++) PERM[i] = p[i & 255];
+      })();
+      const fade = (t) => t * t * (3 - 2 * t);
+      function noise(x, y) {
+        const xi = Math.floor(x), yi = Math.floor(y);
+        const xf = x - xi, yf = y - yi;
+        const h = (a, b) => PERM[(PERM[a & 255] + b) & 255] / 255;
+        const u = fade(xf), v = fade(yf);
+        const a = h(xi, yi), b = h(xi + 1, yi), c = h(xi, yi + 1), d = h(xi + 1, yi + 1);
+        return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+      }
+      function fbm(x, y) {
+        let v = 0, amp = 0.55, f = 1;
+        for (let o = 0; o < 4; o++) {
+          v += amp * noise(x * f, y * f);
+          f *= 2.03;
+          amp *= 0.5;
+        }
+        return v;
+      }
+
+      // stars for the night (positions in cells, stable across frames)
+      const STARS = Array.from({ length: 140 }, (_, i) => ({
+        x: (Math.sin(i * 91.7) * 0.5 + 0.5),
+        y: (Math.sin(i * 47.3 + 1.3) * 0.5 + 0.5),
+        tw: (i * 0.37) % (Math.PI * 2),
+        big: i % 11 === 0,
+      }));
+
+      let W = 0, H = 0, image;
+      function resize() {
+        W = Math.ceil(window.innerWidth / CELL);
+        H = Math.ceil(window.innerHeight / CELL);
+        canvas.width = W;
+        canvas.height = H;
+        image = ctx.createImageData(W, H);
+      }
+
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      let progress = 0;
+      function render(time) {
+        const t = reduced ? 0 : time / 1000;
+        const pal = palette(progress);
+        const night = Math.max(0, (progress - 0.45) / 0.55);
+        const scrollShift = window.scrollY / CELL / 60;
+        const data = image.data;
+        // the sun sits in the upper right during the day and sets as you scroll
+        // (parallax: it sinks faster than the page scrolls and is gone after the hero)
+        const sunX = W * 0.74, sunY = H * 0.2 + (window.scrollY / CELL) * 1.25, sunR = Math.max(8, W * 0.035);
+        for (let y = 0; y < H; y++) {
+          const gy = y / H;
+          for (let x = 0; x < W; x++) {
+            const nx = x / 70 + t * 0.012, ny = y / 46 + scrollShift;
+            let v = fbm(nx, ny) * (1.05 - night * 0.55);
+            // brighter towards the horizon by day, darker towards the top at night
+            v += (gy - 0.5) * (0.22 - night * 0.5);
+            const dx = x - sunX, dy = y - sunY;
+            const d = Math.sqrt(dx * dx + dy * dy);
+            if (sunY < H + sunR * 4) {
+              if (d < sunR) v = 1.2;
+              else v += Math.max(0, 1 - d / (sunR * 4)) * 0.45;
+            }
+            const level = Math.max(0, Math.min(3, Math.floor(v * 3.2 + BAYER[(y & 3) * 4 + (x & 3)] * 1.1)));
+            const c = pal[level];
+            const i = (y * W + x) * 4;
+            data[i] = c[0];
+            data[i + 1] = c[1];
+            data[i + 2] = c[2];
+            data[i + 3] = 255;
+          }
+        }
+        if (night > 0.05) {
+          for (const s of STARS) {
+            const x = Math.floor(s.x * W), y = Math.floor(s.y * H * 0.85);
+            const b = (0.55 + 0.45 * Math.sin(t * 1.6 + s.tw)) * Math.min(1, night * 1.6);
+            const put = (px, py, k) => {
+              if (px < 0 || py < 0 || px >= W || py >= H) return;
+              const i = (py * W + px) * 4;
+              data[i] += (230 - data[i]) * k;
+              data[i + 1] += (238 - data[i + 1]) * k;
+              data[i + 2] += (255 - data[i + 2]) * k;
+            };
+            put(x, y, b);
+            if (s.big) [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([a, c]) => put(x + a, y + c, b * 0.55));
+          }
+        }
+        ctx.putImageData(image, 0, 0);
+      }
+
+      let last = 0;
+      function frame(now) {
+        // ~15 fps is enough for drifting clouds and keeps the page light
+        if (now - last > 66) {
+          last = now;
+          render(now);
+        }
+        if (!reduced) requestAnimationFrame(frame);
+      }
+      const nav = document.getElementById("nav");
+      function onScroll() {
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        progress = Math.min(1, Math.max(0, window.scrollY / Math.max(1, max * 0.62)));
+        nav.classList.toggle("solid", progress > 0.25);
+        if (reduced) render(0);
+      }
+      window.addEventListener("resize", () => (resize(), render(performance.now())));
+      window.addEventListener("scroll", onScroll, { passive: true });
+      resize();
+      onScroll();
+      render(0);
+      if (!reduced) requestAnimationFrame(frame);
+    </script>
+  </body>
+</html>

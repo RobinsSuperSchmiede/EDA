@@ -295,6 +295,7 @@ templates/         project templates (embedded into the CLI)
 examples/          runnable examples
 docs/              documentation (docs/ai: material for AI agents, docs/concept: original concept, German)
 schema/            JSON Schema of openshell.json
+website/           landing page (static HTML)
 ```
 
 ## Contributing
