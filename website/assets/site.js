@@ -217,6 +217,7 @@
   const buckets = [[], [], [], [], [], [], []];
   function render(time) {
     const t = motionOn() ? time / 1000 : 0;
+    const calmOn = setting("calm", "on") !== "off";
     const intensity = Math.max(0.2, Math.min(1.6, parseFloat(setting("intensity", "1")) || 1));
     const scrollY = window.scrollY;
     const viewTop = scrollY;
@@ -242,7 +243,7 @@
         const px = x * cw;
         // quiet space behind headlines so the text never fights the field
         let calm = 1;
-        for (const r of calmRects) {
+        for (const r of calmOn ? calmRects : []) {
           const dx = Math.max(r.left - 24 - px, 0, px - r.right - 24);
           const dy = Math.max(r.top - 24 - docY, 0, docY - r.bottom - 16);
           calm = Math.min(calm, 0.06 + 0.94 * Math.min(1, Math.hypot(dx, dy) / 120));
@@ -283,7 +284,7 @@
     measure();
     redraw();
   }
-  new MutationObserver(apply).observe(root, { attributes: true, attributeFilter: ["data-theme", "data-surface", "data-hero", "data-field", "data-intensity", "data-motion"] });
+  new MutationObserver(apply).observe(root, { attributes: true, attributeFilter: ["data-theme", "data-surface", "data-hero", "data-field", "data-intensity", "data-motion", "data-calm"] });
   window.OpenShellSite = { apply };
   apply();
   document.fonts.ready.then(apply);

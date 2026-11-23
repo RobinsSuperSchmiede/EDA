@@ -5,6 +5,7 @@
  *   data-surface   tinted | ink                                page tinted by the theme or neutral ink
  *   data-hero      wordmark | stage                            big wordmark or product window in the hero
  *   data-field     hero | page | off                           where the ASCII field is drawn
+ *   data-calm      on | off                                    keep the field quiet behind headlines or not
  *   data-intensity 0.4 … 1.4                                   strength of the ASCII field
  *   data-motion    on | off
  */
@@ -112,6 +113,12 @@ a {
   height: 100vh;
   z-index: -1;
   pointer-events: none;
+}
+
+/* with the field running behind the text, a thin shadow keeps the letters apart from the glyphs */
+[data-calm="off"] .hero .copy-block,
+[data-calm="off"] #download > div {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
 }
 
 /* ------------------------------------------------------------------ header */

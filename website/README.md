@@ -20,6 +20,7 @@ Every setting is a data attribute on `<html>` in `index.html`:
 | `data-surface` | `tinted`, `ink` | Page tinted by the theme or neutral ink |
 | `data-hero` | `wordmark`, `stage` | Big `openshell` wordmark in the hero, or the app window next to the headline (the wordmark moves to the end) |
 | `data-field` | `hero`, `page`, `off` | Where the ASCII field is drawn |
+| `data-calm` | `on`, `off` | Keep the ASCII field quiet behind the hero and final text, or let it run behind the text |
 | `data-intensity` | `0.4` – `1.4` | Strength of the ASCII field |
 | `data-motion` | `on`, `off` | Animations (always off with `prefers-reduced-motion`) |
 

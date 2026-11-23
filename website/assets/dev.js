@@ -9,7 +9,7 @@
     ["amber", "Amber", "#ffc457"],
     ["mono", "Mono", "#e8e8eb"],
   ];
-  const PAGE_KEYS = ["theme", "surface", "hero", "field", "intensity", "motion"];
+  const PAGE_KEYS = ["theme", "surface", "hero", "field", "calm", "intensity", "motion"];
   const STORE = "openshell-dev";
 
   const frame = document.getElementById("site");
