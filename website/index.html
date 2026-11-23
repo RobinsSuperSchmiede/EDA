@@ -1,458 +1,48 @@
 <!doctype html>
-<html lang="en">
+<!-- Production page. Design settings live in the data attributes below; try others in dev.html. -->
+<html lang="en" data-theme="green" data-surface="tinted" data-hero="wordmark" data-field="hero" data-intensity="1" data-motion="on">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>OpenShell – any web app, a native desktop app, agents included</title>
     <meta
       name="description"
-      content="OpenShell is an open-source desktop shell built on Rust and Tauri 2. Bring a web frontend, any backend, a database or just functions – OpenShell runs them as a native desktop app that people and AI agents can use."
+      content="OpenShell is an open-source shell built on Rust and Tauri 2. Bring a web frontend, any backend, a database or just functions – OpenShell runs them as a native desktop app that people and AI agents can use. The same core runs headless on servers and Android."
     />
-    <meta property="og:title" content="OpenShell – the desktop shell for agent-native apps" />
+    <meta property="og:title" content="OpenShell – the shell for agent-native apps" />
     <meta property="og:description" content="Any web app. A native desktop app. Agents included. Free and open source." />
     <meta name="theme-color" content="#0f3624" />
     <link rel="icon" href="assets/logo.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
-    <style>
-      :root {
-        --bg: #0f3624;
-        --bg-2: #0c2e1e;
-        --panel: #082416;
-        --panel-2: #0c2e1d;
-        --line: rgba(200, 255, 225, 0.16);
-        --line-strong: rgba(200, 255, 225, 0.34);
-        --g-900: #154a31;
-        --g-700: #23704a;
-        --g-500: #3bb873;
-        --g-400: #5fd896;
-        --g-300: #a3f0c4;
-        --g-100: #e2fff0;
-        --white: #ffffff;
-        --text: #effcf4;
-        --muted: rgba(239, 252, 244, 0.76);
-        --amber: #ffd77a;
-        --card: rgba(6, 32, 20, 0.74);
-        --display: Geist, "SF Pro Text", system-ui, -apple-system, "Segoe UI", sans-serif;
-        --mono: "Geist Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
-        /* Minimal design system – dark tokens */
-        --ease: cubic-bezier(0.16, 1, 0.3, 1);
-        --glass: rgba(255, 255, 255, 0.1);
-        --glass-hover: rgba(255, 255, 255, 0.15);
-        --glass-active: rgba(255, 255, 255, 0.07);
-        --ghost-hover: rgba(255, 255, 255, 0.08);
-        --sheen: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-        --sheen-hover: inset 0 1px 0 rgba(255, 255, 255, 0.09);
-        --seg-on: rgba(255, 255, 255, 0.18);
-        --primary: #ffffff;
-        --primary-hover: #e4e4e6;
-        --on-primary: #0b0b0c;
-        --ring: rgba(255, 255, 255, 0.3);
-        font-family: Geist, "SF Pro Text", system-ui, -apple-system, "Segoe UI", sans-serif;
-        font-size: 17px;
-        letter-spacing: -0.005em;
-        -webkit-font-smoothing: antialiased;
-      }
-      * { box-sizing: border-box; }
-      html { scroll-behavior: smooth; }
-      body { margin: 0; color: var(--text); background: var(--bg); overflow-x: hidden; }
-      a { color: inherit; }
-      ::selection { background: rgba(163, 240, 196, 0.4); }
-
-      /* ASCII field behind everything */
-      #field { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -2; }
-      .veil {
-        position: fixed;
-        inset: 0;
-        z-index: -1;
-        pointer-events: none;
-        background: radial-gradient(ellipse 75% 65% at 50% 45%, rgba(15, 54, 36, 0.1), rgba(15, 54, 36, 0.55));
-      }
-
-      /* ------------------------------------------------------------ header */
-      .top {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 20;
-        height: 60px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 clamp(18px, 4vw, 44px);
-        transition: transform 0.35s ease, background 0.35s ease, border-color 0.35s ease;
-        border-bottom: 1px solid transparent;
-      }
-      .top.scrolled {
-        background: rgba(15, 54, 36, 0.7);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-bottom-color: var(--line);
-      }
-      .top.hidden { transform: translateY(-100%); }
-      .brand { display: flex; align-items: center; gap: 9px; text-decoration: none; font-weight: 600; font-size: 19px; letter-spacing: -0.04em; color: var(--white); }
-      .brand img { width: 20px; height: 20px; border-radius: 5px; }
-      /* Buttons from the "Minimal Design System": glass button (.btn) and landing CTA (.cta) */
-      .btn {
-        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-        height: 28px; padding: 0 16px; border: 0; border-radius: 999px; box-sizing: border-box;
-        box-shadow: var(--sheen); background: var(--glass); color: var(--white);
-        backdrop-filter: blur(24px) saturate(120%); -webkit-backdrop-filter: blur(24px) saturate(120%);
-        font-family: inherit; font-size: 13px; font-weight: 450; line-height: 1; letter-spacing: -0.005em;
-        text-decoration: none; white-space: nowrap; cursor: pointer;
-        transition: background-color 0.35s var(--ease), box-shadow 0.4s var(--ease), transform 0.3s var(--ease), color 0.28s var(--ease);
-      }
-      .btn:hover { background: var(--glass-hover); box-shadow: var(--sheen-hover); transform: translateY(-0.5px); }
-      .btn:active { background: var(--glass-active); box-shadow: var(--sheen); transform: scale(0.98); transition-duration: 0.12s; }
-      .btn:focus-visible { outline: none; box-shadow: var(--sheen), 0 0 0 3px var(--ring); }
-      .btn--sm { height: 22px; padding: 0 11px; font-size: 12px; gap: 5px; }
-      .btn--lg { height: 36px; padding: 0 20px; font-size: 14px; }
-      .btn--primary { background: var(--primary); color: var(--on-primary); backdrop-filter: none; -webkit-backdrop-filter: none; }
-      .btn--primary:hover { background: var(--primary-hover); }
-      .btn--ghost { background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
-      .btn--ghost:hover { background: var(--ghost-hover); }
-      .cta {
-        --c: #b8f7d2; --c-soft: rgba(52, 199, 120, 0.88); --c-hover: rgba(52, 199, 120, 1); --c-glow: rgba(52, 199, 120, 0.32);
-        position: relative; overflow: hidden; isolation: isolate;
-        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-        height: 36px; padding: 0 22px; border: 0; border-radius: 999px;
-        background: var(--c-soft); box-shadow: inset 0 0 0 2px var(--c), 0 4px 12px -6px var(--c-glow);
-        color: #0b0b0c; font-family: inherit; font-size: 14px; font-weight: 500; letter-spacing: -0.01em;
-        text-decoration: none; white-space: nowrap; cursor: pointer;
-        backdrop-filter: blur(24px) saturate(140%); -webkit-backdrop-filter: blur(24px) saturate(140%);
-        transition: background-color 0.35s var(--ease), box-shadow 0.4s var(--ease), transform 0.3s var(--ease);
-      }
-      .cta > * { position: relative; z-index: 2; }
-      .cta svg { width: 15px; height: 15px; flex: none; transition: transform 0.3s var(--ease); }
-      .cta::after {
-        content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; z-index: 1; pointer-events: none;
-        background: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.55) 50%, rgba(255, 255, 255, 0) 100%);
-        transform: translateX(-140%) skewX(-14deg); animation: cta-shine 3.8s var(--ease) infinite;
-      }
-      .cta:hover { background: var(--c-hover); box-shadow: inset 0 0 0 2px var(--c), 0 6px 16px -8px var(--c-glow); transform: translateY(-1px); }
-      .cta:hover svg { transform: translateX(2px); }
-      .cta:hover::after { animation-duration: 1.9s; }
-      .cta:active { transform: scale(0.98); transition-duration: 0.12s; }
-      .cta:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--c), 0 0 0 3px var(--ring); }
-      .cta--sm { height: 30px; padding: 0 18px; font-size: 13px; }
-      @keyframes cta-shine { 0% { transform: translateX(-140%) skewX(-14deg); } 50%, 100% { transform: translateX(320%) skewX(-14deg); } }
-
-      /* ------------------------------------------------------------ layout */
-      section { position: relative; padding: 140px clamp(18px, 4vw, 44px); }
-      .wrap { max-width: 1080px; margin: 0 auto; }
-      h1, h2, h3 { margin: 0; font-weight: 500; color: var(--white); }
-      h2 { font-size: clamp(40px, 6.4vw, 76px); line-height: 1.02; letter-spacing: -0.045em; }
-      h2 em { font-style: normal; color: var(--g-300); }
-      .kicker { font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--g-300); margin-bottom: 18px; display: inline-flex; }
-      .lead { font-size: clamp(19px, 2vw, 23px); line-height: 1.38; letter-spacing: -0.02em; font-weight: 500; color: var(--muted); max-width: 640px; margin: 22px 0 0; }
-      .lead, .note, .kicker, h1, h2, .step, .works { text-shadow: 0 0 3px var(--bg), 0 0 14px var(--bg), 0 0 28px var(--bg); }
-      .mono { font-family: var(--mono); }
-      .center { text-align: center; }
-      .center .lead { margin-left: auto; margin-right: auto; }
-      .center .kicker { justify-content: center; }
-
-      /* ------------------------------------------------------------ hero */
-      .hero {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
-        padding-top: clamp(100px, 15vh, 190px);
-        padding-bottom: clamp(140px, 22vh, 300px);
-        overflow: hidden;
-      }
-      .hero .wrap { width: 100%; position: relative; }
-      /* a soft calm area behind the headline so the ASCII field never fights the text */
-      .hero .wrap::before {
-        content: "";
-        position: absolute;
-        inset: -60px -40px -50px -80px;
-        z-index: -1;
-        pointer-events: none;
-        background: radial-gradient(ellipse 62% 60% at 32% 50%, rgba(15, 54, 36, 0.82), rgba(15, 54, 36, 0.5) 55%, rgba(15, 54, 36, 0) 78%);
-      }
-      .hero h1 { font-size: clamp(44px, min(7vw, 9.5vh), 88px); line-height: 1; letter-spacing: -0.05em; font-weight: 600; max-width: 900px; }
-      .hero .lead { color: var(--white); }
-      .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 34px; }
-      .note { margin-top: 18px; font-size: 13.5px; color: var(--muted); }
-      .wordmark {
-        position: absolute;
-        right: -0.06em;
-        bottom: -0.2em;
-        font-size: clamp(96px, min(21vw, 26vh), 300px);
-        font-weight: 600;
-        letter-spacing: -0.07em;
-        line-height: 1;
-        color: var(--white);
-        text-shadow: 0 0 40px rgba(15, 54, 36, 0.6);
-        pointer-events: none;
-        user-select: none;
-      }
-      .scroll-hint { position: absolute; left: clamp(18px, 4vw, 44px); bottom: 28px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
-
-      /* ------------------------------------------------------------ app window mockups */
-      .win {
-        background: var(--panel);
-        border: 1px solid var(--line-strong);
-        border-radius: 12px;
-        box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(0, 0, 0, 0.4);
-        position: relative;
-        font-size: 13.5px;
-        overflow: visible;
-      }
-      .win .bar { height: 36px; display: flex; align-items: center; gap: 9px; padding: 0 12px; border-bottom: 1px solid var(--line); color: var(--text); font-size: 13px; }
-      .win .bar img { width: 15px; height: 15px; border-radius: 4px; }
-      .win .bar .ctl { margin-left: auto; display: flex; gap: 14px; color: var(--muted); font-family: var(--mono); font-size: 11.5px; }
-      .win .body { padding: 20px 22px 24px; }
-      .win h4 { margin: 0 0 12px; font-family: var(--display); font-weight: 500; font-size: 19px; color: var(--white); }
-      .field-input { padding: 9px 11px; border: 1px solid var(--line); border-radius: 7px; color: var(--muted); background: var(--bg-2); margin-bottom: 8px; }
-      .row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
-      .row .meta { font-family: var(--mono); font-size: 11.5px; color: var(--muted); white-space: nowrap; }
-      .menu {
-        position: absolute;
-        top: 26px;
-        left: 30%;
-        width: min(350px, 78%);
-        background: #0b2217;
-        border: 1px solid var(--line-strong);
-        border-radius: 10px;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-        padding: 5px;
-        font-size: 12.5px;
-      }
-      .menu .it { display: flex; align-items: center; gap: 8px; padding: 6px 9px; border-radius: 6px; white-space: nowrap; }
-      .menu .it.head { color: var(--muted); font-size: 11.5px; }
-      .menu .it:not(.head):hover { background: rgba(127, 232, 171, 0.08); }
-      .menu .sep { height: 1px; background: var(--line); margin: 4px 3px; }
-      .menu .r { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--muted); }
-      .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--g-400); box-shadow: 0 0 8px var(--g-400); flex: none; }
-      .dot.wait { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
-      .pointer { position: absolute; top: 14px; left: calc(30% - 8px); width: 13px; height: 13px; border-left: 2px solid var(--white); border-top: 2px solid var(--white); transform: rotate(-12deg); filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7)); }
-      .stage { margin: 64px auto 0; max-width: 760px; }
-      .stage .win .body { min-height: 290px; }
-      .hero-visual { position: relative; }
-      .hero-visual .badge {
-        position: absolute;
-        right: -14px;
-        bottom: -26px;
-        background: var(--panel);
-        border: 1px solid var(--line-strong);
-        border-radius: 10px;
-        padding: 12px 14px;
-        font-family: var(--mono);
-        font-size: 12px;
-        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
-        max-width: 290px;
-      }
-      .badge .k { color: var(--g-300); }
-      .badge .m { color: var(--muted); }
-
-      /* ------------------------------------------------------------ diagram */
-      .diagram { margin-top: 56px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); padding: clamp(14px, 3vw, 34px); }
-      .diagram svg { width: 100%; height: auto; display: block; }
-      .diagram text { font-family: Geist, system-ui, sans-serif; fill: var(--text); }
-      .diagram .t-title { font-family: Geist, system-ui, sans-serif; font-size: 17px; font-weight: 500; fill: var(--white); }
-      .diagram .t-mono { font-family: "Geist Mono", monospace; font-size: 11.5px; fill: var(--muted); }
-      .diagram .t-small { font-size: 12.5px; fill: var(--muted); }
-      .diagram .box { fill: #0a1f14; stroke: rgba(160, 255, 200, 0.32); stroke-width: 1.2; }
-      .diagram .box-strong { fill: #0d281a; stroke: #7fe8ab; stroke-width: 1.4; }
-      .diagram .box-opt { fill: #08190f; stroke: rgba(160, 255, 200, 0.45); stroke-width: 1.2; stroke-dasharray: 5 4; }
-      .diagram .flow { fill: none; stroke: #45c97f; stroke-width: 1.6; stroke-dasharray: 6 6; animation: flow 1.6s linear infinite; }
-      .diagram .flow.slow { animation-duration: 2.6s; stroke: #7fe8ab; }
-      .diagram .arrow { fill: #45c97f; }
-      @keyframes flow { to { stroke-dashoffset: -24; } }
-      .legend { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 18px; font-size: 13.5px; color: var(--muted); }
-      .legend span::before { content: ""; display: inline-block; width: 22px; height: 0; border-top: 1.6px dashed var(--g-400); vertical-align: middle; margin-right: 8px; }
-      .legend span.opt::before { border-top: 1.4px dashed rgba(160, 255, 200, 0.45); width: 14px; height: 10px; border: 1.2px dashed rgba(160, 255, 200, 0.45); border-radius: 3px; }
-      .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 26px; }
-      .step { border-top: 1px solid var(--line-strong); padding-top: 14px; }
-      .step .n { font-family: var(--mono); font-size: 12px; color: var(--g-300); }
-      .step h3 { font-size: 18px; margin: 6px 0 6px; }
-      .step p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.55; }
-
-      /* ------------------------------------------------------------ building blocks */
-      .blocks { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 48px; }
-      .block {
-        position: relative;
-        text-align: left;
-        font: inherit;
-        color: inherit;
-        cursor: pointer;
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        padding: 20px;
-        background: var(--card);
-        min-height: 210px;
-        display: flex;
-        flex-direction: column;
-        transition: border-color 0.2s, background 0.2s;
-      }
-      .block:hover { border-color: var(--line-strong); }
-      .block[aria-pressed="true"] { border-color: var(--g-300); background: rgba(20, 70, 44, 0.92); }
-      .block .ascii { font-family: var(--mono); font-size: 11px; line-height: 1.15; color: var(--g-400); white-space: pre; margin: 0 0 14px; }
-      .block h3 { font-size: 21px; margin-bottom: 8px; }
-      .block p { margin: 0; color: var(--muted); font-size: 14.5px; line-height: 1.55; }
-      .block .state { position: absolute; top: 16px; right: 16px; width: 18px; height: 18px; border-radius: 5px; border: 1px solid var(--line-strong); display: grid; place-items: center; font-family: var(--mono); font-size: 12px; color: transparent; }
-      .block[aria-pressed="true"] .state { background: var(--g-300); border-color: var(--g-300); color: #03140a; }
-      .composer { margin-top: 12px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px; align-items: center; border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; background: var(--panel); }
-      .composer code { font-family: var(--mono); font-size: 14px; color: var(--g-100); }
-      .composer code::before { content: "$ "; color: var(--g-400); }
-      .composer span { color: var(--muted); font-size: 15px; }
-
-      /* ------------------------------------------------------------ gallery */
-      .group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 3px; border-radius: 999px; box-shadow: var(--sheen); background: var(--glass); backdrop-filter: blur(24px) saturate(120%); -webkit-backdrop-filter: blur(24px) saturate(120%); }
-      .tabs { margin-top: 40px; }
-      .tab { height: 28px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font-family: inherit; font-size: 13px; font-weight: 450; cursor: pointer; transition: background-color 0.35s var(--ease), color 0.28s var(--ease); }
-      .tab:hover { color: var(--white); }
-      .tab[aria-selected="true"] { color: var(--white); background: var(--seg-on); box-shadow: var(--sheen); }
-      .shots { margin-top: 22px; }
-      .shot { display: none; }
-      .shot.on { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 34px; align-items: center; animation: fade 0.4s ease; }
-      @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-      .shot .cap h3 { font-size: 26px; margin-bottom: 10px; }
-      .shot .cap p { color: var(--muted); line-height: 1.6; margin: 0 0 12px; }
-      .shot .cap code { font-family: var(--mono); font-size: 13px; color: var(--g-300); }
-      .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 14px; }
-      .chip { font-family: var(--mono); font-size: 11.5px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--line-strong); color: var(--text); }
-      .chip.on { background: rgba(127, 232, 171, 0.14); border-color: var(--g-300); }
-      table.mini { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-      table.mini th, table.mini td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
-      table.mini th { color: var(--muted); font-weight: 500; }
-      .fn { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-top: 12px; }
-      .fn .head { display: flex; justify-content: space-between; align-items: center; }
-      .fn code { font-family: var(--mono); color: var(--g-300); font-size: 12.5px; }
-      .fn .mini-btn { font-family: var(--mono); font-size: 11px; padding: 3px 9px; border-radius: 6px; background: var(--g-300); color: #03140a; }
-      .fn pre { margin: 8px 0 0; font-family: var(--mono); font-size: 11.5px; color: var(--muted); white-space: pre-wrap; }
-      .term {
-        font-family: var(--mono);
-        font-size: 12.5px;
-        line-height: 1.7;
-        background: #061d11;
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        padding: 16px 18px;
-        color: var(--text);
-        white-space: pre;
-        overflow-x: auto;
-      }
-      .term .c { color: #7fae93; }
-      .term .g { color: var(--g-300); }
-      .term .w { color: var(--white); }
-      .term .y { color: var(--amber); }
-      .term .p { color: var(--g-400); }
-      .chat .msg { padding: 10px 0; border-bottom: 1px solid var(--line); }
-      .chat .who { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 4px; }
-      .chat .call { font-family: var(--mono); font-size: 12px; color: var(--g-300); }
-      .chat .res { font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin-top: 2px; }
-
-      /* ------------------------------------------------------------ agents */
-      .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 48px; }
-      .card { border: 1px solid var(--line); border-radius: 14px; padding: 26px; background: var(--card); }
-      .card .tagline { font-family: var(--mono); font-size: 12px; color: var(--g-300); }
-      .card h3 { font-size: 26px; margin: 10px 0 10px; }
-      .card p { color: var(--muted); line-height: 1.6; margin: 0 0 18px; }
-      .works { margin-top: 22px; color: var(--muted); font-size: 14.5px; }
-
-      /* ------------------------------------------------------------ features */
-      .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 48px; }
-      .feat { border: 1px solid var(--line); border-radius: 12px; padding: 22px; background: var(--card); }
-      .feat h3 { font-size: 19px; display: flex; justify-content: space-between; align-items: baseline; }
-      .feat h3 small { font-family: var(--mono); font-size: 11.5px; color: var(--muted); font-weight: 400; }
-      .feat ul { list-style: none; padding: 0; margin: 14px 0 0; }
-      .feat li { padding: 5px 0 5px 18px; position: relative; color: var(--muted); font-size: 15px; }
-      .feat li::before { content: ">"; position: absolute; left: 0; font-family: var(--mono); color: var(--g-500); font-size: 12px; top: 7px; }
-      .soon { font-family: var(--mono); font-size: 10px; color: var(--amber); border: 1px solid rgba(245, 208, 107, 0.5); border-radius: 4px; padding: 0 4px; margin-left: 6px; }
-
-      /* ------------------------------------------------------------ security */
-      .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 48px; }
-      .list { border: 1px solid var(--line); border-radius: 14px; padding: 24px 26px; background: var(--card); }
-      .list h3 { font-size: 20px; margin-bottom: 8px; }
-      .list ul { list-style: none; margin: 0; padding: 0; }
-      .list li { padding: 11px 0; border-bottom: 1px solid var(--line); color: var(--muted); display: flex; gap: 12px; }
-      .list li:last-child { border-bottom: 0; }
-      .list li b { font-family: var(--mono); font-weight: 400; color: var(--g-300); font-size: 13px; min-width: 70px; }
-
-      /* ------------------------------------------------------------ quick start */
-      .quick { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 52px; align-items: center; }
-      .quick h2 { font-size: clamp(40px, 4.8vw, 60px); }
-      .copy { position: relative; min-width: 0; }
-      #quickstart { white-space: pre-wrap; overflow-wrap: anywhere; padding-right: 64px; }
-      .copy #copy { position: absolute; top: 12px; right: 12px; }
-
-      /* ------------------------------------------------------------ faq */
-      .faq { max-width: 820px; margin: 44px auto 0; }
-      .faq details { border-top: 1px solid var(--line); }
-      .faq details:last-child { border-bottom: 1px solid var(--line); }
-      .faq summary { cursor: pointer; list-style: none; padding: 18px 0; font-family: var(--display); font-size: 19px; color: var(--white); display: flex; justify-content: space-between; gap: 20px; }
-      .faq summary::-webkit-details-marker { display: none; }
-      .faq summary::after { content: "+"; font-family: var(--mono); color: var(--g-300); }
-      .faq details[open] summary::after { content: "−"; }
-      .faq p { margin: 0 0 20px; color: var(--muted); line-height: 1.65; }
-
-      /* ------------------------------------------------------------ final */
-      .final { min-height: 78vh; display: grid; place-items: center; text-align: center; }
-      .final h2 { font-size: clamp(48px, 8vw, 104px); letter-spacing: -0.035em; }
-      .final .actions { justify-content: center; }
-      footer { padding: 30px clamp(18px, 4vw, 44px) 44px; font-size: 13.5px; color: var(--muted); }
-      footer .wrap { display: flex; flex-wrap: wrap; gap: 20px; border-top: 1px solid var(--line); padding-top: 24px; }
-      footer a { text-decoration: none; }
-      footer a:hover { color: var(--white); }
-      footer .right { margin-left: auto; }
-
-      .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.8s ease, transform 0.8s ease; }
-      .reveal.in { opacity: 1; transform: none; }
-      .rise { animation: rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
-      @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-
-      @media (max-width: 960px) {
-        .shot.on, .split, .two, .quick { grid-template-columns: minmax(0, 1fr); }
-        .blocks, .steps { grid-template-columns: 1fr 1fr; }
-        .grid { grid-template-columns: 1fr 1fr; }
-        .hero-visual .badge { right: 8px; }
-      }
-      @media (max-width: 600px) {
-        section { padding-top: 100px; padding-bottom: 100px; }
-        .blocks, .steps, .grid { grid-template-columns: 1fr; }
-        .menu { left: 10%; }
-        .pointer { left: calc(10% - 8px); }
-        .diagram { overflow-x: auto; }
-        .diagram svg { width: 760px; max-width: none; }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        html { scroll-behavior: auto; }
-        .reveal { opacity: 1; transform: none; transition: none; }
-        .rise, .diagram .flow { animation: none; }
-      }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/site.css" />
   </head>
   <body>
     <canvas id="field" aria-hidden="true"></canvas>
-    <div class="veil" aria-hidden="true"></div>
 
     <header class="top" id="top-bar">
       <a class="brand" href="#hero"><img src="assets/logo.png" alt="" />OpenShell</a>
-      <a class="cta cta--sm" href="#start"><span>Get started</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      <a class="cta cta--sm" href="#start"><span>Get started</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
     </header>
 
     <main>
       <!-- ============================================================ hero -->
       <section class="hero" id="hero">
         <div class="wrap">
-          <h1 class="rise">Any web app.<br />A native desktop app.<br />Agents included.</h1>
-          <p class="lead rise">
-            OpenShell runs your frontend, backends, database and AI functions as one desktop app – supervised,
-            packaged, and open to the AI agents you choose.
-          </p>
-          <div class="actions rise">
-            <a class="cta" href="https://github.com/RobinsSuperSchmiede/EDA/releases/latest"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-            <a class="btn btn--lg" href="#how">How it works</a>
+          <div class="copy-block">
+            <h1 class="rise">Any web app<br />A native desktop app<br />Agents included</h1>
+            <p class="lead rise">
+              OpenShell runs your frontend, backends, database and AI functions as one desktop app – supervised,
+              packaged and open to the AI agents you choose. The same core runs headless on servers and Android.
+            </p>
+            <div class="actions rise">
+              <a class="cta" href="https://github.com/RobinsSuperSchmiede/EDA/releases/latest"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+              <a class="btn btn--lg" href="#how">How it works</a>
+            </div>
+            <p class="note rise">Free and open source · MIT · Windows, macOS, Linux · Android in progress</p>
           </div>
-          <p class="note rise">Free and open source · MIT · Windows, macOS and Linux</p>
+          <div class="stage-slot rise"></div>
         </div>
         <div class="wordmark" aria-hidden="true">openshell</div>
         <div class="scroll-hint" aria-hidden="true">scroll ↓</div>
@@ -461,40 +51,42 @@
       <!-- ============================================================ how it works -->
       <section id="how">
         <div class="wrap">
-          <div class="kicker reveal">how it works</div>
-          <h2 class="reveal">The shell is not your app.<br /><em>It runs your app.</em></h2>
+          <div class="kicker reveal">How it works</div>
+          <h2 class="reveal">The shell is not your app<br /><span class="soft">It runs your app</span></h2>
           <p class="lead reveal">
             OpenShell sits between the people and agents using your app and the parts it is made of. Your code stays a
             normal project; OpenShell never compiles it in.
           </p>
 
-          <div class="hero-visual stage reveal" aria-label="An OpenShell app window with the service menu open">
-            <div class="win">
-              <div class="bar"><img src="assets/logo.png" alt="" />Field Notes<span class="ctl">— ▢ ✕</span></div>
-              <div class="body">
-                <h4>Field Notes</h4>
-                <div class="field-input">Add a note…</div>
-                <div class="row"><span>Soil samples, plot 4</span><span class="meta">you · 3m</span></div>
-                <div class="row"><span>Weekly summary drafted</span><span class="meta">agent · 9m</span></div>
-                <div class="row"><span>Order more sample bags</span><span class="meta">you · 1h</span></div>
+          <div class="stage-slot">
+            <div class="stage" id="stage" aria-label="An OpenShell app window with the service menu open">
+              <div class="win">
+                <div class="bar"><img src="assets/logo.png" alt="" />Field Notes<span class="ctl">— ▢ ✕</span></div>
+                <div class="body">
+                  <h4>Field Notes</h4>
+                  <div class="field-input">Add a note</div>
+                  <div class="row"><span>Soil samples, plot 4</span><span class="meta">you · 3 min</span></div>
+                  <div class="row"><span>Weekly summary drafted</span><span class="meta">agent · 9 min</span></div>
+                  <div class="row"><span>Order more sample bags</span><span class="meta">you · 1 h</span></div>
+                </div>
+                <div class="pointer" aria-hidden="true"></div>
+                <div class="menu" role="presentation">
+                  <div class="it head">Field Notes · 2/2 healthy · 0.5% CPU · 48 MB</div>
+                  <div class="sep"></div>
+                  <div class="it"><span class="dot"></span>backend — running<span class="r">0.3% · 29 MB</span></div>
+                  <div class="it"><span class="dot"></span>frontend — running<span class="r">static</span></div>
+                  <div class="it"><span class="dot"></span>database main — 3 tables<span class="r">sqlite</span></div>
+                  <div class="it"><span class="dot"></span>4 functions for AI agents<span class="r">mcp</span></div>
+                  <div class="sep"></div>
+                  <div class="it">Restart all services</div>
+                  <div class="it">Runtime panel</div>
+                </div>
               </div>
-              <div class="pointer" aria-hidden="true"></div>
-              <div class="menu" role="presentation">
-                <div class="it head">Field Notes · 2/2 healthy · 0.5% CPU · 48 MB</div>
-                <div class="sep"></div>
-                <div class="it"><span class="dot"></span>backend — running<span class="r">0.3% · 29 MB</span></div>
-                <div class="it"><span class="dot"></span>frontend — running<span class="r">static</span></div>
-                <div class="it"><span class="dot"></span>database main — 3 tables<span class="r">sqlite</span></div>
-                <div class="it"><span class="dot"></span>4 functions for AI agents<span class="r">mcp</span></div>
-                <div class="sep"></div>
-                <div class="it">Restart all services</div>
-                <div class="it">Runtime panel…</div>
+              <div class="badge">
+                <div class="m">assistant → field-notes</div>
+                <div><span class="k">add_note</span> {"text": "Rain on plot 2"}</div>
+                <div class="m">saved · id 41</div>
               </div>
-            </div>
-            <div class="badge">
-              <div class="m">assistant → field-notes</div>
-              <div><span class="k">add_note</span> {"text": "Rain on plot 2"}</div>
-              <div class="m">✓ saved · id 41</div>
             </div>
           </div>
 
@@ -507,48 +99,44 @@
                 </marker>
               </defs>
 
-              <!-- actors -->
               <rect class="box" x="150" y="20" width="250" height="70" rx="12" />
               <text class="t-title" x="275" y="52" text-anchor="middle">People</text>
-              <text class="t-small" x="275" y="73" text-anchor="middle">use the native window</text>
+              <text class="t-small" x="275" y="73" text-anchor="middle">use the app window</text>
               <rect class="box" x="600" y="20" width="250" height="70" rx="12" />
               <text class="t-title" x="725" y="52" text-anchor="middle">AI agents</text>
               <text class="t-small" x="725" y="73" text-anchor="middle">Claude, Codex, Ollama, any MCP client</text>
 
-              <!-- config -->
               <rect class="box" x="10" y="250" width="120" height="96" rx="10" />
-              <text class="t-mono" x="70" y="282" text-anchor="middle" style="fill:#7fe8ab">openshell</text>
-              <text class="t-mono" x="70" y="298" text-anchor="middle" style="fill:#7fe8ab">.json</text>
+              <text class="t-accent" x="70" y="282" text-anchor="middle">openshell</text>
+              <text class="t-accent" x="70" y="298" text-anchor="middle">.json</text>
               <text class="t-small" x="70" y="324" text-anchor="middle">describes</text>
               <text class="t-small" x="70" y="339" text-anchor="middle">the app</text>
 
-              <!-- the shell -->
               <rect class="box-strong" x="160" y="150" width="830" height="250" rx="16" />
               <text class="t-title" x="190" y="182">OpenShell</text>
-              <text class="t-mono" x="290" y="182">desktop shell · runs on Windows, macOS, Linux</text>
+              <text class="t-mono" x="290" y="182">one core · desktop, server and Android</text>
 
-              <rect class="box" x="190" y="205" width="240" height="120" rx="10" />
-              <text class="t-title" x="210" y="236">Native window</text>
+              <rect class="box" x="190" y="204" width="240" height="120" rx="10" />
+              <text class="t-title" x="210" y="236">App window</text>
               <text class="t-small" x="210" y="260">WebView · tray · notifications</text>
               <text class="t-small" x="210" y="279">service menu · approvals</text>
               <text class="t-small" x="210" y="298">console for apps without UI</text>
 
-              <rect class="box" x="455" y="205" width="240" height="120" rx="10" />
+              <rect class="box" x="455" y="204" width="240" height="120" rx="10" />
               <text class="t-title" x="475" y="236">Runtime</text>
               <text class="t-small" x="475" y="260">start order · health checks</text>
               <text class="t-small" x="475" y="279">restarts · logs · CPU / memory</text>
-              <text class="t-small" x="475" y="298">builds · hot reload · ports</text>
+              <text class="t-small" x="475" y="298">platform adapter · lifecycle</text>
 
-              <rect class="box" x="720" y="205" width="240" height="120" rx="10" />
+              <rect class="box" x="720" y="204" width="240" height="120" rx="10" />
               <text class="t-title" x="740" y="236">Agent layer</text>
               <text class="t-small" x="740" y="260">MCP · 32 tools · UI bridge</text>
               <text class="t-small" x="740" y="279">permissions · approvals</text>
-              <text class="t-small" x="740" y="298">audit log</text>
+              <text class="t-small" x="740" y="298">audit log · remote gateway</text>
 
-              <rect class="box" x="190" y="343" width="770" height="38" rx="8" />
+              <rect class="box" x="190" y="344" width="770" height="36" rx="8" />
               <text class="t-mono" x="575" y="367" text-anchor="middle">local control API · 127.0.0.1 · tokens · used by CLI, SDK and agents</text>
 
-              <!-- blocks -->
               <rect class="box-opt" x="160" y="470" width="190" height="100" rx="12" />
               <text class="t-title" x="255" y="505" text-anchor="middle">Frontend</text>
               <text class="t-small" x="255" y="528" text-anchor="middle">React, Vue, Svelte, HTML</text>
@@ -569,7 +157,6 @@
               <text class="t-small" x="894" y="528" text-anchor="middle">scripts for AI agents</text>
               <text class="t-mono" x="894" y="552" text-anchor="middle">optional</text>
 
-              <!-- flows -->
               <path class="flow" d="M275,90 L275,148" marker-end="url(#ah)" />
               <path class="flow" d="M725,90 L725,148" marker-end="url(#ah)" />
               <path class="flow slow" d="M130,298 L158,298" marker-end="url(#ah)" />
@@ -596,36 +183,36 @@
       <!-- ============================================================ building blocks -->
       <section id="blocks">
         <div class="wrap">
-          <div class="kicker reveal">building blocks</div>
-          <h2 class="reveal">Pick the parts.<br /><em>Skip the rest.</em></h2>
+          <div class="kicker reveal">Building blocks</div>
+          <h2 class="reveal">Pick the parts<br /><span class="soft">Skip the rest</span></h2>
           <p class="lead reveal">Every block is optional. Store data without a backend, give agents tools without a UI, or combine everything. Click to compose.</p>
           <div class="blocks" id="picker">
             <button class="block reveal" type="button" data-block="frontend" aria-pressed="true"><span class="state">✓</span>
 <span class="ascii">┌──────┐
 │ ▤ ▤  │
-└──────┘</span><h3>Frontend</h3><p>Any web UI in a native window.</p></button>
+└──────┘</span><h3>Frontend</h3><p>Any web UI in a native window</p></button>
             <button class="block reveal" type="button" data-block="backend" aria-pressed="false"><span class="state">✓</span>
 <span class="ascii">  ┌─┐
 ──┤ ├──
-  └─┘</span><h3>Backend</h3><p>Any language, supervised and hot-reloaded.</p></button>
+  └─┘</span><h3>Backend</h3><p>Any language, supervised and hot-reloaded</p></button>
             <button class="block reveal" type="button" data-block="database" aria-pressed="true"><span class="state">✓</span>
 <span class="ascii"> ╭────╮
  ├────┤
- ╰────╯</span><h3>Database</h3><p>Built-in SQLite with migrations.</p></button>
+ ╰────╯</span><h3>Database</h3><p>Built-in SQLite with migrations</p></button>
             <button class="block reveal" type="button" data-block="functions" aria-pressed="false"><span class="state">✓</span>
 <span class="ascii"> { } →
  f(x)
- → { }</span><h3>Functions</h3><p>Tools for AI agents as plain scripts.</p></button>
+ → { }</span><h3>Functions</h3><p>Tools for AI agents as plain scripts</p></button>
           </div>
-          <div class="composer reveal"><code id="cmd">openshell create my-app --with frontend,database</code><span id="cmd-note">A desktop UI that keeps its data – no backend.</span></div>
+          <div class="composer reveal"><code id="cmd">openshell create my-app --with frontend,database</code><span id="cmd-note">A desktop UI that keeps its data – no backend</span></div>
         </div>
       </section>
 
       <!-- ============================================================ gallery -->
       <section id="look">
         <div class="wrap">
-          <div class="kicker reveal">what it looks like</div>
-          <h2 class="reveal">One shell,<br /><em>four ways to see it.</em></h2>
+          <div class="kicker reveal">What it looks like</div>
+          <h2 class="reveal">One shell<br /><span class="soft">Four ways to see it</span></h2>
           <div class="tabs group reveal" role="tablist">
             <button class="tab" role="tab" aria-selected="true" data-shot="window">App window</button>
             <button class="tab" role="tab" aria-selected="false" data-shot="console">Console</button>
@@ -633,13 +220,12 @@
             <button class="tab" role="tab" aria-selected="false" data-shot="agent">Agent</button>
           </div>
           <div class="shots reveal">
-            <!-- app window -->
             <div class="shot on" data-shot="window" role="tabpanel">
               <div class="win">
                 <div class="bar"><img src="assets/logo.png" alt="" />Recipe Box<span class="ctl">— ▢ ✕</span></div>
                 <div class="body">
                   <h4>Recipes</h4>
-                  <div class="field-input">Search recipes…</div>
+                  <div class="field-input">Search recipes</div>
                   <div class="row"><span>Lentil soup</span><span class="meta">25 min · vegan</span></div>
                   <div class="row"><span>Green shakshuka</span><span class="meta">30 min</span></div>
                   <div class="row"><span>Pea and mint risotto</span><span class="meta">40 min</span></div>
@@ -652,13 +238,12 @@
                 <code>openshell dev</code>
               </div>
             </div>
-            <!-- console -->
             <div class="shot" data-shot="console" role="tabpanel">
               <div class="win">
                 <div class="bar"><img src="assets/logo.png" alt="" />Inventory<span class="ctl">— ▢ ✕</span></div>
                 <div class="body">
                   <h4>Inventory</h4>
-                  <div class="row" style="border:0;padding-top:0"><span class="meta">production · 1 database · 3 functions for AI agents</span></div>
+                  <div class="meta">production · 1 database · 3 functions for AI agents</div>
                   <div class="chips"><span class="chip on">items (128)</span><span class="chip">suppliers (12)</span><span class="chip">orders (57)</span></div>
                   <table class="mini">
                     <tr><th>id</th><th>name</th><th>stock</th><th>supplier</th></tr>
@@ -670,26 +255,25 @@
                 </div>
               </div>
               <div class="cap">
-                <h3>No frontend? Still a window.</h3>
+                <h3>No frontend, still a window</h3>
                 <p>Apps made of a database and functions get OpenShell's console: browse tables, run functions, read logs and copy the command that connects an agent.</p>
                 <code>openshell create inventory --with database,functions</code>
               </div>
             </div>
-            <!-- terminal -->
             <div class="shot" data-shot="terminal" role="tabpanel">
-              <div class="term"><span class="p">$</span> openshell dev
-  <span class="w">OpenShell 0.3</span>  Field Notes
+              <div class="term"><span class="c">$</span> openshell dev
+  OpenShell 0.3  Field Notes
   mode    development · desktop
   agents  openshell mcp
 
 <span class="c">  db:main │</span> applied migration 002_tags.sql
 <span class="c"> backend │</span> starting: python main.py
-<span class="c"> backend │</span> ready after 0.4s
+<span class="c"> backend │</span> ready after 0.4 s
 <span class="c">frontend │</span> serving web/ at http://127.0.0.1:52471/
 <span class="c"> backend │</span> files changed: backend/main.py
-<span class="c"> backend │</span> restarting · <span class="g">ready after 0.3s</span>
+<span class="c"> backend │</span> restarting · <span class="g">ready after 0.3 s</span>
 
-<span class="p">$</span> openshell status
+<span class="c">$</span> openshell status
   SERVICE    STATE     PORT   CPU    MEMORY
   backend    <span class="g">running</span>   52470  0.2%   29 MB
   frontend   <span class="g">running</span>   52471  -      -
@@ -701,14 +285,13 @@
                 <code>openshell status · logs -f · package</code>
               </div>
             </div>
-            <!-- agent -->
             <div class="shot" data-shot="agent" role="tabpanel">
               <div class="win chat">
                 <div class="bar"><span class="dot"></span>MCP · field-notes (app profile)<span class="ctl">6 tools</span></div>
                 <div class="body">
                   <div class="msg"><div class="who">you</div>What did we log about plot 4 this week? Add a note that the samples were shipped.</div>
                   <div class="msg"><div class="who">assistant</div><div class="call">search_notes {"q": "plot 4", "since": "7d"}</div><div class="res">→ 3 notes</div><div class="call">add_note {"text": "Plot 4 samples shipped"}</div><div class="res">→ saved · id 42</div></div>
-                  <div class="msg" style="border:0"><div class="who">assistant</div>Three notes mention plot 4 (soil samples on Monday, irrigation check, labels). I added “Plot 4 samples shipped”.</div>
+                  <div class="msg"><div class="who">assistant</div>Three notes mention plot 4 (soil samples on Monday, irrigation check, labels). I added “Plot 4 samples shipped”.</div>
                 </div>
               </div>
               <div class="cap">
@@ -724,8 +307,8 @@
       <!-- ============================================================ agents -->
       <section id="agents">
         <div class="wrap">
-          <div class="kicker reveal">for ai agents</div>
-          <h2 class="reveal">Use it or build it.<br /><em>Two profiles, one protocol.</em></h2>
+          <div class="kicker reveal">For AI agents</div>
+          <h2 class="reveal">Use it or build it<br /><span class="soft">Two profiles, one protocol</span></h2>
           <div class="split">
             <div class="card reveal">
               <div class="tagline">app profile</div>
@@ -741,7 +324,7 @@ openshell mcp --app --start</div>
               <h3>Build the app</h3>
               <p>32 tools for coding agents: status, logs, restarts, project files, database, and semantic UI automation that clicks by element, not by pixel.</p>
               <div class="term">claude mcp add notes -- openshell mcp
-<span class="c">› ui_snapshot</span>   <span class="g">e7 button "Add"</span>
+<span class="c">› ui_snapshot</span>   <span class="a">e7 button "Add"</span>
 <span class="c">› logs_read</span>     <span class="g">0 errors</span></div>
             </div>
           </div>
@@ -749,20 +332,100 @@ openshell mcp --app --start</div>
         </div>
       </section>
 
+      <!-- ============================================================ platforms -->
+      <section id="platforms">
+        <div class="wrap">
+          <div class="kicker reveal">Platforms</div>
+          <h2 class="reveal">Desktop, server, phone<br /><span class="soft">One core runs them all</span></h2>
+          <p class="lead reveal">
+            The runtime, the agent layer and the control API are the same everywhere. A small platform adapter decides
+            which programs may start and how long they may live – so an app built on the desktop also runs on a server
+            or an Android phone.
+          </p>
+
+          <div class="devices reveal" aria-label="The same app on a desktop, a phone and a server">
+            <div>
+              <div class="win">
+                <div class="bar"><img src="assets/logo.png" alt="" />Pocket Notes<span class="ctl">— ▢ ✕</span></div>
+                <div class="body">
+                  <div class="svc"><span class="dot"></span>frontend<span class="meta">static</span></div>
+                  <div class="svc"><span class="dot"></span>sync<span class="meta">node · 31 MB</span></div>
+                  <div class="svc"><span class="dot"></span>compiler<span class="meta">cargo · desktop only</span></div>
+                  <div class="svc"><span class="dot"></span>database main<span class="meta">3 tables</span></div>
+                </div>
+              </div>
+              <div class="device-label">desktop · Windows, macOS, Linux · any program</div>
+            </div>
+            <div>
+              <div class="phone">
+                <div class="screen">
+                  <div class="status"><span>12:08</span><span>Android 16</span></div>
+                  <h4>Pocket Notes</h4>
+                  <div class="svc"><span class="dot"></span>frontend<span class="meta">static</span></div>
+                  <div class="svc"><span class="dot wait"></span>sync<span class="meta">paused</span></div>
+                  <div class="svc"><span class="dot"></span>database<span class="meta">3 tables</span></div>
+                  <div class="svc"><span class="dot"></span>gateway<span class="meta">:7420</span></div>
+                  <div class="notif"><b>OpenShell · 3 services running</b>Pocket Notes is reachable in your network</div>
+                </div>
+              </div>
+              <div class="device-label center">android · system tools and bundled programs</div>
+            </div>
+            <div>
+              <div class="term"><span class="c">$</span> openshell start --headless
+  Pocket Notes  production · server
+
+  frontend  <span class="g">running</span>  static
+  sync      <span class="g">running</span>  node
+  compiler  <span class="g">running</span>  cargo
+  remote    http://10.0.0.12:7420</div>
+              <div class="device-label">server · headless, always on</div>
+            </div>
+          </div>
+
+          <div class="remote-call reveal"><span class="c">laptop agent → http://10.0.2.16:7420/mcp/app · pairing token</span>
+› greet {"name": "Ada"}
+← "Hello from Pixel 7 on Android 16"</div>
+
+          <div class="facts">
+            <div class="fact reveal">
+              <h3>Platform adapters</h3>
+              <p>Desktop and server start any program. On Android only system tools and programs shipped with the app run – anything else gets an error that says what to use instead.</p>
+              <code>"platforms": ["desktop", "server"]</code>
+            </div>
+            <div class="fact reveal">
+              <h3>Made for phones</h3>
+              <p>Services can pause while the app is in the background and resume when it returns. Services that keep running hold a foreground service, so the phone works as a small always-on server.</p>
+              <code>"background": "pause"</code>
+            </div>
+            <div class="fact reveal">
+              <h3>Remote gateway</h3>
+              <p>Other devices use the app's functions over MCP with a pairing token. Developer tools and the admin token never leave the device, and browser requests are refused.</p>
+              <code>openshell remote</code>
+            </div>
+          </div>
+
+          <p class="planned reveal">
+            <b>Status</b> The core and the CLI build for Android and run headless today, for example in Termux. The native
+            Android app with its foreground service is in progress. <b>Planned</b> A device mesh: pair desktop, phone and
+            server with a QR code and deploy from one to the other.
+          </p>
+        </div>
+      </section>
+
       <!-- ============================================================ features -->
       <section id="features">
         <div class="wrap">
-          <div class="kicker reveal">in the box</div>
-          <h2 class="reveal">Everything a desktop app<br /><em>needs around it.</em></h2>
-          <div class="grid" id="feature-grid"></div>
+          <div class="kicker reveal">In the box</div>
+          <h2 class="reveal">Everything an app<br /><span class="soft">needs around it</span></h2>
+          <div class="spec" id="feature-grid"></div>
         </div>
       </section>
 
       <!-- ============================================================ security -->
       <section id="security">
         <div class="wrap">
-          <div class="kicker reveal">security</div>
-          <h2 class="reveal">Agents get exactly<br /><em>what you allow.</em></h2>
+          <div class="kicker reveal">Security</div>
+          <h2 class="reveal">Agents get exactly<br /><span class="soft">what you allow</span></h2>
           <div class="two">
             <div class="list reveal">
               <h3>Scopes you grant</h3>
@@ -782,6 +445,7 @@ openshell mcp --app --start</div>
                 <li><b>files</b>only inside the project</li>
                 <li><b>shell</b>no arbitrary commands, ever</li>
                 <li><b>api</b>loopback only, tokens, origin checks</li>
+                <li><b>remote</b>off by default, app profile only, pairing token</li>
               </ul>
             </div>
           </div>
@@ -792,8 +456,8 @@ openshell mcp --app --start</div>
       <section id="start">
         <div class="wrap quick">
           <div>
-            <div class="kicker reveal">get started</div>
-            <h2 class="reveal">Five minutes to<br /><em>a desktop app.</em></h2>
+            <div class="kicker reveal">Get started</div>
+            <h2 class="reveal">Five minutes to<br /><span class="soft">a desktop app</span></h2>
             <p class="lead reveal">Create, run, ship. Or point OpenShell at the web app you already have – it detects the stack.</p>
           </div>
           <div class="copy reveal">
@@ -801,13 +465,13 @@ openshell mcp --app --start</div>
             <div class="term" id="quickstart"><span class="c"># install (Windows: scripts/install.ps1)</span>
 curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/scripts/install.sh | sh
 
-<span class="p">$</span> openshell create my-app --with frontend,database
-<span class="p">$</span> cd my-app
-<span class="p">$</span> openshell dev        <span class="c"># native window, hot reload</span>
-<span class="p">$</span> openshell package    <span class="c"># installer</span>
+<span class="c">$</span> openshell create my-app --with frontend,database
+<span class="c">$</span> cd my-app
+<span class="c">$</span> openshell dev        <span class="c"># native window, hot reload</span>
+<span class="c">$</span> openshell package    <span class="c"># installer</span>
 
 <span class="c"># existing project</span>
-<span class="p">$</span> openshell init</div>
+<span class="c">$</span> openshell init</div>
           </div>
         </div>
       </section>
@@ -820,6 +484,7 @@ curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/script
             <details class="reveal"><summary>Do I have to rewrite my app?</summary><p>No. Your frontend and backend stay normal projects. OpenShell reads an <span class="mono">openshell.json</span> and runs them – the shell is never compiled into your app, so improving the shell improves every app.</p></details>
             <details class="reveal"><summary>How is it different from Tauri or Electron?</summary><p>OpenShell is built on Tauri 2 and adds what you would otherwise write yourself: process supervision, health checks, logs, a database, hot reload, installers and a standard interface for AI agents. You configure instead of coding a desktop shell.</p></details>
             <details class="reveal"><summary>Do I need a backend?</summary><p>Only if you want one. A frontend can keep its data in the built-in SQLite database, and AI functions can be plain scripts.</p></details>
+            <details class="reveal"><summary>Does it run on Android?</summary><p>The runtime and the CLI do: they build for Android and run headless, for example in Termux, with static frontends, the built-in database, functions and the remote gateway. The native Android app with a foreground service is in progress.</p></details>
             <details class="reveal"><summary>Which agents and models work with it?</summary><p>Any MCP client – Claude Code, Codex, Cursor, Copilot – and anything that speaks HTTP/JSON. OpenShell never ships a model; it can detect local providers like Ollama and LM Studio.</p></details>
             <details class="reveal"><summary>Can an agent damage my computer?</summary><p>Agents only get the scopes you grant per mode, critical actions need your approval, file access stays inside the project, arbitrary commands are impossible and every call is audited.</p></details>
             <details class="reveal"><summary>What does it cost?</summary><p>Nothing. OpenShell is open source under the MIT license.</p></details>
@@ -830,13 +495,14 @@ curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/script
       <!-- ============================================================ final -->
       <section class="final" id="download">
         <div>
-          <h2 class="reveal">Build the shell once.</h2>
-          <p class="lead reveal">Build applications on top of it. Let agents use and evolve them.</p>
+          <h2 class="reveal">Build the shell once</h2>
+          <p class="lead reveal">Build applications on top of it. Let agents use and evolve them – on every device you own.</p>
           <div class="actions reveal">
-            <a class="cta" href="https://github.com/RobinsSuperSchmiede/EDA/releases/latest"><span>Download OpenShell</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            <a class="cta" href="https://github.com/RobinsSuperSchmiede/EDA/releases/latest"><span>Download OpenShell</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
             <a class="btn btn--lg" href="https://github.com/RobinsSuperSchmiede/EDA">View on GitHub</a>
           </div>
         </div>
+        <div class="wordmark" aria-hidden="true">openshell</div>
       </section>
     </main>
 
@@ -844,6 +510,7 @@ curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/script
       <div class="wrap">
         <span>© OpenShell contributors · MIT</span>
         <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/README.md">Docs</a>
+        <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/platforms.md">Platforms</a>
         <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/CHANGELOG.md">Changelog</a>
         <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/ROADMAP.md">Roadmap</a>
         <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
@@ -851,216 +518,6 @@ curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/script
       </div>
     </footer>
 
-    <script>
-      // ---------------------------------------------------------------- header: hide on scroll down
-      const bar = document.getElementById("top-bar");
-      let lastY = window.scrollY;
-      window.addEventListener(
-        "scroll",
-        () => {
-          const y = window.scrollY;
-          bar.classList.toggle("scrolled", y > 20);
-          if (y > 120 && y > lastY + 4) bar.classList.add("hidden");
-          else if (y < lastY - 4 || y < 120) bar.classList.remove("hidden");
-          lastY = y;
-        },
-        { passive: true },
-      );
-
-      // ---------------------------------------------------------------- features
-      const FEATURES = [
-        ["Runtime", ["Start order and health checks", "Restarts with backoff", "Logs from every service", "CPU and memory per service", "Builds for C++, Java, Go, Rust", "Hot reload on save"]],
-        ["Desktop", ["Native Tauri 2 window", "Service menu in the title bar", "Tray and background mode", "Your own title bar", "Notifications", "Launch at login"]],
-        ["Building blocks", ["Frontend in any framework", "Backend in any language", "Built-in SQLite", "Script functions", "Console for apps without UI", "openshell add / create --with"]],
-        ["Agents", ["MCP over stdio and HTTP", "App and developer profiles", "OpenAPI import", "Semantic UI automation", "MCP resources and live updates", "Screenshot fallback|soon"]],
-        ["Security", ["Permission scopes per mode", "Human approvals", "Audit log", "Project-scoped files", "Per-database agent access", "Agent sessions with own tokens|soon"]],
-        ["Shipping", ["NSIS, MSI, DMG, DEB, AppImage", "Your name and icon", "Per-user data", "Installed apps speak MCP", "Code signing|soon", "Auto-updates|soon"]],
-      ];
-      const grid = document.getElementById("feature-grid");
-      for (const [title, items] of FEATURES) {
-        const card = document.createElement("div");
-        card.className = "feat reveal";
-        const h = document.createElement("h3");
-        h.textContent = title;
-        const small = document.createElement("small");
-        small.textContent = String(items.length).padStart(2, "0");
-        h.append(small);
-        const ul = document.createElement("ul");
-        for (const raw of items) {
-          const [text, soon] = raw.split("|");
-          const li = document.createElement("li");
-          li.textContent = text;
-          if (soon) {
-            const s = document.createElement("span");
-            s.className = "soon";
-            s.textContent = soon;
-            li.append(s);
-          }
-          ul.append(li);
-        }
-        card.append(h, ul);
-        grid.append(card);
-      }
-
-      // ---------------------------------------------------------------- block composer
-      const NOTES = {
-        frontend: "A desktop UI – static HTML or any framework.",
-        backend: "A supervised service. Runs in the tray or headless.",
-        database: "A local database with a browser in the console.",
-        functions: "Tools for AI agents only. No UI, no server.",
-        "frontend,database": "A desktop UI that keeps its data – no backend.",
-        "database,functions": "An AI interface over your data – no UI, no server.",
-        "frontend,backend": "Your web app as a desktop app.",
-        "backend,database": "An API with built-in storage.",
-        "frontend,functions": "A UI plus tools agents can call.",
-        "backend,functions": "A service plus script tools for agents.",
-      };
-      const picker = document.getElementById("picker");
-      function compose() {
-        const on = [...picker.querySelectorAll('[aria-pressed="true"]')].map((b) => b.dataset.block);
-        const key = on.join(",");
-        document.getElementById("cmd").textContent = on.length ? `openshell create my-app --with ${key}` : "openshell create my-app --with …";
-        document.getElementById("cmd-note").textContent = !on.length
-          ? "Pick at least one block."
-          : NOTES[key] || (on.length === 4 ? "Everything: UI, API, data and agent tools." : "Any combination works – blocks connect themselves.");
-      }
-      picker.addEventListener("click", (e) => {
-        const b = e.target.closest(".block");
-        if (!b) return;
-        b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") === "true" ? "false" : "true");
-        compose();
-      });
-      compose();
-
-      // ---------------------------------------------------------------- gallery tabs
-      document.querySelectorAll(".tab").forEach((tab) =>
-        tab.addEventListener("click", () => {
-          document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", String(t === tab)));
-          document.querySelectorAll(".shot").forEach((s) => s.classList.toggle("on", s.dataset.shot === tab.dataset.shot));
-        }),
-      );
-
-      // ---------------------------------------------------------------- copy
-      document.getElementById("copy").addEventListener("click", async (e) => {
-        const text = document
-          .getElementById("quickstart")
-          .innerText.split("\n")
-          .map((l) => l.replace(/^\$\s*/, "").replace(/\s+#.*$/, ""))
-          .filter((l) => l.trim() && !l.trim().startsWith("#"))
-          .join("\n");
-        try {
-          await navigator.clipboard.writeText(text);
-          e.target.textContent = "copied";
-          setTimeout(() => (e.target.textContent = "copy"), 1500);
-        } catch {
-          e.target.textContent = "select & copy";
-        }
-      });
-
-      // ---------------------------------------------------------------- reveal
-      const io = new IntersectionObserver(
-        (entries) => entries.forEach((en) => en.isIntersecting && (en.target.classList.add("in"), io.unobserve(en.target))),
-        { threshold: 0.12 },
-      );
-      document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
-
-      // ---------------------------------------------------------------- ASCII field
-      // Characters on a grid; their density follows a slowly drifting noise field ("terrain lines"),
-      // their colour runs from deep green over mint to white. Scrolling shifts the field and makes it
-      // calmer further down the page.
-      const canvas = document.getElementById("field");
-      const ctx = canvas.getContext("2d");
-      const RAMP = " .,:;-=+*%#";
-      const COLORS = ["#174a32", "#1e5d3f", "#2a7a52", "#3a9a69", "#5ebd89", "#a3e6c0", "#f6fff9"];
-      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-      const PERM = new Uint8Array(512);
-      (() => {
-        const p = [...Array(256).keys()];
-        let s = 20241122;
-        for (let i = 255; i > 0; i--) {
-          s = (s * 48271) % 2147483647;
-          const j = s % (i + 1);
-          [p[i], p[j]] = [p[j], p[i]];
-        }
-        for (let i = 0; i < 512; i++) PERM[i] = p[i & 255];
-      })();
-      const fade = (t) => t * t * (3 - 2 * t);
-      function noise(x, y) {
-        const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
-        const h = (a, b) => PERM[(PERM[a & 255] + b) & 255] / 255;
-        const u = fade(xf), v = fade(yf);
-        const a = h(xi, yi), b = h(xi + 1, yi), c = h(xi, yi + 1), d = h(xi + 1, yi + 1);
-        return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
-      }
-      const fbm = (x, y) => 0.6 * noise(x, y) + 0.28 * noise(x * 2.1, y * 2.1) + 0.12 * noise(x * 4.3, y * 4.3);
-
-      let cols = 0, rows = 0, cw = 0, ch = 0, dpr = 1;
-      function resize() {
-        dpr = Math.min(window.devicePixelRatio || 1, 2);
-        const size = window.innerWidth < 700 ? 12 : 14;
-        cw = size * 0.62;
-        ch = size * 1.05;
-        cols = Math.ceil(window.innerWidth / cw);
-        rows = Math.ceil(window.innerHeight / ch);
-        canvas.width = Math.floor(window.innerWidth * dpr);
-        canvas.height = Math.floor(window.innerHeight * dpr);
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.font = `${size}px "Geist Mono", ui-monospace, monospace`;
-        ctx.textBaseline = "top";
-      }
-
-      // reuse buckets to draw all characters of one colour at once
-      const buckets = COLORS.map(() => []);
-      function render(time) {
-        const t = reduced ? 0 : time / 1000;
-        const doc = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-        const p = Math.min(1, window.scrollY / doc);
-        const shift = window.scrollY / ch / 3; // parallax: field moves slower than the page
-        // full strength in the hero, calm behind the content, a little stronger again at the very end
-        const clamp01 = (x) => Math.max(0, Math.min(1, x));
-        const out = clamp01((window.scrollY - 0.3 * window.innerHeight) / (0.9 * window.innerHeight));
-        const end = clamp01((p - 0.9) / 0.1);
-        const calm = 1 - 0.45 * out + 0.25 * end;
-        ctx.fillStyle = "#0f3624";
-        ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-        buckets.forEach((b) => (b.length = 0));
-        for (let y = 0; y < rows; y++) {
-          const gy = (y + shift) * 0.075;
-          for (let x = 0; x < cols; x++) {
-            const n = fbm(x * 0.045 + t * 0.04, gy + t * 0.02);
-            // contour bands: stripes along the noise field, like terrain lines
-            const band = Math.abs(Math.sin(n * 18 + t * 0.6));
-            let v = (n - 0.25) * 1.3 * calm + (1 - band) * 0.55 * calm;
-            if (v <= 0.08) continue;
-            v = Math.min(0.999, v);
-            const ci = Math.min(COLORS.length - 1, Math.floor(v * COLORS.length));
-            const chr = RAMP[Math.min(RAMP.length - 1, 1 + Math.floor(v * (RAMP.length - 1)))];
-            buckets[ci].push(x, y, chr);
-          }
-        }
-        for (let i = 0; i < COLORS.length; i++) {
-          const b = buckets[i];
-          if (!b.length) continue;
-          ctx.fillStyle = COLORS[i];
-          for (let k = 0; k < b.length; k += 3) ctx.fillText(b[k + 2], b[k] * cw, b[k + 1] * ch);
-        }
-      }
-
-      let last = 0;
-      function frame(now) {
-        if (now - last > 100) {
-          last = now;
-          render(now);
-        }
-        requestAnimationFrame(frame);
-      }
-      window.addEventListener("resize", () => (resize(), render(performance.now())));
-      if (reduced) window.addEventListener("scroll", () => render(0), { passive: true });
-      resize();
-      document.fonts.ready.then(() => (resize(), render(performance.now())));
-      render(0);
-      if (!reduced) requestAnimationFrame(frame);
-    </script>
+    <script src="assets/site.js"></script>
   </body>
 </html>

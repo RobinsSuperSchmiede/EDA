@@ -29,7 +29,10 @@ All notable changes to this project are documented here. The format follows
   `POST /v1/lifecycle` and `openshell lifecycle`; paused services resume in the foreground.
 - **Remote gateway** (`runtime.remote`): other devices use the app's functions over MCP with a pairing token;
   `openshell remote` prints URL, token and an MCP client configuration. See `docs/platforms.md`.
-- Landing page in `website/` (static, animated ASCII field in green and white, architecture diagram, product gallery).
+- Landing page in `website/`: static, ASCII field of code glyphs, architecture diagram, product gallery and a
+  platforms section (desktop, server, Android, remote gateway). `dev.html` adds a customize bar to try colour themes
+  (green, light blue, red, purple, amber, mono), hero variants, surfaces and background settings; `index.html` is the
+  production page.
 
 ## [0.2.1] - 2026-11-19
 
