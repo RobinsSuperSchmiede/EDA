@@ -648,6 +648,27 @@
             "$ref": "#/$defs/Mode"
           }
         },
+        "platforms": {
+          "description": "Only run on these platforms (default: all). Example: `[\"desktop\", \"server\"]` for a service\nthat needs a toolchain which is not available on Android.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/Platform"
+          }
+        },
+        "background": {
+          "description": "Behaviour while the app is in the background on mobile platforms (default: `keep`).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BackgroundPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "stop_timeout_ms": {
           "description": "Grace period between the stop signal and a forced kill.",
           "type": [
@@ -797,6 +818,41 @@
         }
       ]
     },
+    "Platform": {
+      "description": "Platform an OpenShell runtime runs on. The core is the same everywhere; a platform\nadapter decides how processes are started and how the app lifecycle is handled.",
+      "oneOf": [
+        {
+          "description": "Windows, macOS and Linux with a native window (also `--headless` on a workstation).",
+          "type": "string",
+          "const": "desktop"
+        },
+        {
+          "description": "Android phones and tablets: the app runs as a personal runtime and mini server.",
+          "type": "string",
+          "const": "android"
+        },
+        {
+          "description": "A machine without a user session (headless runtime, always on).",
+          "type": "string",
+          "const": "server"
+        }
+      ]
+    },
+    "BackgroundPolicy": {
+      "description": "What happens to a service while the app is in the background (mobile platforms;\non the desktop the app never goes to the background).",
+      "oneOf": [
+        {
+          "description": "Keep running (on Android this keeps a foreground service with a notification alive).",
+          "type": "string",
+          "const": "keep"
+        },
+        {
+          "description": "Stop while the app is in the background and start again when it returns.",
+          "type": "string",
+          "const": "pause"
+        }
+      ]
+    },
     "RuntimeConfig": {
       "type": "object",
       "properties": {
@@ -838,6 +894,35 @@
           "description": "Start the installed app when the user logs in (applies to installed apps only).",
           "type": "boolean",
           "default": false
+        },
+        "remote": {
+          "description": "Make the app usable from other devices (for example a phone that hosts the app and a\nlaptop that uses it). Off by default.",
+          "$ref": "#/$defs/RemoteConfig"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RemoteConfig": {
+      "description": "Remote access gateway: serves the app profile (the app's own functions over MCP) to\nother devices in the network, protected by a pairing token.",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "Start the gateway.",
+          "type": "boolean",
+          "default": false
+        },
+        "bind": {
+          "description": "Address to listen on. `0.0.0.0` makes the gateway reachable in the local network; use a\nVPN address (for example a Tailscale IP) to limit it to your own devices.",
+          "type": "string",
+          "default": "0.0.0.0"
+        },
+        "port": {
+          "description": "Fixed port (default: 7420).",
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0,
+          "maximum": 65535,
+          "default": 7420
         }
       },
       "additionalProperties": false

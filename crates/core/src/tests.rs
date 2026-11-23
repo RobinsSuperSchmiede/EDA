@@ -434,3 +434,116 @@ async fn database_agent_access_is_enforced() {
     assert_eq!(r["result"]["rows"][0]["one"], 1, "{r}");
     shell.shutdown().await;
 }
+
+#[tokio::test]
+async fn platform_and_lifecycle_in_the_control_api() {
+    let (_dir, shell, client) = launch("", Mode::Development).await;
+    let status = client.get("/v1/status").await.unwrap();
+    assert_eq!(status["platform"]["platform"], "desktop");
+    assert_eq!(status["platform"]["processes"], "full");
+    assert_eq!(status["in_background"], false);
+    assert_eq!(status["remote"], Value::Null);
+
+    let r = client.post("/v1/lifecycle", &json!({ "kind": "background" })).await.unwrap();
+    assert_eq!(r["ok"], true);
+    assert_eq!(r["services"], json!([]));
+    assert_eq!(r["keep_alive"], json!(["api"]));
+    assert!(shell.runtime().in_background());
+    let r =
+        client.post("/v1/lifecycle", &json!({ "kind": "network", "connected": true, "metered": true })).await;
+    assert!(r.is_ok());
+    assert!(client.post("/v1/lifecycle", &json!({ "kind": "nap" })).await.is_err());
+
+    let r = client.get("/v1/remote").await.unwrap();
+    assert_eq!(r["enabled"], false);
+
+    let info = tool(&client, "app_info", json!({})).await;
+    assert_eq!(info["result"]["platform"]["platform"], "desktop", "{info}");
+    shell.shutdown().await;
+}
+
+#[tokio::test]
+async fn remote_gateway_requires_the_pairing_token() {
+    let port = openshell_runtime::process::free_port().unwrap();
+    let extra = format!(
+        r#","runtime":{{"remote":{{"enabled":true,"bind":"127.0.0.1","port":{port}}}}},
+        "capabilities":[{{"name":"ping","description":"Answer pong","permission":"read","run":{{"command":"echo pong"}}}}]"#
+    );
+    let (dir, shell, client) = launch(&extra, Mode::Production).await;
+    let remote = client.get("/v1/remote").await.unwrap();
+    assert_eq!(remote["enabled"], true);
+    let token = remote["token"].as_str().unwrap().to_string();
+    assert!(dir.path().join(".openshell/data").join(remote::TOKEN_FILE).is_file());
+    let base = format!("http://127.0.0.1:{port}");
+    assert_eq!(remote["urls"][0], base);
+
+    let http = reqwest::Client::new();
+    let health: Value = http.get(format!("{base}/v1/health")).send().await.unwrap().json().await.unwrap();
+    assert_eq!(health["app"], "Test App");
+
+    let r = http.get(format!("{base}/v1/remote/info")).send().await.unwrap();
+    assert_eq!(r.status(), 401);
+    let r = http.get(format!("{base}/v1/remote/info")).bearer_auth("wrong").send().await.unwrap();
+    assert_eq!(r.status(), 401);
+    let r = http
+        .get(format!("{base}/v1/remote/info"))
+        .bearer_auth(&token)
+        .header("origin", "https://evil.example")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(r.status(), 403);
+    // the admin token of the local control API is not valid remotely
+    let admin = std::fs::read_to_string(dir.path().join(".openshell/runtime.json")).unwrap();
+    let admin: Value = serde_json::from_str(&admin).unwrap();
+    let r = http
+        .get(format!("{base}/v1/remote/info"))
+        .bearer_auth(admin["token"].as_str().unwrap())
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(r.status(), 401);
+    // developer routes do not exist on the gateway
+    let r = http.get(format!("{base}/v1/status")).bearer_auth(&token).send().await.unwrap();
+    assert_eq!(r.status(), 404);
+
+    let info: Value = http
+        .get(format!("{base}/v1/remote/info"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(info["app"]["name"], "Test App");
+    assert_eq!(info["functions"][0]["name"], "ping");
+
+    let mcp = |body: Value| http.post(format!("{base}/mcp/app")).bearer_auth(&token).json(&body).send();
+    let init: Value = mcp(json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"laptop-agent","version":"1"}}}))
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert!(init["result"]["serverInfo"].is_object(), "{init}");
+    let list: Value =
+        mcp(json!({"jsonrpc":"2.0","id":2,"method":"tools/list"})).await.unwrap().json().await.unwrap();
+    let names: Vec<&str> =
+        list["result"]["tools"].as_array().unwrap().iter().filter_map(|t| t["name"].as_str()).collect();
+    assert!(names.contains(&"ping"), "{names:?}");
+    assert!(!names.contains(&"fs_write"), "{names:?}");
+    let call: Value =
+        mcp(json!({"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"ping","arguments":{}}}))
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+    assert!(call.to_string().contains("pong"), "{call}");
+
+    // calls are audited with the remote channel
+    let audit = client.get("/v1/audit?limit=5").await.unwrap();
+    assert!(audit["entries"].as_array().unwrap().iter().any(|e| e["channel"] == "remote"), "{audit}");
+    shell.shutdown().await;
+}

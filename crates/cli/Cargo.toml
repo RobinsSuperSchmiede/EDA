@@ -12,7 +12,6 @@ path = "src/main.rs"
 
 [dependencies]
 openshell-core.workspace = true
-openshell-package = { path = "../package" }
 anyhow.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -23,6 +22,10 @@ tracing-subscriber.workspace = true
 include_dir.workspace = true
 which.workspace = true
 chrono.workspace = true
+
+# installers are built on desktop platforms only (the CLI also runs on Android, e.g. in Termux)
+[target.'cfg(not(target_os = "android"))'.dependencies]
+openshell-package = { path = "../package" }
 
 [target.'cfg(unix)'.dependencies]
 libc.workspace = true

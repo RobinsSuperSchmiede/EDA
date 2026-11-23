@@ -14,9 +14,9 @@ non-allow-listed `Origin` are rejected with 403.
 
 | Method & path | Token | Description |
 |---|---|---|
-| `GET /v1/health` | – | `{ ok, app, mode, host, version }` |
+| `GET /v1/health` | – | `{ ok, app, mode, host, platform, version }` |
 | `GET /sdk.js`, `GET /bridge.js` | – | Frontend SDK, UI bridge script |
-| `GET /v1/status` (alias `/v1/info`) | admin | App, mode, host, pid, URLs, services, bridged pages, pending approvals, agent permissions |
+| `GET /v1/status` (alias `/v1/info`) | admin | App, mode, host, platform capabilities, pid, URLs, services, bridged pages, pending approvals, agent permissions, `in_background`, `keep_alive`, `remote` |
 | `POST /v1/services/{name}/{start\|stop\|restart}` | admin | Change the desired state (returns immediately) |
 | `GET /v1/logs?service=&since=&limit=&contains=&errors_only=` | admin | `{ lines: [{ seq, ts, service, stream, text }], last_seq }` |
 | `POST /v1/shutdown` | admin | Stop all services and exit |
@@ -29,6 +29,11 @@ non-allow-listed `Origin` are rejected with 403.
 | `GET /v1/ui/bridge` | app or admin | WebSocket for `bridge.js` |
 | `GET /v1/sdk/info` | app | App info and SDK permissions |
 | `POST /v1/sdk/call/{tool}` | app | Call a tool with the **SDK** policy |
+| `POST /v1/lifecycle` | admin | App lifecycle from the host: `{ "kind": "foreground" \| "background" \| "low_memory" }`, `{ "kind": "power_save", "enabled": true }`, `{ "kind": "network", "connected": true, "metered": false }` → paused/resumed services and `keep_alive` |
+| `GET /v1/remote` | admin | Remote gateway: `enabled`, `urls`, `mcp_url`, pairing `token` |
+
+The optional remote gateway (`runtime.remote`) is a separate listener with `GET /v1/health`, `GET /v1/remote/info`
+and `POST /mcp/app` only, authorised with the pairing token – see [platforms.md](platforms.md#remote-access).
 
 ## Example
 

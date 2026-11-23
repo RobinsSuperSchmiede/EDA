@@ -14,6 +14,8 @@
 //! | `POST /mcp`                         | admin (agent policy) | MCP Streamable HTTP              |
 //! | `GET  /v1/ui/bridge`                | app / admin    | UI bridge WebSocket                   |
 //! | `GET  /v1/sdk/info`, `POST /v1/sdk/call/{tool}` | app (SDK policy) | frontend SDK           |
+//! | `POST /v1/lifecycle`                | admin          | app lifecycle from the host (mobile)  |
+//! | `GET  /v1/remote`                   | admin          | remote gateway: URLs and pairing token|
 //!
 //! Protection: loopback only, `Host` header check (DNS rebinding), `Origin`
 //! allow-list (CORS / CSRF) and two bearer tokens (admin, app).
@@ -78,6 +80,8 @@ pub(crate) fn spawn(shell: Shell, listener: tokio::net::TcpListener) {
         .route("/v1/ui/bridge", get(bridge_ws))
         .route("/v1/sdk/info", get(sdk_info))
         .route("/v1/sdk/call/{tool}", post(sdk_call))
+        .route("/v1/lifecycle", post(lifecycle))
+        .route("/v1/remote", get(remote))
         .layer(from_fn_with_state(shell.clone(), guard))
         .with_state(shell);
     tokio::spawn(async move {
@@ -172,6 +176,7 @@ async fn health(State(shell): State<Shell>) -> Json<Value> {
         "app": shell.inner.project.config.app.name,
         "mode": shell.inner.mode,
         "host": shell.inner.host.kind(),
+        "platform": shell.inner.runtime.platform(),
         "version": env!("CARGO_PKG_VERSION"),
     }))
 }
@@ -191,6 +196,10 @@ async fn status(State(shell): State<Shell>) -> ApiResult {
         "version": i.project.config.app.version,
         "mode": i.mode,
         "host": i.host.kind(),
+        "platform": i.runtime.capabilities(),
+        "in_background": i.runtime.in_background(),
+        "keep_alive": i.runtime.keep_alive(),
+        "remote": i.remote,
         "pid": std::process::id(),
         "project_root": i.project.root,
         "control_url": i.control_url,
@@ -327,14 +336,26 @@ fn mcp_sessions() -> &'static Mutex<HashMap<String, String>> {
 }
 
 async fn mcp(State(shell): State<Shell>, headers: HeaderMap, Json(msg): Json<Value>) -> Response {
-    mcp_with(shell, headers, msg, false).await
+    mcp_with(shell, headers, msg, McpProfile::Full).await
 }
 
 async fn mcp_app(State(shell): State<Shell>, headers: HeaderMap, Json(msg): Json<Value>) -> Response {
-    mcp_with(shell, headers, msg, true).await
+    mcp_with(shell, headers, msg, McpProfile::App).await
 }
 
-async fn mcp_with(shell: Shell, headers: HeaderMap, msg: Value, app_profile: bool) -> Response {
+/// Which tools an MCP endpoint offers and how calls are labelled in the audit log.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum McpProfile {
+    /// All developer tools (`/mcp`).
+    Full,
+    /// The app's own functions (`/mcp/app`).
+    App,
+    /// The app profile over the remote gateway.
+    Remote,
+}
+
+pub(crate) async fn mcp_with(shell: Shell, headers: HeaderMap, msg: Value, profile: McpProfile) -> Response {
+    let app_profile = profile != McpProfile::Full;
     let session = headers.get("mcp-session-id").and_then(|h| h.to_str().ok()).map(str::to_string);
     let is_init = msg.get("method").and_then(|m| m.as_str()) == Some("initialize");
     let client_name = msg.pointer("/params/clientInfo/name").and_then(|n| n.as_str()).map(str::to_string);
@@ -347,7 +368,11 @@ async fn mcp_with(shell: Shell, headers: HeaderMap, msg: Value, app_profile: boo
         .unwrap_or_else(|| "mcp-client".into());
     let ctx = CallContext {
         agent: agent.clone(),
-        channel: if app_profile { "mcp-app".into() } else { "mcp".into() },
+        channel: match profile {
+            McpProfile::Full => "mcp".into(),
+            McpProfile::App => "mcp-app".into(),
+            McpProfile::Remote => "remote".into(),
+        },
     };
     let reply = if app_profile {
         handle_message(&AppTools(shell), msg, ctx).await
@@ -425,4 +450,31 @@ async fn sdk_call(
         if role == Role::Admin { shell.inner.agent_policy.clone() } else { shell.inner.sdk_policy.clone() };
     let outcome = shell.call_tool(&tool, args, ctx, &policy).await;
     Ok(Json(json!(outcome)))
+}
+
+async fn lifecycle(
+    State(shell): State<Shell>,
+    Json(event): Json<openshell_runtime::LifecycleEvent>,
+) -> ApiResult {
+    let services = shell.lifecycle(event);
+    Ok(Json(json!({
+        "ok": true,
+        "event": event,
+        "services": services,
+        "keep_alive": shell.inner.runtime.keep_alive(),
+    })))
+}
+
+async fn remote(State(shell): State<Shell>) -> ApiResult {
+    Ok(Json(match &shell.inner.remote {
+        Some(r) => json!({
+            "enabled": true,
+            "bind": r.bind,
+            "port": r.port,
+            "urls": r.urls,
+            "mcp_url": r.mcp_url,
+            "token": r.token,
+        }),
+        None => json!({ "enabled": false }),
+    }))
 }

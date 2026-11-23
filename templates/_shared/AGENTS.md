@@ -34,6 +34,9 @@ openshell build && openshell package   # production build + native installer
 8. Use only the building blocks the task needs: a frontend can store data in the built-in database
    (`OpenShell.db`), agent functions can be plain scripts (`"run"`), no backend is required for either.
    Schema changes go into new files in the migrations folder.
+9. The app may also run on Android or a server (`openshell call app_info` → `platform`). On Android only system
+   tools and bundled programs start: prefer static frontends, the database and functions, and mark services that
+   need a toolchain with `"platforms": ["desktop", "server"]`.
 
 ## Verify a change
 

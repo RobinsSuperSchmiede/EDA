@@ -21,6 +21,26 @@ pub async fn run(dir: &Path, targets: Vec<String>, out: Option<PathBuf>, skip_bu
         build_project(&project).await?;
     }
     println!("{} {} {}", dim("package:"), bold(&project.config.app.name), project.config.identifier());
+    package(project, desktop, targets, out).await
+}
+
+#[cfg(target_os = "android")]
+async fn package(
+    _project: openshell_core::config::Project,
+    _desktop: PathBuf,
+    _targets: Vec<String>,
+    _out: Option<PathBuf>,
+) -> Result<()> {
+    bail!("installers are built on Windows, macOS or Linux – not on Android")
+}
+
+#[cfg(not(target_os = "android"))]
+async fn package(
+    project: openshell_core::config::Project,
+    desktop: PathBuf,
+    targets: Vec<String>,
+    out: Option<PathBuf>,
+) -> Result<()> {
     let opts = openshell_package::Options { desktop_binary: desktop, targets, out_dir: out };
     let result = tokio::task::spawn_blocking(move || {
         openshell_package::package(&project, &opts, &|msg| println!("  {} {msg}", dim("·")))

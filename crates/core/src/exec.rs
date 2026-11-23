@@ -8,7 +8,6 @@ use openshell_agent::policy::{Decision, Policy};
 use openshell_agent::tools::{builtin_tools, ToolDef, CAPABILITY_TOOL_PREFIX};
 use openshell_agent::{providers, ToolOutcome};
 use openshell_config::{CapabilityConfig, Permission};
-use openshell_runtime::process::build_command;
 use openshell_runtime::LogQuery;
 use serde_json::{json, Value};
 use std::time::{Duration, Instant};
@@ -392,6 +391,7 @@ impl Shell {
             },
             "mode": self.inner.mode,
             "host": self.inner.host.kind(),
+            "platform": self.inner.runtime.capabilities(),
             "project_root": self.inner.project.root,
             "frontend_url": self.inner.runtime.frontend_url(),
             "services": self.inner.runtime.status().iter().map(|s| json!({
@@ -409,6 +409,7 @@ impl Shell {
                 "Services with `watch` paths restart automatically when their files change; otherwise call service_restart.",
                 "Dev-server frontends hot-reload by themselves; use ui_reload for static frontends.",
                 "Use ui_snapshot to see the UI and get element refs for ui_click / ui_fill.",
+                "Check `platform`: with `processes: restricted` (Android) only programs bundled with the app run – prefer static frontends, the built-in database and functions, and limit other services with `platforms`.",
             ],
         })
     }
@@ -442,7 +443,7 @@ impl Shell {
         env.insert("OPENSHELL_FUNCTION".into(), name.to_string());
         env.insert("OPENSHELL_INPUT".into(), input_text.clone());
         env.extend(run.env.clone());
-        let mut cmd = build_command(&run.command, &[], &cwd, &env).map_err(|e| e.to_string())?;
+        let mut cmd = self.inner.runtime.command(&run.command, &[], &cwd, &env).map_err(|e| e.to_string())?;
         cmd.stdin(std::process::Stdio::piped());
         let started = Instant::now();
         let mut child = cmd.spawn().map_err(|e| format!("cannot run `{}`: {e}", run.command.display()))?;
@@ -495,7 +496,8 @@ impl Shell {
             .as_ref()
             .map(|c| self.inner.project.resolve_path(c))
             .unwrap_or_else(|| self.inner.project.root.clone());
-        let mut cmd = build_command(&spec.command, &[], &cwd, &spec.env).map_err(|e| e.to_string())?;
+        let mut cmd =
+            self.inner.runtime.command(&spec.command, &[], &cwd, &spec.env).map_err(|e| e.to_string())?;
         let started = Instant::now();
         let child = cmd.spawn().map_err(|e| format!("cannot run task `{name}`: {e}"))?;
         let output = tokio::time::timeout(Duration::from_millis(spec.timeout_ms), child.wait_with_output())

@@ -11,7 +11,9 @@
 //! * dynamic port allocation and `${...}` variable resolution,
 //! * serving static frontend builds (with reverse proxy),
 //! * restarting services / reloading the frontend when files change (dev mode),
-//! * killing whole process trees on stop and when the shell exits.
+//! * killing whole process trees on stop and when the shell exits,
+//! * platform differences (desktop, server, Android) through a [`RuntimeAdapter`],
+//! * the app lifecycle on mobile platforms ([`LifecycleEvent`]).
 //!
 //! The runtime is UI-agnostic: the desktop app, the headless CLI mode and the
 //! agent layer all drive the same [`Runtime`].
@@ -20,6 +22,7 @@ mod health;
 pub mod logs;
 mod metrics;
 mod plan;
+pub mod platform;
 pub mod process;
 mod static_server;
 mod supervisor;
@@ -28,14 +31,19 @@ mod watch;
 pub use health::{Probe, ProbeConfig};
 pub use logs::{LogLine, LogQuery, LogStore, LogStream};
 pub use metrics::Metrics;
-pub use openshell_config::{Mode, Project};
-pub use plan::{build_plan, BuildDef, DefKind, ServiceDef};
+pub use openshell_config::{BackgroundPolicy, Mode, Platform, Project};
+pub use plan::{build_plan, build_plan_for, BuildDef, DefKind, ServiceDef};
+pub use platform::{
+    default_adapter, AndroidAdapter, BackgroundModel, Capabilities, DesktopAdapter, ProcessSupport,
+    RuntimeAdapter,
+};
 
 use anyhow::{anyhow, bail, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
 use tokio::sync::{broadcast, watch as tokio_watch};
@@ -163,6 +171,30 @@ pub enum RuntimeEvent {
         service: String,
         paths: Vec<String>,
     },
+    /// The host reported a lifecycle change (mobile platforms).
+    Lifecycle {
+        event: LifecycleEvent,
+        /// Services paused or resumed because of it.
+        services: Vec<String>,
+    },
+}
+
+/// App lifecycle reported by the host. On the desktop the app is always in the foreground;
+/// on Android the host forwards `onStart`/`onStop`, `onTrimMemory`, battery saver and
+/// connectivity changes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum LifecycleEvent {
+    /// The app is visible again: paused services are resumed.
+    Foreground,
+    /// The app went to the background: services with `"background": "pause"` are stopped.
+    Background,
+    /// The system is low on memory: pausable services are stopped.
+    LowMemory,
+    /// Battery saver switched on or off.
+    PowerSave { enabled: bool },
+    /// Network connectivity changed.
+    Network { connected: bool, metered: bool },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -226,6 +258,10 @@ pub(crate) struct Inner {
     pub extra_env: RwLock<BTreeMap<String, String>>,
     pub html_injection: Arc<RwLock<Option<String>>>,
     pub watchers: Mutex<Vec<watch::WatchHandle>>,
+    pub adapter: Arc<dyn RuntimeAdapter>,
+    /// Services stopped because the app went to the background; resumed on `Foreground`.
+    pub paused: Mutex<BTreeSet<String>>,
+    pub in_background: AtomicBool,
 }
 
 impl Inner {
@@ -241,10 +277,16 @@ pub struct Runtime {
 }
 
 impl Runtime {
-    /// Create the runtime for a project. Must be called inside a Tokio runtime.
-    /// Services are not started until [`Runtime::start_all`] or [`Runtime::start`].
+    /// Create the runtime for a project on the platform this binary was built for.
+    /// Must be called inside a Tokio runtime. Services are not started until
+    /// [`Runtime::start_all`] or [`Runtime::start`].
     pub fn new(project: &Project, mode: Mode) -> Result<Self> {
-        let defs = build_plan(project, mode)?;
+        Self::with_adapter(project, mode, default_adapter())
+    }
+
+    /// Create the runtime with a specific platform adapter (Android host, server, tests).
+    pub fn with_adapter(project: &Project, mode: Mode, adapter: Arc<dyn RuntimeAdapter>) -> Result<Self> {
+        let defs = build_plan_for(project, mode, adapter.platform())?;
         let state_dir = project.state_dir();
         let logs =
             Arc::new(LogStore::new(project.config.runtime.log_buffer_lines, Some(state_dir.join("logs"))));
@@ -288,6 +330,9 @@ impl Runtime {
             extra_env: RwLock::new(BTreeMap::new()),
             html_injection: Arc::new(RwLock::new(None)),
             watchers: Mutex::new(Vec::new()),
+            adapter,
+            paused: Mutex::new(BTreeSet::new()),
+            in_background: AtomicBool::new(false),
         });
         let handle = tokio::runtime::Handle::try_current()
             .map_err(|_| anyhow!("Runtime::new must be called inside a Tokio runtime"))?;
@@ -306,6 +351,90 @@ impl Runtime {
 
     pub fn mode(&self) -> Mode {
         self.inner.mode
+    }
+
+    pub fn platform(&self) -> Platform {
+        self.inner.adapter.platform()
+    }
+
+    /// What the platform offers (processes, background model, window, tray, installers).
+    pub fn capabilities(&self) -> Capabilities {
+        self.inner.adapter.capabilities()
+    }
+
+    pub fn adapter(&self) -> &Arc<dyn RuntimeAdapter> {
+        &self.inner.adapter
+    }
+
+    /// Build a command for this platform (functions and tasks run outside the supervisor).
+    pub fn command(
+        &self,
+        spec: &openshell_config::CommandSpec,
+        extra_args: &[String],
+        cwd: &Path,
+        env: &BTreeMap<String, String>,
+    ) -> Result<tokio::process::Command> {
+        self.inner.adapter.command(spec, extra_args, cwd, env)
+    }
+
+    /// Apply a lifecycle change reported by the host. Returns the services that were paused
+    /// (`Background`, `LowMemory`) or resumed (`Foreground`).
+    pub fn lifecycle(&self, event: LifecycleEvent) -> Vec<String> {
+        let mut affected = Vec::new();
+        match event {
+            LifecycleEvent::Background | LifecycleEvent::LowMemory => {
+                if event == LifecycleEvent::Background {
+                    self.inner.in_background.store(true, Ordering::SeqCst);
+                }
+                let mut paused = self.inner.paused.lock().unwrap();
+                for slot in &self.inner.slots {
+                    let wants_run = slot.control.borrow().run;
+                    if wants_run
+                        && slot.def.background == BackgroundPolicy::Pause
+                        && !matches!(slot.def.kind, DefKind::External)
+                    {
+                        slot.set_run(false);
+                        paused.insert(slot.def.name.clone());
+                        self.inner.logs.system(&slot.def.name, "paused (app in the background)");
+                        affected.push(slot.def.name.clone());
+                    }
+                }
+            }
+            LifecycleEvent::Foreground => {
+                self.inner.in_background.store(false, Ordering::SeqCst);
+                let names = std::mem::take(&mut *self.inner.paused.lock().unwrap());
+                for name in names {
+                    if self.start(&name).is_ok() {
+                        self.inner.logs.system(&name, "resumed (app in the foreground)");
+                        affected.push(name);
+                    }
+                }
+            }
+            LifecycleEvent::PowerSave { .. } | LifecycleEvent::Network { .. } => {}
+        }
+        tracing::info!(?event, ?affected, "lifecycle");
+        self.emit(RuntimeEvent::Lifecycle { event, services: affected.clone() });
+        affected
+    }
+
+    /// Whether the host reported that the app is in the background.
+    pub fn in_background(&self) -> bool {
+        self.inner.in_background.load(Ordering::SeqCst)
+    }
+
+    /// Active services that keep running in the background. On Android the host keeps a
+    /// foreground service (with a notification) alive while this list is not empty.
+    pub fn keep_alive(&self) -> Vec<String> {
+        self.inner
+            .slots
+            .iter()
+            .filter(|s| {
+                s.def.background == BackgroundPolicy::Keep
+                    && !matches!(s.def.kind, DefKind::External)
+                    && s.state().is_active()
+            })
+            .map(|s| s.def.name.clone())
+            .collect()
     }
 
     pub fn root(&self) -> &Path {

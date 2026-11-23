@@ -47,7 +47,18 @@ Legend: ✅ done · 🚧 partial · ⏳ planned
 - ⏳ Agent runner integration (hand tasks to a configured agent, stream progress into the UI)
 - ✅ MCP resources (status, config, logs, capabilities, database schemas) and `tools/list_changed` notifications
 
-## Phase 6 – Ecosystem ⏳
+## Phase 6 – Platforms: Android and connected devices 🚧
+- ✅ Platform-neutral core: `RuntimeAdapter` (desktop, server, Android), capabilities in status and `app_info`
+- ✅ `services[].platforms`, `services[].background` (`keep` / `pause`), lifecycle events (`openshell lifecycle`, `POST /v1/lifecycle`)
+- ✅ Core and CLI build for Android (CI); verified headless on an Android 16 emulator; usable in Termux
+- ✅ Remote gateway (`runtime.remote`): app profile over MCP for other devices, pairing token, `openshell remote`
+- ⏳ Android app: Tauri 2 mobile shell, foreground-service plugin (Kotlin), battery-optimisation exemption,
+  notification with running services
+- ⏳ Bundled runtimes for Android (Node.js, Python as `lib*.so`), app manager for several apps on the phone
+- ⏳ Device mesh: per-device pairing (QR), TLS, mDNS discovery, remote control API (`--device`), project sync and
+  deploy (`openshell deploy --device phone`)
+
+## Phase 7 – Ecosystem ⏳
 - 🚧 SDK (`@openshell/sdk`) – runtime, window, notifications, agent actions; publish to npm
 - ⏳ Extension system (shell plugins)
 - ⏳ More templates (Next.js, FastAPI with venv, Django, Rails, .NET)

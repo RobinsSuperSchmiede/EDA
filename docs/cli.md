@@ -36,6 +36,8 @@ binary), `NO_COLOR`.
 | `openshell status [--json]` | Mode, URLs, services (state, pid, port, CPU, memory, restarts, errors), bridged pages, pending approvals. |
 | `openshell logs [service] [-f] [-n 100] [--errors] [--grep <text>]` | Logs of all or one service. |
 | `openshell audit [-n 30]` | Recent agent actions. |
+| `openshell remote` | Remote gateway: URLs, MCP endpoint, pairing token and an MCP client configuration (`runtime.remote`). |
+| `openshell lifecycle <foreground\|background\|low-memory>` | Simulate a mobile lifecycle event, e.g. to test `"background": "pause"`. |
 
 ## Agents
 

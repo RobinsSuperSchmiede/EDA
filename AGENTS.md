@@ -18,9 +18,9 @@ Instructions for AI coding agents (Claude Code, Codex, Cursor, Copilot, Aider, â
 | Path | Crate / package | Responsibility |
 |---|---|---|
 | `crates/config` | `openshell-config` | `openshell.json` model (`model.rs`), validation (`validate.rs`), `${...}` interpolation |
-| `crates/runtime` | `openshell-runtime` | plan (`plan.rs`: ports, URLs, probes), supervisor per service (`supervisor.rs`), processes (`process.rs`), health, logs, metrics, static server, file watching |
+| `crates/runtime` | `openshell-runtime` | plan (`plan.rs`: ports, URLs, probes), supervisor per service (`supervisor.rs`), processes (`process.rs`), platform adapters + capabilities (`platform.rs`: desktop, server, Android), lifecycle, health, logs, metrics, static server, file watching |
 | `crates/agent` | `openshell-agent` | permission policy, approvals, audit log, UI bridge hub + `assets/bridge.js`, tool catalogue (`tools.rs`), MCP JSON-RPC (`mcp.rs`), provider discovery |
-| `crates/core` | `openshell-core` | `Shell` (runtime + agent layer), control API (`server.rs`), tool implementations (`exec.rs`), OpenAPI import, MCP stdio proxy, headless runner, `runtime.json` + client (`state.rs`) |
+| `crates/core` | `openshell-core` | `Shell` (runtime + agent layer), control API (`server.rs`), remote gateway (`remote.rs`), tool implementations (`exec.rs`), OpenAPI import, MCP stdio proxy, headless runner, `runtime.json` + client (`state.rs`) |
 | `crates/cli` | `openshell` binary | commands in `src/commands/*`; templates are embedded from `templates/` |
 | `crates/package` | `openshell-package` | installers: stage files, brand exe icon, Tauri bundler |
 | `apps/desktop/src-tauri` | `openshell-desktop` binary | Tauri 2 app: window, host implementation, title-bar/tray menus (`menus.rs`), `--mcp` / `--headless` modes |
@@ -65,6 +65,8 @@ cd examples/todo-app
   `crates/core/src/exec.rs`; they are audited automatically. Document in `docs/agents.md`.
 - Runtime tests use portable shell commands (`echo`, `exit N`, `ping -n` on Windows / `sleep` elsewhere) â€“ see
   `crates/runtime/src/tests.rs`.
+- Platform differences that apps or agents can observe go through `RuntimeAdapter` (`crates/runtime/src/platform.rs`),
+  never `cfg` checks in the core. The core and the CLI must keep building for `aarch64-linux-android` (CI job `android`).
 - Platform code: `#[cfg(windows)]` / `#[cfg(unix)]`; keep Windows process handling in `crates/runtime/src/process.rs`
   and `crates/core/src/headless.rs` (job objects, `CREATE_NO_WINDOW`, non-inheritable stdio for detached children).
 - Line endings are LF (`.gitattributes`). Docs and code are English.

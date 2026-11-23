@@ -152,6 +152,13 @@ enum Command {
         #[arg(short = 'n', long, default_value_t = 30)]
         lines: usize,
     },
+    /// Show how other devices reach the app (remote gateway URL, MCP endpoint, pairing token)
+    Remote,
+    /// Simulate an app lifecycle event: foreground, background, low-memory (tests mobile behaviour)
+    Lifecycle {
+        #[arg(value_parser = ["foreground", "background", "low-memory"])]
+        event: String,
+    },
     /// Print the JSON Schema of openshell.json
     Schema,
     /// Print the guide for AI coding agents that build apps on OpenShell

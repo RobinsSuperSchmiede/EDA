@@ -4,7 +4,7 @@
 use crate::health;
 use crate::logs::LogStream;
 use crate::plan::{BuildDef, DefKind, SetupDef};
-use crate::process::{build_command, terminate};
+use crate::process::terminate;
 use crate::{static_server, Control, Inner, ServiceState, Slot};
 use chrono::Utc;
 use openshell_config::RestartPolicy;
@@ -260,8 +260,10 @@ async fn run_build(rt: &Inner, slot: &Slot, build: &BuildDef, ctrl: &mut Ctrl) -
         s.metrics = None;
     });
     let started = std::time::Instant::now();
-    let mut cmd =
-        build_command(&build.command, &[], &build.cwd, &process_env(rt, slot)).map_err(|e| e.to_string())?;
+    let mut cmd = rt
+        .adapter
+        .command(&build.command, &[], &build.cwd, &process_env(rt, slot))
+        .map_err(|e| e.to_string())?;
     let mut child = cmd.spawn().map_err(|e| format!("cannot run `{}`: {e}", build.command.display()))?;
     if let Some(job) = &rt.job {
         job.assign(&child);
@@ -299,8 +301,10 @@ async fn run_setup(rt: &Inner, slot: &Slot, setup: &SetupDef, ctrl: &mut Ctrl) -
     let name = &slot.def.name;
     rt.logs.system(name, format!("running setup: {}", setup.command.display()));
     slot.set_state(rt, ServiceState::Setup);
-    let mut cmd =
-        build_command(&setup.command, &[], &setup.cwd, &process_env(rt, slot)).map_err(|e| e.to_string())?;
+    let mut cmd = rt
+        .adapter
+        .command(&setup.command, &[], &setup.cwd, &process_env(rt, slot))
+        .map_err(|e| e.to_string())?;
     let mut child = cmd.spawn().map_err(|e| format!("cannot run `{}`: {e}", setup.command.display()))?;
     if let Some(job) = &rt.job {
         job.assign(&child);
@@ -331,7 +335,7 @@ async fn run_setup(rt: &Inner, slot: &Slot, setup: &SetupDef, ctrl: &mut Ctrl) -
 async fn run_process(rt: &Inner, slot: &Slot, ctrl: &mut Ctrl) -> Exit {
     let DefKind::Process { command, args } = &slot.def.kind else { unreachable!() };
     let name = &slot.def.name;
-    let mut cmd = match build_command(command, args, &slot.def.cwd, &process_env(rt, slot)) {
+    let mut cmd = match rt.adapter.command(command, args, &slot.def.cwd, &process_env(rt, slot)) {
         Ok(c) => c,
         Err(e) => return Exit::Error(format!("{e:#}")),
     };

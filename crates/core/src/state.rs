@@ -18,6 +18,9 @@ pub struct RuntimeInfo {
     pub token: String,
     pub mode: Mode,
     pub host: String,
+    /// `desktop`, `android` or `server` (missing in files written by OpenShell < 0.3).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub platform: Option<openshell_config::Platform>,
     pub app: String,
     pub started_at: DateTime<Utc>,
     pub version: String,

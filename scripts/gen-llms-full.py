@@ -17,6 +17,7 @@ DOCS = [
     "docs/languages.md",
     "docs/agents.md",
     "docs/installers.md",
+    "docs/platforms.md",
     "docs/cli.md",
     "docs/sdk.md",
     "docs/control-api.md",

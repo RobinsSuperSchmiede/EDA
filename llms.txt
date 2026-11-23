@@ -13,6 +13,7 @@ Key facts for building apps: services read `PORT` and bind `127.0.0.1`, answer `
 - [Configuration reference](https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/configuration.md): every field of openshell.json
 - [Languages](https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/languages.md): Java, Spring Boot, C++/CMake, Go, Rust, .NET
 - [Installers](https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/installers.md): openshell package
+- [Platforms](https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/platforms.md): desktop, server, Android (platform adapters, `platforms`, lifecycle, remote gateway, device mesh)
 
 ## AI agents
 

@@ -5,8 +5,8 @@ use crate::health::{Probe, ProbeConfig};
 use crate::process::free_port;
 use anyhow::{anyhow, bail, Result};
 use openshell_config::{
-    interpolate, startup_order, BuildWhen, CommandSpec, FrontendPlan, HealthCheckSpec, Mode, PortSpec,
-    Project, RestartPolicy, FRONTEND_SERVICE,
+    interpolate, startup_order, BackgroundPolicy, BuildWhen, CommandSpec, FrontendPlan, HealthCheckSpec,
+    Mode, Platform, PortSpec, Project, RestartPolicy, FRONTEND_SERVICE,
 };
 use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
@@ -58,6 +58,8 @@ pub struct ServiceDef {
     pub watch: Vec<PathBuf>,
     pub stop_timeout: Duration,
     pub is_frontend: bool,
+    /// Behaviour while the app is in the background (mobile platforms).
+    pub background: BackgroundPolicy,
 }
 
 impl ServiceDef {
@@ -85,13 +87,20 @@ impl ServiceDef {
     }
 }
 
-/// Resolved plan for a project in a mode, in startup order (frontend last).
+/// Resolved plan for a project in a mode on the desktop, in startup order (frontend last).
 pub fn build_plan(project: &Project, mode: Mode) -> Result<Vec<ServiceDef>> {
+    build_plan_for(project, mode, Platform::Desktop)
+}
+
+/// Resolved plan for a project in a mode on a platform. Services limited to other platforms
+/// (`platforms`) are left out, like services limited to other modes.
+pub fn build_plan_for(project: &Project, mode: Mode, platform: Platform) -> Result<Vec<ServiceDef>> {
     let cfg = &project.config;
     let root = project.root.clone();
     let shutdown = Duration::from_millis(cfg.runtime.shutdown_timeout_ms);
 
-    let enabled: Vec<_> = cfg.services.iter().filter(|s| s.enabled_in(mode)).cloned().collect();
+    let enabled: Vec<_> =
+        cfg.services.iter().filter(|s| s.enabled_in(mode) && s.runs_on(platform)).cloned().collect();
     let enabled_names: Vec<String> = enabled.iter().map(|s| s.name.clone()).collect();
 
     // 1. ports
@@ -298,6 +307,7 @@ pub fn build_plan(project: &Project, mode: Mode) -> Result<Vec<ServiceDef>> {
             stop_timeout: s.stop_timeout_ms.map(Duration::from_millis).unwrap_or(shutdown),
             cwd,
             is_frontend: false,
+            background: s.background.unwrap_or_default(),
         });
     }
 
@@ -358,6 +368,7 @@ pub fn build_plan(project: &Project, mode: Mode) -> Result<Vec<ServiceDef>> {
             stop_timeout: shutdown,
             cwd,
             is_frontend: true,
+            background: BackgroundPolicy::Keep,
         });
     }
     Ok(defs)

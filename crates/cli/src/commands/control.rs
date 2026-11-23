@@ -292,3 +292,53 @@ pub async fn audit(dir: &Path, lines: usize) -> Result<()> {
     }
     Ok(())
 }
+
+pub async fn remote(dir: &Path) -> Result<()> {
+    let client = connect(dir).await?;
+    let r = client.get("/v1/remote").await?;
+    if r["enabled"].as_bool() != Some(true) {
+        println!("the remote gateway is off");
+        println!(
+            "\n  {} set {} in openshell.json and restart the app",
+            dim("enable it:"),
+            cyan(r#""runtime": { "remote": { "enabled": true } }"#)
+        );
+        return Ok(());
+    }
+    println!(
+        "{} {}",
+        bold("remote gateway"),
+        dim(&format!("listening on {}:{}", r["bind"].as_str().unwrap_or("?"), r["port"]))
+    );
+    for url in r["urls"].as_array().into_iter().flatten() {
+        println!("  {} {}", dim("url:  "), url.as_str().unwrap_or(""));
+    }
+    println!("  {} {}", dim("mcp:  "), r["mcp_url"].as_str().unwrap_or(""));
+    println!("  {} {}", dim("token:"), yellow(r["token"].as_str().unwrap_or("")));
+    let snippet = json!({
+        "url": r["mcp_url"],
+        "headers": { "Authorization": format!("Bearer {}", r["token"].as_str().unwrap_or("")) }
+    });
+    println!("\n{}", dim("MCP client configuration (streamable HTTP):"));
+    println!("{}", serde_json::to_string_pretty(&snippet)?);
+    println!(
+        "\n{}",
+        dim("Anyone with the token can use the app's functions. Delete .openshell/data/remote-token to revoke it.")
+    );
+    Ok(())
+}
+
+pub async fn lifecycle(dir: &Path, event: &str) -> Result<()> {
+    let client = connect(dir).await?;
+    let kind = event.replace('-', "_");
+    let r = client.post("/v1/lifecycle", &json!({ "kind": kind })).await?;
+    let services: Vec<&str> =
+        r["services"].as_array().into_iter().flatten().filter_map(|s| s.as_str()).collect();
+    let verb = if kind == "foreground" { "resumed" } else { "paused" };
+    if services.is_empty() {
+        output::ok(&format!("{event}: no services {verb}"));
+    } else {
+        output::ok(&format!("{event}: {verb} {}", services.join(", ")));
+    }
+    Ok(())
+}

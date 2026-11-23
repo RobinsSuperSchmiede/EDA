@@ -20,6 +20,15 @@ All notable changes to this project are documented here. The format follows
   `openshell mcp`.
 - `runtime.launch_at_login` for installed apps.
 - `openshell status` and `openshell doctor` show databases and functions.
+- **Platform-neutral core** for desktop, server and Android: a `RuntimeAdapter` builds every command and reports the
+  platform's capabilities (`platform` in `/v1/status`, `/v1/health` and the agent tool `app_info`). The
+  `AndroidAdapter` runs system tools and programs bundled with the app and explains what to use instead of anything
+  else. The core and the CLI build for Android (new CI job); verified headless on an Android 16 emulator.
+- `services[].platforms` (`desktop`, `android`, `server`) and `services[].background` (`keep` / `pause`).
+- App lifecycle events (`foreground`, `background`, `low_memory`, `power_save`, `network`) via `Shell::lifecycle`,
+  `POST /v1/lifecycle` and `openshell lifecycle`; paused services resume in the foreground.
+- **Remote gateway** (`runtime.remote`): other devices use the app's functions over MCP with a pairing token;
+  `openshell remote` prints URL, token and an MCP client configuration. See `docs/platforms.md`.
 - Landing page in `website/` (static, animated ASCII field in green and white, architecture diagram, product gallery).
 
 ## [0.2.1] - 2026-11-19

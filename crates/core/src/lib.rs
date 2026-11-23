@@ -4,15 +4,18 @@
 //! Layer together and serves the local **control API** (HTTP + WebSocket + MCP)
 //! that the CLI, the frontend SDK and AI agents talk to.
 //!
-//! Both front-ends of OpenShell use this crate:
+//! Every front-end of OpenShell uses this crate:
 //! * the desktop app (Tauri) launches a [`Shell`] with a desktop [`Host`],
-//! * `openshell start --headless` launches it with a [`HeadlessHost`].
+//! * `openshell start --headless` launches it with a [`HeadlessHost`],
+//! * a mobile host (Android) launches it with [`Shell::launch_with`] and an
+//!   [`AndroidAdapter`](openshell_runtime::AndroidAdapter) and forwards lifecycle events.
 
 pub mod db;
 mod exec;
 mod fs;
 pub mod headless;
 pub mod openapi;
+pub mod remote;
 mod server;
 pub mod state;
 pub mod stdio;
@@ -29,7 +32,7 @@ use openshell_agent::audit::AuditLog;
 use openshell_agent::bridge::UiHub;
 use openshell_agent::policy::Policy;
 use openshell_config::{Mode, Project};
-use openshell_runtime::Runtime;
+use openshell_runtime::{LifecycleEvent, Runtime, RuntimeAdapter};
 use serde_json::json;
 use std::sync::Arc;
 use tokio::sync::Notify;
@@ -91,6 +94,8 @@ pub(crate) struct ShellInner {
     pub imported: std::sync::RwLock<Vec<openapi::ApiOperation>>,
     /// Built-in databases.
     pub dbs: db::Databases,
+    /// Remote access gateway (`runtime.remote`), if enabled.
+    pub remote: Option<remote::RemoteInfo>,
 }
 
 /// A running OpenShell instance: runtime + control API + agent layer.
@@ -111,9 +116,20 @@ fn origin_of(url: &str) -> Option<String> {
 
 impl Shell {
     /// Create the runtime, bind the control API and write `.openshell/runtime.json`.
-    /// Services are started with [`Shell::start`].
+    /// Services are started with [`Shell::start`]. Uses the adapter of the platform this
+    /// binary was built for.
     pub async fn launch(project: Project, mode: Mode, host: Arc<dyn Host>) -> Result<Shell> {
-        let runtime = Runtime::new(&project, mode)?;
+        Self::launch_with(project, mode, host, openshell_runtime::default_adapter()).await
+    }
+
+    /// Like [`Shell::launch`] with an explicit platform adapter (Android host, server, tests).
+    pub async fn launch_with(
+        project: Project,
+        mode: Mode,
+        host: Arc<dyn Host>,
+        adapter: Arc<dyn RuntimeAdapter>,
+    ) -> Result<Shell> {
+        let runtime = Runtime::with_adapter(&project, mode, adapter)?;
         let dbs = db::Databases::open(&project, runtime.logs())?;
         for (k, v) in dbs.env() {
             runtime.set_extra_env(k, v);
@@ -127,6 +143,7 @@ impl Shell {
             .with_context(|| format!("cannot bind control API on 127.0.0.1:{port}"))?;
         let port = listener.local_addr()?.port();
         let control_url = format!("http://127.0.0.1:{port}");
+        let remote = remote::bind(&project).await?;
 
         let mut allowed_origins = vec![
             "tauri://localhost".to_string(),
@@ -154,6 +171,7 @@ impl Shell {
             control_url: control_url.clone(),
             allowed_origins,
             imported: std::sync::RwLock::new(Vec::new()),
+            remote: remote.as_ref().map(|(_, info)| info.clone()),
             dbs,
             mode,
             runtime,
@@ -181,6 +199,10 @@ impl Shell {
 
         shell.watch_openapi();
         server::spawn(shell.clone(), listener);
+        if let Some((listener, info)) = remote {
+            tracing::info!("remote gateway on {}", info.urls.join(", "));
+            remote::spawn(shell.clone(), listener);
+        }
         state::write_runtime_info(
             &state_dir,
             &state::RuntimeInfo {
@@ -189,6 +211,7 @@ impl Shell {
                 token: shell.inner.admin_token.clone(),
                 mode,
                 host: shell.inner.host.kind().to_string(),
+                platform: Some(shell.inner.runtime.platform()),
                 app: shell.inner.project.config.app.name.clone(),
                 started_at: chrono::Utc::now(),
                 version: env!("CARGO_PKG_VERSION").to_string(),
@@ -207,6 +230,17 @@ impl Shell {
                 tracing::warn!("file watching disabled: {e:#}");
             }
         }
+    }
+
+    /// Forward an app lifecycle change from the host (Android: `onStart`/`onStop`,
+    /// `onTrimMemory`, battery saver, connectivity). Returns the paused/resumed services.
+    pub fn lifecycle(&self, event: LifecycleEvent) -> Vec<String> {
+        self.inner.runtime.lifecycle(event)
+    }
+
+    /// Remote access gateway, if enabled (URLs and pairing token).
+    pub fn remote(&self) -> Option<&remote::RemoteInfo> {
+        self.inner.remote.as_ref()
     }
 
     /// Stop all services and remove the runtime state file.

@@ -48,3 +48,21 @@ jobs:
           diff -u schema/openshell.schema.json /tmp/schema.json || (echo "run: cargo run -p openshell-cli -- schema > schema/openshell.schema.json" && exit 1)
       - name: llms-full.txt
         run: python3 scripts/gen-llms-full.py --check
+
+  android:
+    name: Android (core and CLI build for aarch64-linux-android)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+      - uses: Swatinem/rust-cache@v2
+      - name: Build for Android with the NDK of the runner
+        run: |
+          BIN="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          export CC_aarch64_linux_android="$BIN/aarch64-linux-android26-clang"
+          export CXX_aarch64_linux_android="$BIN/aarch64-linux-android26-clang++"
+          export AR_aarch64_linux_android="$BIN/llvm-ar"
+          export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$BIN/aarch64-linux-android26-clang"
+          cargo build -p openshell-cli --target aarch64-linux-android --locked

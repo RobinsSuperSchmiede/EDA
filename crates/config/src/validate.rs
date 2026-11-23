@@ -124,6 +124,30 @@ pub fn validate(config: &Config) -> Vec<Issue> {
         if !s.watch.is_empty() && s.external {
             issues.push(Issue::warning(format!("{p}.watch"), "ignored for external services"));
         }
+        if s.platforms.as_ref().is_some_and(|p| p.is_empty()) {
+            issues.push(Issue::error(
+                format!("{p}.platforms"),
+                "must not be empty (omit it to run on every platform)",
+            ));
+        }
+        if s.background == Some(BackgroundPolicy::Pause) && s.external {
+            issues.push(Issue::warning(format!("{p}.background"), "ignored for external services"));
+        }
+    }
+
+    // --- remote access ------------------------------------------------------
+    let remote = &config.runtime.remote;
+    if remote.bind.parse::<std::net::IpAddr>().is_err() {
+        issues.push(Issue::error(
+            "runtime.remote.bind",
+            format!("`{}` is not an IP address (for example `0.0.0.0` or a VPN address)", remote.bind),
+        ));
+    }
+    if remote.port == 0 {
+        issues.push(Issue::error("runtime.remote.port", "must be a fixed port so other devices can find it"));
+    }
+    if config.runtime.control_port == Some(remote.port) && remote.enabled {
+        issues.push(Issue::error("runtime.remote.port", "must differ from `runtime.control_port`"));
     }
 
     // dependency references (after collecting names)

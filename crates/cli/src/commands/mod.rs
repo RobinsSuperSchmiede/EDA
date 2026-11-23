@@ -65,6 +65,8 @@ pub async fn run(project: Option<PathBuf>, cmd: Cmd) -> Result<()> {
         Cmd::Approve { id } => control::decide(&dir, &id, true).await,
         Cmd::Deny { id } => control::decide(&dir, &id, false).await,
         Cmd::Audit { lines } => control::audit(&dir, lines).await,
+        Cmd::Remote => control::remote(&dir).await,
+        Cmd::Lifecycle { event } => control::lifecycle(&dir, &event).await,
     }
 }
 

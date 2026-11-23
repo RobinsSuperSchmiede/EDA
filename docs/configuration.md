@@ -86,6 +86,8 @@ overrides, then `dist`, then the development settings.
 | `openapi` | – | Import the service's OpenAPI 3 (JSON) document as agent tools: `"/openapi.json"`, URL, project file, or `{ "location", "include", "exclude", "prefix" }` |
 | `watch` | `[]` | Paths whose changes restart the service (dev mode). `node_modules`, `.git`, `__pycache__`, `target`, `.venv`, `*.log` are ignored |
 | `modes` | all | Only run in `["development"]` or `["production"]` |
+| `platforms` | all | Only run on `desktop`, `android` and/or `server`, e.g. `["desktop", "server"]` for a service that needs a toolchain. See [platforms.md](platforms.md) |
+| `background` | `keep` | Mobile platforms: `pause` stops the service while the app is in the background and starts it again afterwards |
 | `stop_timeout_ms` | `runtime.shutdown_timeout_ms` | Grace period before a forced kill (Unix; Windows terminates the tree immediately) |
 
 Every process also receives `OPENSHELL=1`, `OPENSHELL_MODE`, `OPENSHELL_SERVICE`, `OPENSHELL_PROJECT_ROOT`,
@@ -116,6 +118,7 @@ Usable in commands, args, env values, URLs, health checks and proxy targets:
 | `log_buffer_lines` | 10000 | Lines kept in memory (files in `.openshell/logs/`) |
 | `shutdown_timeout_ms` | 5000 | Default grace period when stopping |
 | `launch_at_login` | `false` | Start the installed app when the user logs in (installed apps only) |
+| `remote` | off | Remote access gateway for other devices: `{ "enabled": true, "bind": "0.0.0.0", "port": 7420 }`. Serves only the app profile, protected by a pairing token (`openshell remote`). See [platforms.md](platforms.md#remote-access) |
 
 ## `agents`
 

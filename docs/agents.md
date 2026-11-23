@@ -71,6 +71,13 @@ transport (JSON responses). They require
 `Authorization: Bearer <token>` from `.openshell/runtime.json`. Because the port and token change on each start,
 stdio is more convenient; set `runtime.control_port` for a fixed port.
 
+### From another device (remote gateway)
+
+With `"runtime": { "remote": { "enabled": true } }` the app profile is also reachable from other devices – for
+example an agent on a laptop using an app hosted on a phone. `openshell remote` prints the URL and a ready MCP client
+configuration (`{ "url": "http://<ip>:7420/mcp/app", "headers": { "Authorization": "Bearer <pairing token>" } }`).
+Only the app's functions are exposed; see [platforms.md](platforms.md#remote-access).
+
 ### Plain HTTP / JSON
 
 ```
@@ -199,6 +206,8 @@ tool, scope, (truncated) arguments, outcome and duration. View it with `openshel
 - Application frontends loaded from http(s) URLs get no Tauri IPC access.
 - File tools reject absolute paths, `..`, symlink escapes and OpenShell's state directory; `fs_write` also protects `.git`.
 - Agents cannot run arbitrary shell commands; only tasks declared in the config, under the `system` scope.
+- The remote gateway (off by default) exposes only the app profile, uses its own pairing token, rejects browser
+  requests (`Origin`) and audits calls with the channel `remote`.
 - Limits: the permission layer governs cooperating agents. A local process running as the same user can read the token
   file; OpenShell is not a sandbox against local malware.
 

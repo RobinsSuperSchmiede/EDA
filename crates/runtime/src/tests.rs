@@ -308,3 +308,77 @@ async fn metrics_are_sampled() {
     rt.shutdown().await;
     assert!(rt.service_status("svc").unwrap().metrics.is_none());
 }
+
+#[tokio::test]
+async fn services_are_filtered_by_platform() {
+    let json = format!(
+        r#"{{"app":{{"name":"t"}},"services":[
+            {{"name":"everywhere","command":"{0}"}},
+            {{"name":"toolchain","command":"{0}","platforms":["desktop","server"]}},
+            {{"name":"phone","command":"{0}","platforms":["android"],"depends_on":["toolchain"]}}
+        ]}}"#,
+        sleep_cmd()
+    );
+    let (_d, p) = project(&json);
+    let desktop = Runtime::new(&p, Mode::Development).unwrap();
+    assert_eq!(desktop.platform(), Platform::Desktop);
+    assert_eq!(desktop.service_names(), vec!["everywhere", "toolchain"]);
+
+    let android = Runtime::with_adapter(&p, Mode::Development, Arc::new(AndroidAdapter::new())).unwrap();
+    assert_eq!(android.platform(), Platform::Android);
+    assert_eq!(android.service_names(), vec!["everywhere", "phone"]);
+    // the dependency on a service that does not exist on this platform is dropped
+    assert!(android.service_status("phone").unwrap().depends_on.is_empty());
+    assert_eq!(android.capabilities().processes, ProcessSupport::Restricted);
+}
+
+#[tokio::test]
+async fn android_rejects_programs_that_are_not_bundled() {
+    let (_d, p) = project(
+        r#"{"app":{"name":"t"},"services":[{"name":"api","command":["cargo","run"],"restart":false}]}"#,
+    );
+    let adapter = AndroidAdapter::new().with_program("node", "/apk/lib/libnode.so");
+    let rt = Runtime::with_adapter(&p, Mode::Development, Arc::new(adapter)).unwrap();
+    rt.start("api").unwrap();
+    let st = wait_state(&rt, "api", ServiceState::Failed, 10).await;
+    let err = st.last_error.unwrap_or_default();
+    assert!(err.contains("cannot run on Android") && err.contains("bundled: node"), "{err}");
+}
+
+#[tokio::test]
+async fn background_pauses_and_foreground_resumes() {
+    let json = format!(
+        r#"{{"app":{{"name":"t"}},"services":[
+            {{"name":"sync","command":"{0}","background":"pause"}},
+            {{"name":"api","command":"{0}"}}
+        ]}}"#,
+        sleep_cmd()
+    );
+    let (_d, p) = project(&json);
+    let rt = Runtime::new(&p, Mode::Development).unwrap();
+    rt.start_all();
+    rt.wait_ready("sync", Duration::from_secs(10)).await.unwrap();
+    rt.wait_ready("api", Duration::from_secs(10)).await.unwrap();
+    // only services with the default policy (`keep`) need a foreground service on Android
+    assert_eq!(rt.keep_alive(), vec!["api"]);
+
+    let mut events = rt.subscribe();
+    assert_eq!(rt.lifecycle(LifecycleEvent::Background), vec!["sync"]);
+    assert!(rt.in_background());
+    rt.wait_stopped("sync", Duration::from_secs(10)).await.unwrap();
+    assert_eq!(rt.service_status("api").unwrap().state, ServiceState::Running);
+    let lifecycle_event = loop {
+        match tokio::time::timeout(Duration::from_secs(5), events.recv()).await.unwrap().unwrap() {
+            RuntimeEvent::Lifecycle { event, services } => break (event, services),
+            _ => continue,
+        }
+    };
+    assert_eq!(lifecycle_event, (LifecycleEvent::Background, vec!["sync".to_string()]));
+
+    // a second background event does not pause anything new
+    assert!(rt.lifecycle(LifecycleEvent::LowMemory).is_empty());
+    assert_eq!(rt.lifecycle(LifecycleEvent::Foreground), vec!["sync"]);
+    assert!(!rt.in_background());
+    rt.wait_ready("sync", Duration::from_secs(10)).await.unwrap();
+    rt.shutdown().await;
+}

@@ -209,7 +209,9 @@ openshell package            # native installer (needs app.version as semver, op
       "env": { "LOG_LEVEL": "info" },
       "restart": true,                                          // on-failure (default) | "always" | false
       "watch": ["backend"],                                     // dev: restart on change
-      "depends_on": ["db"]
+      "depends_on": ["db"],
+      "platforms": ["desktop", "server"],                       // optional: not on Android (needs a toolchain)
+      "background": "keep"                                      // mobile: "pause" stops it in the background
     },
     { "name": "db", "external": true, "healthcheck": { "tcp": "127.0.0.1:5432" } }
   ],
@@ -246,6 +248,8 @@ in order, at startup). Access: services/functions `OPENSHELL_DB_MAIN` (+ `DATABA
 - **Absolute URLs to the backend in the frontend** → break in production. Use `/api` + proxy.
 - **`frontend.dist` must exist for production** → run `openshell build`.
 - **Installing global tools** or changing the user's system is not needed; templates have no dependencies except the language runtime and (for Vite templates) `npm install`, which OpenShell runs itself via `setup`.
+- **Assuming a desktop** → apps can run on Android or a server too. Check `platform` in `app_info`; on Android only
+  system tools and bundled programs start (see docs/platforms.md).
 - **Do not edit `.openshell/`** – it is runtime state (logs, audit log, `runtime.json` with the control token).
 
 ## Definition of done

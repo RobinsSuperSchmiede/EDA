@@ -16,6 +16,47 @@ pub enum Mode {
     Production,
 }
 
+/// Platform an OpenShell runtime runs on. The core is the same everywhere; a platform
+/// adapter decides how processes are started and how the app lifecycle is handled.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum Platform {
+    /// Windows, macOS and Linux with a native window (also `--headless` on a workstation).
+    Desktop,
+    /// Android phones and tablets: the app runs as a personal runtime and mini server.
+    Android,
+    /// A machine without a user session (headless runtime, always on).
+    Server,
+}
+
+impl Platform {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Desktop => "desktop",
+            Self::Android => "android",
+            Self::Server => "server",
+        }
+    }
+}
+
+impl std::fmt::Display for Platform {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+/// What happens to a service while the app is in the background (mobile platforms;
+/// on the desktop the app never goes to the background).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum BackgroundPolicy {
+    /// Keep running (on Android this keeps a foreground service with a notification alive).
+    #[default]
+    Keep,
+    /// Stop while the app is in the background and start again when it returns.
+    Pause,
+}
+
 /// Root of an `openshell.json` / `openshell.toml` file.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -385,6 +426,13 @@ pub struct ServiceConfig {
     /// Only run in these modes (default: all).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub modes: Option<Vec<Mode>>,
+    /// Only run on these platforms (default: all). Example: `["desktop", "server"]` for a service
+    /// that needs a toolchain which is not available on Android.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub platforms: Option<Vec<Platform>>,
+    /// Behaviour while the app is in the background on mobile platforms (default: `keep`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub background: Option<BackgroundPolicy>,
     /// Grace period between the stop signal and a forced kill.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub stop_timeout_ms: Option<u64>,
@@ -418,6 +466,8 @@ impl ServiceConfig {
             openapi: None,
             watch: vec![],
             modes: None,
+            platforms: None,
+            background: None,
             stop_timeout_ms: None,
         }
     }
@@ -428,6 +478,11 @@ impl ServiceConfig {
 
     pub fn enabled_in(&self, mode: Mode) -> bool {
         self.modes.as_ref().map(|m| m.contains(&mode)).unwrap_or(true)
+    }
+
+    /// Whether the service runs on `platform` (no `platforms` list: everywhere).
+    pub fn runs_on(&self, platform: Platform) -> bool {
+        self.platforms.as_ref().map(|p| p.contains(&platform)).unwrap_or(true)
     }
 }
 
@@ -554,6 +609,10 @@ pub struct RuntimeConfig {
     /// Start the installed app when the user logs in (applies to installed apps only).
     #[serde(default)]
     pub launch_at_login: bool,
+    /// Make the app usable from other devices (for example a phone that hosts the app and a
+    /// laptop that uses it). Off by default.
+    #[serde(default, skip_serializing_if = "RemoteConfig::is_disabled")]
+    pub remote: RemoteConfig,
 }
 
 impl Default for RuntimeConfig {
@@ -565,8 +624,45 @@ impl Default for RuntimeConfig {
             log_buffer_lines: default_log_lines(),
             shutdown_timeout_ms: default_shutdown_timeout(),
             launch_at_login: false,
+            remote: RemoteConfig::default(),
         }
     }
+}
+
+/// Remote access gateway: serves the app profile (the app's own functions over MCP) to
+/// other devices in the network, protected by a pairing token.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RemoteConfig {
+    /// Start the gateway.
+    #[serde(default)]
+    pub enabled: bool,
+    /// Address to listen on. `0.0.0.0` makes the gateway reachable in the local network; use a
+    /// VPN address (for example a Tailscale IP) to limit it to your own devices.
+    #[serde(default = "default_remote_bind")]
+    pub bind: String,
+    /// Fixed port (default: 7420).
+    #[serde(default = "default_remote_port")]
+    pub port: u16,
+}
+
+impl Default for RemoteConfig {
+    fn default() -> Self {
+        Self { enabled: false, bind: default_remote_bind(), port: default_remote_port() }
+    }
+}
+
+impl RemoteConfig {
+    fn is_disabled(&self) -> bool {
+        !self.enabled && self.bind == default_remote_bind() && self.port == default_remote_port()
+    }
+}
+
+fn default_remote_bind() -> String {
+    "0.0.0.0".into()
+}
+fn default_remote_port() -> u16 {
+    7420
 }
 
 fn default_log_lines() -> usize {

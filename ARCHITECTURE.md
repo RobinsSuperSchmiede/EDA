@@ -34,6 +34,11 @@ The same `openshell-core::Shell` runs inside the desktop app and inside the CLI 
 modes therefore share one runtime implementation; they differ only in the `Host` (desktop window vs. headless) and the
 permission defaults (development vs. production).
 
+Platform differences sit below the runtime in a `RuntimeAdapter` (`crates/runtime/src/platform.rs`): the
+`DesktopAdapter` (desktop, server) starts any program, the `AndroidAdapter` only system tools and programs bundled
+with the app. Hosts forward app lifecycle events (`foreground`, `background`, `low_memory`, ...). The core and the CLI
+build for Android; see [docs/platforms.md](docs/platforms.md).
+
 ## Key decisions
 
 | Decision | Rationale |
@@ -58,6 +63,8 @@ permission defaults (development vs. production).
 | **Per-user state for installed apps** | `runtime.json`, logs, audit and `OPENSHELL_DATA_DIR` go to the user's local data directory (bundle identifier), never into the install directory. |
 | **Title bar menu via window subclassing (Windows)** | Right-clicking the caption (`WM_NCRBUTTONUP`/`HTCAPTION`) opens a Tauri popup menu with live service data instead of the system menu; Alt+Space keeps the system menu. Tray (all platforms) and menu bar (macOS) show the same menu. |
 | **Independent building blocks** (frontend, backend, database, functions) | No part is mandatory. A database is managed by the shell itself (SQLite, migrations, WAL) so a frontend or agent functions can store data without a backend; functions are scripts run per call (JSON over stdin/stdout) so an AI interface needs no server. `openshell add` edits `openshell.json` while keeping key order. |
+| **Platform adapters instead of platform forks** | One core for desktop, server and Android. Only command construction, capabilities and lifecycle differ, so agents, MCP, databases and the control API behave identically everywhere. `services[].platforms` lets one project describe what runs where. |
+| **Remote gateway exposes only the app profile** | Other devices get the app's functions (MCP) with a separate pairing token – never developer tools or the admin token. Browser requests are rejected; TLS and per-device pairing come with the device mesh. |
 | **Build steps run inside the supervisor** | Compile → start → watch → recompile is one lifecycle; build errors become a `failed` state with compiler output in the logs, retried on the next change. |
 
 ## Lifecycle of `openshell dev`
