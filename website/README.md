@@ -1,24 +1,49 @@
 # OpenShell website
 
-The landing page of OpenShell – a single static `index.html` (no build step, no dependencies besides Geist and Geist
-Mono from Google Fonts) plus `assets/`.
+The landing page of OpenShell – static files, no build step, no dependencies besides Geist and Geist Mono from Google
+Fonts.
 
-The background is an ASCII field drawn on a canvas: characters on a monospace grid whose density follows drifting
-value noise with contour bands, coloured from deep green over mint to white. It is strongest behind the hero, calms
-down behind the content, moves with a slight parallax and renders at ~10 fps; with `prefers-reduced-motion` it stays
-static. Buttons follow the "Minimal Design System" (glass buttons, landing CTA). Product mockups (app window, console, terminal, agent) and the architecture diagram are plain HTML/inline SVG.
+| File | Purpose |
+|---|---|
+| `index.html` | **Production page.** The design is fixed by the data attributes on `<html>` |
+| `dev.html` | **Development view**: the production page in a frame plus a customize bar |
+| `assets/site.css`, `assets/site.js` | Styles and behaviour shared by both – prod and dev never drift apart |
+| `assets/dev.js` | The customize bar (only loaded by `dev.html`) |
+
+## Design settings
+
+Every setting is a data attribute on `<html>` in `index.html`:
+
+| Attribute | Values | Effect |
+|---|---|---|
+| `data-theme` | `green`, `sky`, `red`, `violet`, `amber`, `mono` | Accent, page tint and ASCII palette |
+| `data-surface` | `tinted`, `ink` | Page tinted by the theme or neutral ink |
+| `data-hero` | `wordmark`, `stage` | Big `openshell` wordmark in the hero, or the app window next to the headline (the wordmark moves to the end) |
+| `data-field` | `hero`, `page`, `off` | Where the ASCII field is drawn |
+| `data-intensity` | `0.4` – `1.4` | Strength of the ASCII field |
+| `data-motion` | `on`, `off` | Animations (always off with `prefers-reduced-motion`) |
+
+Workflow: open `dev.html`, try settings in the bar (they are remembered in the browser), then copy the
+"Production line" from the bar and replace line 3 of `index.html` with it.
+
+The background is an ASCII field drawn on a canvas: code glyphs (`. : - = / < { #`) whose density follows drifting
+value noise with contour bands, coloured from the page colour over the theme accent to white. It stays quiet behind
+headlines, renders at ~10 fps only while visible and is static without motion. Buttons follow the "Minimal Design
+System" (glass `.btn`, landing `.cta`, segmented tabs).
 
 ## Preview
 
 ```bash
 cd website
 python -m http.server 4173
-# open http://127.0.0.1:4173
+# prod: http://127.0.0.1:4173   dev: http://127.0.0.1:4173/dev.html
 ```
+
+`dev.html` needs to be served over HTTP (not opened as a file) so the bar can reach the framed page.
 
 ## Publish
 
-Any static host works – upload the `website/` folder:
+Any static host works – upload the `website/` folder (`dev.html` and `assets/dev.js` can be left out):
 
 - **GitHub Pages**: a branch deployment can only serve `/` or `/docs`, so deploy with a workflow
   (`actions/upload-pages-artifact` with `path: website`). GitHub Pages for private repositories needs a paid plan.
