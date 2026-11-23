@@ -202,6 +202,11 @@
         color: var(--text-1);
         box-shadow: var(--sheen);
       }
+      .seg--grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border-radius: 14px;
+      }
       input[type="range"] {
         width: 100%;
         accent-color: #ededed;
@@ -260,6 +265,17 @@
         <div class="field">
           <div class="label">Color</div>
           <div class="swatches" id="themes"></div>
+        </div>
+        <div class="field">
+          <div class="label">Header</div>
+          <div class="seg seg--grid" data-setting="header">
+            <button type="button" data-value="fade">Fade</button>
+            <button type="button" data-value="pills">Pills</button>
+            <button type="button" data-value="center">Center</button>
+            <button type="button" data-value="blur">Blur</button>
+            <button type="button" data-value="dock">Dock</button>
+            <button type="button" data-value="corner">Corner</button>
+          </div>
         </div>
         <div class="field">
           <div class="label">Hero</div>

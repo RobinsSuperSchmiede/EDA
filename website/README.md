@@ -18,6 +18,7 @@ Every setting is a data attribute on `<html>` in `index.html`:
 |---|---|---|
 | `data-theme` | `green`, `sky`, `red`, `violet`, `amber`, `mono` | Accent, page tint and ASCII palette |
 | `data-surface` | `tinted`, `ink` | Page tinted by the theme or neutral ink |
+| `data-header` | `fade`, `pills`, `center`, `blur`, `dock`, `corner` | Floating header without a bar: content fades out under it. Brand and button side by side, in their own pills, in one centered pill, with a blur, as a dock at the bottom, or brand top left and button bottom right |
 | `data-hero` | `wordmark`, `stage` | Big `openshell` wordmark in the hero, or the app window next to the headline (the wordmark moves to the end) |
 | `data-field` | `hero`, `page`, `off` | Where the ASCII field is drawn |
 | `data-calm` | `on`, `off` | Keep the ASCII field quiet behind the hero and final text, or let it run behind the text |
