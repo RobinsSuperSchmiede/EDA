@@ -9,12 +9,14 @@
 
   // ------------------------------------------------------------------ header: hide on scroll down
   const bar = document.getElementById("top-bar");
+  const topFade = document.querySelector(".top-fade");
   let lastY = window.scrollY;
   window.addEventListener(
     "scroll",
     () => {
       const y = window.scrollY;
       bar.classList.toggle("scrolled", y > 20);
+      topFade.classList.toggle("on", y > 8);
       if (y > 120 && y > lastY + 4) bar.classList.add("hidden");
       else if (y < lastY - 4 || y < 120) bar.classList.remove("hidden");
       lastY = y;
@@ -217,7 +219,7 @@
   const buckets = [[], [], [], [], [], [], []];
   function render(time) {
     const t = motionOn() ? time / 1000 : 0;
-    const calmOn = setting("calm", "on") !== "off";
+    const calmOn = setting("calm", "off") === "on";
     const intensity = Math.max(0.2, Math.min(1.6, parseFloat(setting("intensity", "1")) || 1));
     const scrollY = window.scrollY;
     const viewTop = scrollY;

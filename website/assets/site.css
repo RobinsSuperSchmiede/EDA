@@ -140,6 +140,8 @@ a {
   z-index: 19;
   height: 136px;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 300ms var(--ease);
   background: linear-gradient(
     to bottom,
     var(--bg) 0%,
@@ -174,6 +176,10 @@ a {
 .top.hidden {
   transform: translateY(-100%);
   opacity: 0;
+}
+/* the fade only appears once content scrolls under the header – at the top the ASCII field runs to the edge */
+.top-fade.on {
+  opacity: 1;
 }
 /* pills: brand in its own glass pill */
 [data-header="pills"] .brand {

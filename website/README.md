@@ -21,7 +21,7 @@ Every setting is a data attribute on `<html>` in `index.html`:
 | `data-header` | `fade`, `pills`, `center`, `blur`, `dock`, `corner` | Floating header without a bar: content fades out under it. Brand and button side by side, in their own pills, in one centered pill, with a blur, as a dock at the bottom, or brand top left and button bottom right |
 | `data-hero` | `wordmark`, `stage` | Big `openshell` wordmark in the hero, or the app window next to the headline (the wordmark moves to the end) |
 | `data-field` | `hero`, `page`, `off` | Where the ASCII field is drawn |
-| `data-calm` | `on`, `off` | Keep the ASCII field quiet behind the hero and final text, or let it run behind the text |
+| `data-calm` | `off`, `on` | `off`: the ASCII field runs behind the hero and final text; `on`: it stays quiet there |
 | `data-intensity` | `0.4` – `1.4` | Strength of the ASCII field |
 | `data-motion` | `on`, `off` | Animations (always off with `prefers-reduced-motion`) |
 
@@ -29,8 +29,8 @@ Workflow: open `dev.html`, try settings in the bar (they are remembered in the b
 "Production line" from the bar and replace line 3 of `index.html` with it.
 
 The background is an ASCII field drawn on a canvas: code glyphs (`. : - = / < { #`) whose density follows drifting
-value noise with contour bands, coloured from the page colour over the theme accent to white. It stays quiet behind
-headlines, renders at ~10 fps only while visible and is static without motion. Buttons follow the "Minimal Design
+value noise with contour bands, coloured from the page colour over the theme accent to white. It runs behind the
+headlines (or stays quiet there with `data-calm="on"`), renders at ~10 fps only while visible and is static without motion. Buttons follow the "Minimal Design
 System" (glass `.btn`, landing `.cta`, segmented tabs).
 
 ## Preview
