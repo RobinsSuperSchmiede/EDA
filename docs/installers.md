@@ -85,7 +85,81 @@ embedded Python, referenced by a relative `command`). Compiled services (C++, Ru
 nothing extra. If a runtime is missing, the loading screen shows the error (`java was not found in PATH`).
 Bundled runtimes are on the [roadmap](../ROADMAP.md).
 
+## Portable app bundle (`.osapp`)
+
+```bash
+openshell package --target bundle        # dist/my-app-1.2.0.osapp – works on every platform, also in Termux
+```
+
+A bundle is a zip with the shipped files (same `include` / `exclude` rules) and
+`openshell-bundle.json` (app, identifier, version). It runs **unchanged** on every OpenShell host:
+
+| Host | How |
+|---|---|
+| Android app | open or share the `.osapp` with OpenShell ([android-app.md](android-app.md)) |
+| Termux, servers, desktops with the CLI | `openshell install my-app-1.2.0.osapp --start` |
+
+`openshell install` unpacks into `~/.openshell/apps/<identifier>/` (`OPENSHELL_APPS_DIR`); installing
+a newer bundle replaces the files and keeps the app's data (`.openshell/`). `openshell apps` lists
+installed bundles.
+
+## One link per system
+
+A developer builds once, users download one file for their system – without changing the program.
+
+```bash
+openshell release workflow               # writes .github/workflows/openshell-release.yml
+git tag v1.2.0 && git push origin v1.2.0
+```
+
+On every tag the workflow builds in parallel and publishes a GitHub release with:
+
+| File | For |
+|---|---|
+| `My App_1.2.0_x64-setup.exe` | Windows (NSIS, per-user install) |
+| `My App_1.2.0_aarch64.dmg`, `My App_1.2.0_x64.dmg` | macOS Apple Silicon / Intel |
+| `my-app_1.2.0_amd64.AppImage`, `.deb` | Linux |
+| `my-app-1.2.0.osapp` | Android (OpenShell app, Termux), servers, any host |
+| `downloads.json` | machine-readable list: platform, arch, URL, size, SHA-256 |
+| `index.html` | download page that offers the visitor's system first |
+
+`https://github.com/<owner>/<repo>/releases/latest` always points at the newest release. Without
+GitHub, build on each system and run `openshell release manifest dist --base-url https://example.com/my-app/v1.2.0`
+to get the same `downloads.json` and page for any web server.
+
+## Update checks
+
+```json
+"package": { "update_url": "https://github.com/<owner>/<repo>/releases/latest/download/downloads.json" }
+```
+
+`openshell update` and the control API (`GET /v1/update`) compare the running version with the
+newest release and return the right download for the current system. Installing updates
+automatically (download, verify, replace) is planned.
+
 ## Signing
 
-Unsigned installers trigger SmartScreen / Gatekeeper warnings. Sign `bundle/nsis/*.exe` with `signtool` (Windows) or
-use `codesign` + notarization (macOS) after packaging. Built-in signing settings are planned.
+Unsigned installers trigger SmartScreen / Gatekeeper warnings. Configure signing in
+`openshell.json`; secrets stay in the environment or the certificate store:
+
+```json
+"package": {
+  "signing": {
+    "windows": { "certificate_thumbprint": "A1B2…", "timestamp_url": "http://timestamp.digicert.com" },
+    "macos": { "signing_identity": "Developer ID Application: Example Inc. (TEAMID)" }
+  }
+}
+```
+
+| Platform | Setting | Notes |
+|---|---|---|
+| Windows | `certificate_thumbprint` | Certificate in the user's/machine's store (import a `.pfx` first); SHA-256 digest |
+| Windows | `sign_command` | Any signer, e.g. Azure Trusted Signing or a cloud HSM: `["trusted-signing-cli", "-e", "…", "%1"]` (`%1` = file) |
+| Windows | `timestamp_url` | RFC 3161 timestamp server, keeps signatures valid after the certificate expires |
+| macOS | `signing_identity` | `Developer ID Application: …` (hardened runtime on), `-` for ad-hoc |
+| macOS | `entitlements`, `provider_short_name` | Optional |
+| macOS | notarisation | `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID` (or `APPLE_API_KEY`, `APPLE_API_ISSUER`) in the environment |
+
+The release workflow imports certificates from repository secrets (`WINDOWS_CERTIFICATE`,
+`APPLE_CERTIFICATE`, …, see the comments at its top). Certificates and Apple Developer accounts are
+not part of OpenShell – you need your own.

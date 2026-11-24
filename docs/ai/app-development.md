@@ -176,6 +176,8 @@ openshell build              # frontend.build + services[].build
 openshell start --headless   # production mode (static dist, no file watching, restricted agent permissions)
 openshell status && openshell stop
 openshell package            # native installer (needs app.version as semver, optional app.icon PNG)
+openshell package --target bundle   # portable .osapp for Android, Termux, servers (any host)
+openshell release workflow   # CI workflow: one tag push builds every platform + download page
 ```
 
 ## `openshell.json` cheat sheet
@@ -248,8 +250,11 @@ in order, at startup). Access: services/functions `OPENSHELL_DB_MAIN` (+ `DATABA
 - **Absolute URLs to the backend in the frontend** → break in production. Use `/api` + proxy.
 - **`frontend.dist` must exist for production** → run `openshell build`.
 - **Installing global tools** or changing the user's system is not needed; templates have no dependencies except the language runtime and (for Vite templates) `npm install`, which OpenShell runs itself via `setup`.
-- **Assuming a desktop** → apps can run on Android or a server too. Check `platform` in `app_info`; on Android only
-  system tools and bundled programs start (see docs/platforms.md).
+- **Assuming a desktop** → apps can run on Android or a server too. Check `platform` in `app_info`: in the Android
+  app (`toolchains: false`) only system tools and bundled programs start; in Termux (`toolchains: true`) everything
+  installed with `pkg install` runs (see docs/platforms.md).
+- **Opening ports to other devices yourself** → use `runtime.remote` (`expose`, `allow`, tokens, TLS) instead of
+  binding services to `0.0.0.0` (see docs/remote-access.md).
 - **Do not edit `.openshell/`** – it is runtime state (logs, audit log, `runtime.json` with the control token).
 
 ## Definition of done

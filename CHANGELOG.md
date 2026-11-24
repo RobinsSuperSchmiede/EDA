@@ -29,6 +29,28 @@ All notable changes to this project are documented here. The format follows
   `POST /v1/lifecycle` and `openshell lifecycle`; paused services resume in the foreground.
 - **Remote gateway** (`runtime.remote`): other devices use the app's functions over MCP with a pairing token;
   `openshell remote` prints URL, token and an MCP client configuration. See `docs/platforms.md`.
+- **Remote security** (all optional): per-device tokens (`openshell remote pair <device>` with QR code and pairing
+  URI, `devices`, `revoke`), `runtime.remote.allow` (IP / CIDR allowlist), `rate_limit` with lockout after failed
+  logins (`openshell remote unblock`), `tls` (self-signed with pinned SHA-256 fingerprint, or own certificate),
+  `shared_token: false`, and remote access audited with the device name. See `docs/remote-access.md`.
+- **Exposed services** (`runtime.remote.expose`): make a service or the frontend reachable from other devices on
+  its own port – `http` with token login (header, cookie or one-time `?openshell_token=`) or raw `tcp` (databases,
+  MQTT …) protected by the allowlist.
+- **Termux**: the `TermuxAdapter` runs everything installed with `pkg install` (Python, Node.js, Java, Rust, Go,
+  databases), holds a Termux wake lock while an app runs, and `openshell doctor` gives `pkg install` hints. Platform
+  capabilities report `toolchains` and `wake_lock`. Release builds include the CLI for `aarch64-linux-android` and
+  Linux arm64; `install.sh` detects Termux.
+- **Portable app bundles**: `openshell package --target bundle` writes `<app>-<version>.osapp` (also on Android);
+  `openshell install <file> [--start]` and `openshell apps` run bundles on any host, keeping app data across updates.
+- **One download link per system**: `openshell release workflow` writes a GitHub Actions workflow that builds
+  Windows, macOS (arm64, x64), Linux installers and the bundle on a tag push; `openshell release manifest` writes
+  `downloads.json` and a download page that picks the visitor's system.
+- **Code signing** (`package.signing.windows` / `.macos`) and **update checks** (`package.update_url`,
+  `openshell update`, `GET /v1/update`).
+- **Android app** (`apps/android`, Kotlin) with the JNI bridge `openshell-android` (`crates/android`): app manager
+  for `.osapp` bundles, WebView, foreground service (`specialUse`) with notification and wake lock, lifecycle and
+  network events, target SDK 36, 16 KB page-size aligned native library, AAB build and signing in CI
+  (`android-app.yml`), Play Store listing, policy answers and privacy policy template. See `docs/android-app.md`.
 - Landing page in `website/`: static, ASCII field of code glyphs, architecture diagram, product gallery and a
   platforms section (desktop, server, Android, remote gateway). `dev.html` adds a customize bar to try colour themes
   (green, light blue, red, purple, amber, mono), hero variants, surfaces and background settings; `index.html` is the

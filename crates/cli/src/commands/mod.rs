@@ -5,11 +5,13 @@ mod doctor;
 mod init;
 mod mcp;
 mod package;
+mod release;
+mod remote;
 mod run;
 
 pub use add::Lang;
 
-use crate::{AddBlock, Cmd};
+use crate::{AddBlock, Cmd, ReleaseCmd, RemoteCmd};
 use anyhow::Result;
 use openshell_core::config::Project;
 use openshell_core::state::ControlClient;
@@ -65,8 +67,24 @@ pub async fn run(project: Option<PathBuf>, cmd: Cmd) -> Result<()> {
         Cmd::Approve { id } => control::decide(&dir, &id, true).await,
         Cmd::Deny { id } => control::decide(&dir, &id, false).await,
         Cmd::Audit { lines } => control::audit(&dir, lines).await,
-        Cmd::Remote => control::remote(&dir).await,
+        Cmd::Remote { action } => {
+            let action = match action {
+                None => remote::Action::Show,
+                Some(RemoteCmd::Pair { device, no_qr }) => remote::Action::Pair { device, qr: !no_qr },
+                Some(RemoteCmd::Devices) => remote::Action::Devices,
+                Some(RemoteCmd::Revoke { device }) => remote::Action::Revoke { device },
+                Some(RemoteCmd::Unblock { address }) => remote::Action::Unblock { address },
+            };
+            remote::run(&dir, action).await
+        }
         Cmd::Lifecycle { event } => control::lifecycle(&dir, &event).await,
+        Cmd::Release { action } => match action {
+            ReleaseCmd::Workflow { force } => release::workflow(&dir, force),
+            ReleaseCmd::Manifest { dir: files, base_url } => release::manifest(&dir, &files, base_url),
+        },
+        Cmd::Install { file, start } => release::install(&file, start).await,
+        Cmd::Apps => release::apps(),
+        Cmd::Update => release::update(&dir).await,
     }
 }
 

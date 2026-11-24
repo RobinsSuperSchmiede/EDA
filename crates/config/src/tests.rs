@@ -227,3 +227,58 @@ fn composable_apps() {
     let empty = parse_json(r#"{"app":{"name":"x"}}"#).unwrap();
     assert!(validate(&empty).iter().any(|i| !i.is_error() && i.message.contains("openshell add")));
 }
+
+#[test]
+fn cidr_ranges() {
+    use std::net::IpAddr;
+    let ip = |s: &str| s.parse::<IpAddr>().unwrap();
+    let lan = parse_cidr("192.168.1.0/24").unwrap();
+    assert!(cidr_contains(lan, ip("192.168.1.77")));
+    assert!(!cidr_contains(lan, ip("192.168.2.1")));
+    assert!(cidr_contains(lan, ip("::ffff:192.168.1.5")), "IPv4-mapped IPv6 matches IPv4 ranges");
+    let single = parse_cidr("10.0.0.7").unwrap();
+    assert!(cidr_contains(single, ip("10.0.0.7")) && !cidr_contains(single, ip("10.0.0.8")));
+    assert!(cidr_contains(parse_cidr("0.0.0.0/0").unwrap(), ip("8.8.8.8")));
+    assert!(cidr_contains(parse_cidr("fd7a:115c:a1e0::/48").unwrap(), ip("fd7a:115c:a1e0:ab::1")));
+    assert!(parse_cidr("10.0.0.0/33").is_none());
+    assert!(parse_cidr("phone").is_none());
+}
+
+#[test]
+fn remote_security_settings_are_validated() {
+    let cfg = parse_json(
+        r#"{ "version": 1, "app": { "name": "x" },
+             "services": [ { "name": "api", "command": "node api.js", "port": 3000 },
+                           { "name": "db", "command": "postgres", "port": 5432 } ],
+             "runtime": { "remote": {
+               "enabled": true,
+               "allow": ["192.168.1.0/24", "nope"],
+               "tls": { "enabled": true, "cert": "cert.pem" },
+               "expose": [
+                 { "service": "api", "port": 8080 },
+                 { "service": "db", "port": 8080, "protocol": "tcp", "auth": "token" },
+                 { "service": "ghost", "port": 7420 },
+                 { "service": "frontend", "port": 8081, "auth": "none", "allow": [] }
+               ] } } }"#,
+    )
+    .unwrap();
+    let issues = validate(&cfg);
+    let has = |path: &str, error: bool| issues.iter().any(|i| i.path == path && i.error == error);
+    assert!(has("runtime.remote.allow[1]", true), "{issues:?}");
+    assert!(has("runtime.remote.tls", true));
+    assert!(has("runtime.remote.expose[1].port", true), "duplicate port");
+    assert!(has("runtime.remote.expose[1].auth", true), "tcp + token");
+    assert!(has("runtime.remote.expose[2].service", true));
+    assert!(has("runtime.remote.expose[2].port", true), "gateway port");
+    assert!(has("runtime.remote.expose[3].allow", false), "no login, no allowlist");
+    assert!(!issues.iter().any(|i| i.path.starts_with("runtime.remote.expose[0]")), "{issues:?}");
+    assert_eq!(cfg.runtime.remote.expose[0].effective_auth(), ExposeAuth::Token);
+    assert_eq!(cfg.runtime.remote.expose[1].effective_auth(), ExposeAuth::None);
+}
+
+#[test]
+fn default_remote_config_is_not_serialized() {
+    let cfg = parse_json(r#"{ "version": 1, "app": { "name": "x" } }"#).unwrap();
+    let json = serde_json::to_string(&cfg).unwrap();
+    assert!(!json.contains("remote"), "{json}");
+}

@@ -923,9 +923,151 @@
           "minimum": 0,
           "maximum": 65535,
           "default": 7420
+        },
+        "allow": {
+          "description": "IP addresses or CIDR ranges that may connect (`192.168.1.0/24`, `100.64.0.0/10`,\n`fd7a:115c:a1e0::/48`). Applies to the gateway and every exposed service. Empty: everyone\nwho can reach the port.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "shared_token": {
+          "description": "Accept the shared pairing token (`.openshell/data/remote-token`). Set to `false` to accept\nonly per-device tokens from `openshell remote pair <device>`.",
+          "type": "boolean",
+          "default": true
+        },
+        "rate_limit": {
+          "description": "Requests per minute per client address and a lockout after failed logins.",
+          "$ref": "#/$defs/RateLimitConfig"
+        },
+        "tls": {
+          "description": "HTTPS for the gateway and exposed HTTP services.",
+          "$ref": "#/$defs/TlsConfig"
+        },
+        "expose": {
+          "description": "Services reachable from other devices on their own port (opt-in per service).",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExposeConfig"
+          }
         }
       },
       "additionalProperties": false
+    },
+    "RateLimitConfig": {
+      "description": "Limits per client address. `0` switches a limit off.",
+      "type": "object",
+      "properties": {
+        "requests_per_minute": {
+          "description": "Requests (gateway) and new connections (exposed services) per minute and address.",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0,
+          "default": 120
+        },
+        "max_failed_auth": {
+          "description": "Failed logins (wrong or missing token) before the address is blocked.",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0,
+          "default": 10
+        },
+        "block_minutes": {
+          "description": "How long a blocked address stays blocked.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0,
+          "default": 5
+        }
+      },
+      "additionalProperties": false
+    },
+    "TlsConfig": {
+      "description": "TLS for the remote gateway. Without `cert` and `key` OpenShell creates a self-signed\ncertificate in the app's data directory; clients pin its SHA-256 fingerprint\n(`openshell remote` shows it).",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "cert": {
+          "description": "PEM certificate chain (relative to the project).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "key": {
+          "description": "PEM private key (relative to the project).",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "ExposeConfig": {
+      "description": "A service made reachable from other devices on its own port.",
+      "type": "object",
+      "properties": {
+        "service": {
+          "description": "Service name, or `frontend` for the app's frontend.",
+          "type": "string"
+        },
+        "port": {
+          "description": "Port other devices connect to.",
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "protocol": {
+          "description": "`http` (websites and APIs; token login, TLS) or `tcp` (any protocol, e.g. a database;\nprotected by the address allowlist only).",
+          "$ref": "#/$defs/ExposeProtocol",
+          "default": "http"
+        },
+        "auth": {
+          "description": "`token` (default for `http`): a pairing or device token is required – as\n`Authorization: Bearer`, cookie, or once as `?openshell_token=` in the browser.\n`none`: no login (rely on `allow`). Always `none` for `tcp`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ExposeAuth"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allow": {
+          "description": "Addresses / CIDR ranges for this port; replaces `runtime.remote.allow`.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "service",
+        "port"
+      ]
+    },
+    "ExposeProtocol": {
+      "type": "string",
+      "enum": [
+        "http",
+        "tcp"
+      ]
+    },
+    "ExposeAuth": {
+      "type": "string",
+      "enum": [
+        "token",
+        "none"
+      ]
     },
     "AgentsConfig": {
       "type": "object",
@@ -1333,7 +1475,73 @@
           }
         },
         "targets": {
-          "description": "Installer formats: `nsis`, `msi` (Windows), `app`, `dmg` (macOS), `deb`, `rpm`, `appimage` (Linux).\nDefault: `nsis` / `dmg` / `deb` + `appimage`.",
+          "description": "Installer formats: `nsis`, `msi` (Windows), `app`, `dmg` (macOS), `deb`, `rpm`, `appimage` (Linux).\nDefault: `nsis` / `dmg` / `deb` + `appimage`. `bundle` builds the portable app bundle\n(`.osapp`) on every platform, including Android.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "signing": {
+          "description": "Code signing of installers. Secrets come from the environment, never from this file.",
+          "$ref": "#/$defs/SigningConfig"
+        },
+        "update_url": {
+          "description": "URL of the `downloads.json` of the newest release (`openshell release manifest`). The\ninstalled app compares versions and reports updates (`GET /v1/update`, `openshell update`).",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "SigningConfig": {
+      "description": "Code signing for `openshell package`.",
+      "type": "object",
+      "properties": {
+        "windows": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WindowsSigning"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "macos": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MacosSigning"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "WindowsSigning": {
+      "description": "Windows Authenticode signing: a certificate in the certificate store (thumbprint) or a\ncustom command (Azure Trusted Signing, a cloud HSM, `osslsigncode` …).",
+      "type": "object",
+      "properties": {
+        "certificate_thumbprint": {
+          "description": "SHA-1 thumbprint of a code-signing certificate in the user's or machine's store.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "timestamp_url": {
+          "description": "RFC 3161 / Authenticode timestamp server, e.g. `http://timestamp.digicert.com`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sign_command": {
+          "description": "Custom sign command; `%1` is replaced with the file to sign,\ne.g. `[\"trusted-signing-cli\", \"-e\", \"https://…\", \"%1\"]`.",
           "type": "array",
           "items": {
             "type": "string"
@@ -1341,6 +1549,34 @@
         }
       },
       "additionalProperties": false
+    },
+    "MacosSigning": {
+      "description": "macOS code signing and notarisation (credentials from `APPLE_ID`, `APPLE_PASSWORD`,\n`APPLE_TEAM_ID` or `APPLE_API_KEY` / `APPLE_API_ISSUER` in the environment).",
+      "type": "object",
+      "properties": {
+        "signing_identity": {
+          "description": "`Developer ID Application: Example Inc. (TEAMID)`, or `-` for ad-hoc signing.",
+          "type": "string"
+        },
+        "entitlements": {
+          "description": "Entitlements plist (relative to the project).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provider_short_name": {
+          "description": "Team short name for notarisation when the Apple ID belongs to several teams.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "signing_identity"
+      ]
     },
     "DatabaseConfig": {
       "description": "A database managed by OpenShell.",

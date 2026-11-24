@@ -30,10 +30,15 @@ non-allow-listed `Origin` are rejected with 403.
 | `GET /v1/sdk/info` | app | App info and SDK permissions |
 | `POST /v1/sdk/call/{tool}` | app | Call a tool with the **SDK** policy |
 | `POST /v1/lifecycle` | admin | App lifecycle from the host: `{ "kind": "foreground" \| "background" \| "low_memory" }`, `{ "kind": "power_save", "enabled": true }`, `{ "kind": "network", "connected": true, "metered": false }` → paused/resumed services and `keep_alive` |
-| `GET /v1/remote` | admin | Remote gateway: `enabled`, `urls`, `mcp_url`, pairing `token` |
+| `GET /v1/remote` | admin | Remote gateway: `enabled`, `urls`, `mcp_url`, shared `token` (if `shared_token`), `tls_fingerprint`, `allow`, `exposed`, `devices`, `blocked`, `pairing_uri` |
+| `GET /v1/remote/devices` | admin | Paired devices (`name`, `paired_at`, `last_seen`) |
+| `POST /v1/remote/devices` | admin | Pair a device: `{"name":"laptop"}` → its `token` (only in this answer) and `pairing_uri` |
+| `POST /v1/remote/devices/{name}/revoke` | admin | Revoke a device's token |
+| `POST /v1/remote/unblock` | admin | `{"address":"192.168.1.7"}` – lift a lockout |
+| `GET /v1/update` | admin | `{configured, update: {current, latest, available, download, page}}` from `package.update_url` |
 
 The optional remote gateway (`runtime.remote`) is a separate listener with `GET /v1/health`, `GET /v1/remote/info`
-and `POST /mcp/app` only, authorised with the pairing token – see [platforms.md](platforms.md#remote-access).
+and `POST /mcp/app` only, authorised with the shared or a device token – see [remote-access.md](remote-access.md).
 
 ## Example
 

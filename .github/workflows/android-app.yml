@@ -1,0 +1,81 @@
+name: Android app
+
+# Builds the OpenShell Android app: the Rust core as libopenshell_android.so for arm64-v8a and
+# x86_64 (16 KB page aligned), then the APK and the Play Store bundle (AAB).
+# Signing: set the secrets ANDROID_KEYSTORE (base64 of the upload keystore), ANDROID_KEYSTORE_PASSWORD,
+# ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD. Without them the release build is unsigned.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+    paths:
+      - "apps/android/**"
+      - "crates/**"
+      - "Cargo.lock"
+      - ".github/workflows/android-app.yml"
+  pull_request:
+    paths:
+      - "apps/android/**"
+      - "crates/android/**"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android, x86_64-linux-android
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: android-app
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+      - name: cargo-ndk
+        run: cargo install cargo-ndk --locked
+      - name: Rust library (libopenshell_android.so)
+        env:
+          # Android 15+ devices with 16 KB pages (required by Google Play for new apps)
+          RUSTFLAGS: "-C link-arg=-Wl,-z,max-page-size=16384"
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
+          cargo ndk --platform 26 -t arm64-v8a -t x86_64 -o apps/android/app/src/main/jniLibs \
+            build --release -p openshell-android --locked
+          ls -la apps/android/app/src/main/jniLibs/*
+      - name: Signing key
+        if: env.ANDROID_KEYSTORE != ''
+        env:
+          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+        run: |
+          echo "$ANDROID_KEYSTORE" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+      - name: APK and AAB
+        working-directory: apps/android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          VERSION_CODE: ${{ github.run_number }}
+          VERSION_NAME: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '0.0.0-dev' }}
+        run: gradle --no-daemon assembleRelease bundleRelease
+      - name: Check 16 KB alignment of the native library
+        run: |
+          for so in apps/android/app/src/main/jniLibs/*/libopenshell_android.so; do
+            align=$(readelf -lW "$so" | awk '/LOAD/ { print $NF; exit }')
+            echo "$so: LOAD alignment $align"
+            [ "$align" = "0x4000" ] || [ "$align" = "0x10000" ] || (echo "not 16 KB aligned" && exit 1)
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openshell-android
+          path: |
+            apps/android/app/build/outputs/apk/release/*.apk
+            apps/android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error

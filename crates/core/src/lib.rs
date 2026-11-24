@@ -10,11 +10,13 @@
 //! * a mobile host (Android) launches it with [`Shell::launch_with`] and an
 //!   [`AndroidAdapter`](openshell_runtime::AndroidAdapter) and forwards lifecycle events.
 
+pub mod bundle;
 pub mod db;
 mod exec;
 mod fs;
 pub mod headless;
 pub mod openapi;
+pub mod release;
 pub mod remote;
 mod server;
 pub mod state;
@@ -95,7 +97,7 @@ pub(crate) struct ShellInner {
     /// Built-in databases.
     pub dbs: db::Databases,
     /// Remote access gateway (`runtime.remote`), if enabled.
-    pub remote: Option<remote::RemoteInfo>,
+    pub remote: Option<Arc<remote::Gateway>>,
 }
 
 /// A running OpenShell instance: runtime + control API + agent layer.
@@ -171,7 +173,7 @@ impl Shell {
             control_url: control_url.clone(),
             allowed_origins,
             imported: std::sync::RwLock::new(Vec::new()),
-            remote: remote.as_ref().map(|(_, info)| info.clone()),
+            remote: remote.as_ref().map(|(_, gw)| gw.clone()),
             dbs,
             mode,
             runtime,
@@ -199,9 +201,9 @@ impl Shell {
 
         shell.watch_openapi();
         server::spawn(shell.clone(), listener);
-        if let Some((listener, info)) = remote {
-            tracing::info!("remote gateway on {}", info.urls.join(", "));
-            remote::spawn(shell.clone(), listener);
+        if let Some((bound, gw)) = remote {
+            tracing::info!("remote gateway on {}", gw.info.urls.join(", "));
+            remote::spawn(shell.clone(), gw, bound);
         }
         state::write_runtime_info(
             &state_dir,
@@ -240,6 +242,11 @@ impl Shell {
 
     /// Remote access gateway, if enabled (URLs and pairing token).
     pub fn remote(&self) -> Option<&remote::RemoteInfo> {
+        self.inner.remote.as_ref().map(|g| &g.info)
+    }
+
+    /// The running remote gateway (device pairing, blocked addresses).
+    pub fn gateway(&self) -> Option<&Arc<remote::Gateway>> {
         self.inner.remote.as_ref()
     }
 

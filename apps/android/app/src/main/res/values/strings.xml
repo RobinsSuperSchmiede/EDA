@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenShell</string>
+    <string name="channel_name">Running apps</string>
+    <string name="channel_description">Shows which OpenShell apps keep running in the background</string>
+    <string name="notification_title">%1$s is running</string>
+    <string name="notification_starting">Starting…</string>
+    <string name="action_stop">Stop</string>
+    <string name="action_open">Open</string>
+</resources>

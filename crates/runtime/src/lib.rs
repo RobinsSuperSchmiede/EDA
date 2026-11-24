@@ -35,7 +35,7 @@ pub use openshell_config::{BackgroundPolicy, Mode, Platform, Project};
 pub use plan::{build_plan, build_plan_for, BuildDef, DefKind, ServiceDef};
 pub use platform::{
     default_adapter, AndroidAdapter, BackgroundModel, Capabilities, DesktopAdapter, ProcessSupport,
-    RuntimeAdapter,
+    RuntimeAdapter, TermuxAdapter,
 };
 
 use anyhow::{anyhow, bail, Result};

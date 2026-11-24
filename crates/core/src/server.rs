@@ -16,6 +16,8 @@
 //! | `GET  /v1/sdk/info`, `POST /v1/sdk/call/{tool}` | app (SDK policy) | frontend SDK           |
 //! | `POST /v1/lifecycle`                | admin          | app lifecycle from the host (mobile)  |
 //! | `GET  /v1/remote`                   | admin          | remote gateway: URLs and pairing token|
+//! | `GET  /v1/update`                   | admin          | newer release at `package.update_url`?|
+//! | `GET/POST /v1/remote/devices`, `POST /v1/remote/devices/{name}/revoke`, `POST /v1/remote/unblock` | admin | device pairing |
 //!
 //! Protection: loopback only, `Host` header check (DNS rebinding), `Origin`
 //! allow-list (CORS / CSRF) and two bearer tokens (admin, app).
@@ -82,6 +84,10 @@ pub(crate) fn spawn(shell: Shell, listener: tokio::net::TcpListener) {
         .route("/v1/sdk/call/{tool}", post(sdk_call))
         .route("/v1/lifecycle", post(lifecycle))
         .route("/v1/remote", get(remote))
+        .route("/v1/remote/devices", get(remote_devices).post(remote_pair))
+        .route("/v1/remote/devices/{name}/revoke", post(remote_revoke))
+        .route("/v1/remote/unblock", post(remote_unblock))
+        .route("/v1/update", get(update))
         .layer(from_fn_with_state(shell.clone(), guard))
         .with_state(shell);
     tokio::spawn(async move {
@@ -199,7 +205,7 @@ async fn status(State(shell): State<Shell>) -> ApiResult {
         "platform": i.runtime.capabilities(),
         "in_background": i.runtime.in_background(),
         "keep_alive": i.runtime.keep_alive(),
-        "remote": i.remote,
+        "remote": i.remote.as_ref().map(|g| &g.info),
         "pid": std::process::id(),
         "project_root": i.project.root,
         "control_url": i.control_url,
@@ -467,14 +473,89 @@ async fn lifecycle(
 
 async fn remote(State(shell): State<Shell>) -> ApiResult {
     Ok(Json(match &shell.inner.remote {
-        Some(r) => json!({
-            "enabled": true,
-            "bind": r.bind,
-            "port": r.port,
-            "urls": r.urls,
-            "mcp_url": r.mcp_url,
-            "token": r.token,
-        }),
+        Some(g) => {
+            let r = &g.info;
+            json!({
+                "enabled": true,
+                "bind": r.bind,
+                "port": r.port,
+                "urls": r.urls,
+                "mcp_url": r.mcp_url,
+                "token": if r.shared_token { Some(&r.token) } else { None },
+                "shared_token": r.shared_token,
+                "tls_fingerprint": r.tls_fingerprint,
+                "self_signed": r.self_signed,
+                "allow": r.allow,
+                "exposed": r.exposed,
+                "devices": g.devices(),
+                "blocked": g.blocked(),
+                "pairing_uri": if r.shared_token { Some(g.pairing_uri(&shell.inner.project.config.app.name, &r.token)) } else { None },
+            })
+        }
         None => json!({ "enabled": false }),
     }))
+}
+
+/// Compare the running app with the newest release (`package.update_url`).
+async fn update(State(shell): State<Shell>) -> ApiResult {
+    let cfg = &shell.inner.project.config;
+    let Some(url) = cfg.package.update_url.clone() else {
+        return Ok(Json(json!({ "configured": false })));
+    };
+    let current = cfg.app.version.clone().unwrap_or_else(|| "0.0.0".into());
+    let caps = shell.inner.runtime.capabilities();
+    let platform = if caps.os == "android" { "android".to_string() } else { caps.os.clone() };
+    let info = crate::release::check_update(&url, &current, &platform, &caps.arch)
+        .await
+        .map_err(|e| ApiError(StatusCode::BAD_GATEWAY, format!("{e:#}")))?;
+    Ok(Json(json!({ "configured": true, "update": info })))
+}
+
+fn gateway(shell: &Shell) -> Result<&std::sync::Arc<crate::remote::Gateway>, ApiError> {
+    shell.inner.remote.as_ref().ok_or_else(|| {
+        ApiError(StatusCode::CONFLICT, "the remote gateway is off (runtime.remote.enabled)".into())
+    })
+}
+
+async fn remote_devices(State(shell): State<Shell>) -> ApiResult {
+    Ok(Json(json!({ "devices": gateway(&shell)?.devices() })))
+}
+
+#[derive(Deserialize)]
+struct PairBody {
+    name: String,
+}
+
+/// Pair a device: the token is returned once, with a pairing URI for a QR code.
+async fn remote_pair(State(shell): State<Shell>, Json(body): Json<PairBody>) -> ApiResult {
+    let gw = gateway(&shell)?;
+    let token = gw.pair(&body.name).map_err(bad)?;
+    tracing::info!("remote gateway: paired device `{}`", body.name);
+    Ok(Json(json!({
+        "name": body.name,
+        "token": token,
+        "mcp_url": gw.info.mcp_url,
+        "urls": gw.info.urls,
+        "tls_fingerprint": gw.info.tls_fingerprint,
+        "exposed": gw.info.exposed,
+        "pairing_uri": gw.pairing_uri(&shell.inner.project.config.app.name, &token),
+    })))
+}
+
+async fn remote_revoke(State(shell): State<Shell>, Path(name): Path<String>) -> ApiResult {
+    let revoked = gateway(&shell)?.revoke(&name).map_err(bad)?;
+    if !revoked {
+        return Err(ApiError(StatusCode::NOT_FOUND, format!("no paired device `{name}`")));
+    }
+    Ok(Json(json!({ "ok": true, "revoked": name })))
+}
+
+#[derive(Deserialize)]
+struct UnblockBody {
+    address: String,
+}
+
+async fn remote_unblock(State(shell): State<Shell>, Json(body): Json<UnblockBody>) -> ApiResult {
+    let ip: std::net::IpAddr = body.address.parse().map_err(bad)?;
+    Ok(Json(json!({ "ok": gateway(&shell)?.unblock(ip) })))
 }

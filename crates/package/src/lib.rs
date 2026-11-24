@@ -19,37 +19,17 @@
 //! `OPENSHELL_DATA_DIR`) in a per-user data directory named after the bundle identifier.
 
 use anyhow::{bail, Context, Result};
-use globset::{Glob, GlobSet, GlobSetBuilder};
 use image::{imageops::FilterType, DynamicImage, ImageFormat};
 use openshell_config::Project;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use tauri_bundler::bundle::{
-    BundleBinary, BundleSettings, NsisSettings, PackageSettings, PackageType, SettingsBuilder,
-    WindowsSettings,
+    BundleBinary, BundleSettings, CustomSignCommandSettings, MacOsSettings, NsisSettings, PackageSettings,
+    PackageType, SettingsBuilder, WindowsSettings,
 };
 
 /// Default OpenShell icon (used when `app.icon` is not set).
 const DEFAULT_ICON: &[u8] = include_bytes!("../../../apps/desktop/src-tauri/icons/icon.png");
-
-/// Never shipped: VCS data, OpenShell state, dependency caches, editor/OS junk.
-const DEFAULT_EXCLUDES: &[&str] = &[
-    "**/.git/**",
-    ".openshell/**",
-    "**/.openshell/**",
-    "**/node_modules/**",
-    "**/__pycache__/**",
-    "**/*.pyc",
-    "**/.venv/**",
-    "**/venv/**",
-    "**/.pytest_cache/**",
-    "**/.mypy_cache/**",
-    "**/.idea/**",
-    "**/.vscode/**",
-    "**/.DS_Store",
-    "**/Thumbs.db",
-    "**/.gradle/**",
-];
 
 pub struct Options {
     /// The generic desktop shell binary (`openshell-desktop`).
@@ -67,65 +47,9 @@ pub struct Output {
     pub files: usize,
 }
 
-fn globs(patterns: &[String]) -> Result<GlobSet> {
-    let mut b = GlobSetBuilder::new();
-    for p in patterns {
-        let p = p.trim_start_matches("./").trim_end_matches('/');
-        b.add(Glob::new(p)?);
-        // a plain directory name includes everything below it
-        if !p.contains('*') {
-            b.add(Glob::new(&format!("{p}/**"))?);
-        }
-    }
-    Ok(b.build()?)
-}
-
 /// Relative paths (with `/`) of all files that belong into the package.
 pub fn collect_files(project: &Project) -> Result<Vec<String>> {
-    let cfg = &project.config.package;
-    let mut ex: Vec<String> = DEFAULT_EXCLUDES.iter().map(|s| s.to_string()).collect();
-    ex.extend(cfg.exclude.iter().cloned());
-    let exclude = globs(&ex)?;
-    let include = if cfg.include.is_empty() { None } else { Some(globs(&cfg.include)?) };
-    let config_name = project
-        .config_path
-        .file_name()
-        .map(|n| n.to_string_lossy().to_string())
-        .unwrap_or_else(|| "openshell.json".into());
-
-    let mut files = Vec::new();
-    let mut stack = vec![project.root.clone()];
-    while let Some(dir) = stack.pop() {
-        for entry in std::fs::read_dir(&dir).with_context(|| format!("reading {}", dir.display()))? {
-            let entry = entry?;
-            let path = entry.path();
-            let rel = path.strip_prefix(&project.root).unwrap_or(&path).to_string_lossy().replace('\\', "/");
-            let ft = entry.file_type()?;
-            if ft.is_dir() {
-                // prune excluded directories early
-                if exclude.is_match(format!("{rel}/x")) && exclude.is_match(format!("{rel}/x/y")) {
-                    continue;
-                }
-                stack.push(path);
-            } else if ft.is_file() {
-                if rel == config_name {
-                    files.push(rel);
-                    continue;
-                }
-                if exclude.is_match(&rel) {
-                    continue;
-                }
-                if let Some(inc) = &include {
-                    if !inc.is_match(&rel) {
-                        continue;
-                    }
-                }
-                files.push(rel);
-            }
-        }
-    }
-    files.sort();
-    Ok(files)
+    Ok(openshell_config::package_files(project)?)
 }
 
 fn default_targets() -> Vec<String> {
@@ -197,6 +121,41 @@ fn semver(v: &str) -> bool {
     parts.len() == 3 && parts.iter().all(|p| p.parse::<u64>().is_ok())
 }
 
+#[allow(deprecated)]
+fn windows_settings(cfg: &openshell_config::Config, icon: PathBuf, name: &str) -> WindowsSettings {
+    let mut w = WindowsSettings {
+        icon_path: icon,
+        nsis: Some(NsisSettings { start_menu_folder: Some(name.to_string()), ..Default::default() }),
+        ..Default::default()
+    };
+    if let Some(s) = &cfg.package.signing.windows {
+        if let Some((cmd, args)) = s.sign_command.split_first() {
+            w.sign_command = Some(CustomSignCommandSettings { cmd: cmd.clone(), args: args.to_vec() });
+        } else {
+            w.certificate_thumbprint = s.certificate_thumbprint.clone();
+            w.digest_algorithm = Some("sha256".into());
+        }
+        w.timestamp_url = s.timestamp_url.clone();
+        // RFC 3161 servers are the norm today
+        w.tsp = s.timestamp_url.is_some();
+    }
+    w
+}
+
+fn macos_settings(project: &Project) -> MacOsSettings {
+    let mut m = MacOsSettings::default();
+    if let Some(s) = &project.config.package.signing.macos {
+        m.signing_identity = Some(s.signing_identity.clone());
+        m.provider_short_name = s.provider_short_name.clone();
+        m.hardened_runtime = true;
+        m.entitlements = s
+            .entitlements
+            .as_ref()
+            .map(|e| tauri_bundler::bundle::Entitlements::Path(project.resolve_path(e)));
+    }
+    m
+}
+
 /// Build the installer(s) for `project`. `log` receives progress messages.
 pub fn package(project: &Project, opts: &Options, log: &dyn Fn(&str)) -> Result<Output> {
     let cfg = &project.config;
@@ -257,6 +216,11 @@ pub fn package(project: &Project, opts: &Options, log: &dyn Fn(&str)) -> Result<
     } else {
         default_targets()
     };
+    // `bundle` (the portable .osapp) is built by the CLI, not by the installer bundler
+    let targets: Vec<String> = targets.into_iter().filter(|t| t != "bundle").collect();
+    if targets.is_empty() {
+        return Ok(Output { installers: Vec::new(), staging: bin_dir, files: files.len() });
+    }
     let package_types = targets.iter().map(|t| package_type(t)).collect::<Result<Vec<_>>>()?;
     let mut resources = HashMap::new();
     resources.insert(app_dir.display().to_string(), "app".to_string());
@@ -271,13 +235,13 @@ pub fn package(project: &Project, opts: &Options, log: &dyn Fn(&str)) -> Result<
         license_file,
         short_description: cfg.app.description.clone(),
         #[allow(deprecated)]
-        windows: WindowsSettings {
-            icon_path: ico.clone(),
-            nsis: Some(NsisSettings { start_menu_folder: Some(name.clone()), ..Default::default() }),
-            ..Default::default()
-        },
+        windows: windows_settings(cfg, ico.clone(), &name),
+        macos: macos_settings(project),
         ..Default::default()
     };
+    if cfg.package.signing.windows.is_some() || cfg.package.signing.macos.is_some() {
+        log("code signing is configured");
+    }
     let settings = SettingsBuilder::new()
         .project_out_directory(&bin_dir)
         .package_types(package_types)

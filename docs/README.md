@@ -11,7 +11,10 @@
 
 - [Configuration reference](configuration.md) – every field of `openshell.json`
 - [CLI reference](cli.md)
-- [Installers](installers.md) – `openshell package` and how installed apps behave
+- [Installers](installers.md) – `openshell package`, app bundles, one download link per system, signing, updates
+- [Platforms](platforms.md) – desktop, server, Android app, Termux
+- [Remote access](remote-access.md) – use an app from other devices: tokens, allowlist, TLS, exposed services
+- [Android app](android-app.md) – the native host, building the AAB, Play Store checklist
 - [Frontend SDK](sdk.md) – runtime status, window control, notifications, agent actions from the frontend
 
 ## AI agents

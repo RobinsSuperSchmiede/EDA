@@ -3,8 +3,10 @@
 use super::run::find_desktop_binary;
 use crate::output::{bold, dim, green, red, yellow};
 use anyhow::Result;
+use openshell_core::config::CommandSpec;
 use openshell_core::config::{validate, Mode, Project};
-use openshell_core::runtime::process::{port_in_use, program_exists};
+use openshell_core::runtime::process::port_in_use;
+use openshell_core::runtime::RuntimeAdapter;
 use openshell_core::runtime::{build_plan, DefKind};
 use openshell_core::state::ControlClient;
 use std::path::Path;
@@ -35,8 +37,42 @@ fn tool_version(cmd: &str, arg: &str) -> Option<String> {
     text.lines().next().map(|l| l.trim().to_string())
 }
 
+/// ` – install with `pkg install …`` on platforms that know how.
+fn hint(adapter: &dyn RuntimeAdapter, command: &CommandSpec) -> String {
+    command
+        .program()
+        .and_then(|p| adapter.install_hint(&p))
+        .map(|h| format!(" – install with `{h}`"))
+        .unwrap_or_default()
+}
+
 pub async fn run(dir: &Path) -> Result<()> {
     let mut r = Report { errors: 0, warnings: 0 };
+    let adapter = openshell_core::runtime::default_adapter();
+    let adapter = adapter.as_ref();
+    let caps = adapter.capabilities();
+    println!("{}", bold("Platform"));
+    r.ok(&format!(
+        "{} ({} {}), processes: {}, toolchains: {}",
+        serde_json::to_value(caps.platform)
+            .ok()
+            .and_then(|v| v.as_str().map(str::to_string))
+            .unwrap_or_default(),
+        caps.os,
+        caps.arch,
+        serde_json::to_value(caps.processes)
+            .ok()
+            .and_then(|v| v.as_str().map(str::to_string))
+            .unwrap_or_default(),
+        if caps.toolchains { "yes" } else { "no" }
+    ));
+    if caps.os == "android" && caps.toolchains {
+        println!(
+            "    {}",
+            dim("Termux: install runtimes with `pkg install python nodejs openjdk-17 rust golang`; `termux-wake-lock` keeps services running with the screen off")
+        );
+    }
+    println!();
     println!("{}", bold("Configuration"));
     let project = match Project::discover(dir) {
         Ok(p) => {
@@ -67,28 +103,30 @@ pub async fn run(dir: &Path) -> Result<()> {
                                     "{label} working directory {} does not exist",
                                     d.cwd.display()
                                 ));
-                            } else if !program_exists(command, &d.cwd) {
+                            } else if !adapter.program_available(command, &d.cwd) {
                                 r.err(&format!(
-                                    "{label} `{}` not found in PATH",
-                                    command.program().unwrap_or_default()
+                                    "{label} `{}` not found in PATH{}",
+                                    command.program().unwrap_or_default(),
+                                    hint(adapter, command)
                                 ));
                             } else {
                                 r.ok(&format!("{label} {}", command.display()));
                             }
                             if let Some(build) = &d.build {
-                                if program_exists(&build.command, &build.cwd) {
+                                if adapter.program_available(&build.command, &build.cwd) {
                                     println!("    {}", dim(&format!("build: {}", build.command.display())));
                                 } else {
                                     r.err(&format!(
-                                        "{label} build tool `{}` not found in PATH",
-                                        build.command.program().unwrap_or_default()
+                                        "{label} build tool `{}` not found in PATH{}",
+                                        build.command.program().unwrap_or_default(),
+                                        hint(adapter, &build.command)
                                     ));
                                 }
                             }
                             if let Some(setup) = &d.setup {
                                 let pending = setup.creates.as_ref().map(|c| !c.exists()).unwrap_or(true);
                                 if pending {
-                                    if program_exists(&setup.command, &setup.cwd) {
+                                    if adapter.program_available(&setup.command, &setup.cwd) {
                                         println!(
                                             "    {}",
                                             dim(&format!(
@@ -98,8 +136,9 @@ pub async fn run(dir: &Path) -> Result<()> {
                                         );
                                     } else {
                                         r.err(&format!(
-                                            "{label} setup `{}` not runnable (missing in PATH)",
-                                            setup.command.display()
+                                            "{label} setup `{}` not runnable (missing in PATH){}",
+                                            setup.command.display(),
+                                            hint(adapter, &setup.command)
                                         ));
                                     }
                                 }
@@ -155,13 +194,14 @@ pub async fn run(dir: &Path) -> Result<()> {
             for c in p.config.capabilities.iter().filter(|c| c.run.is_some()) {
                 let run = c.run.as_ref().unwrap().normalized();
                 let cwd = run.cwd.as_ref().map(|d| p.resolve_path(d)).unwrap_or_else(|| p.root.clone());
-                if program_exists(&run.command, &cwd) {
+                if adapter.program_available(&run.command, &cwd) {
                     r.ok(&format!("function `{}` -> {}", c.name, run.command.display()));
                 } else {
                     r.err(&format!(
-                        "function `{}`: `{}` not found in PATH",
+                        "function `{}`: `{}` not found in PATH{}",
                         c.name,
-                        run.command.program().unwrap_or_default()
+                        run.command.program().unwrap_or_default(),
+                        hint(adapter, &run.command)
                     ));
                 }
             }
@@ -174,30 +214,31 @@ pub async fn run(dir: &Path) -> Result<()> {
         }
     }
 
-    println!("\n{}", bold("Desktop"));
-    match find_desktop_binary() {
+    if caps.app_window || caps.tray {
+        println!("\n{}", bold("Desktop"));
+        match find_desktop_binary() {
         Some(b) => r.ok(&format!("desktop shell: {}", b.display())),
         None => r.warn(
             "desktop shell `openshell-desktop` not found – `openshell dev` will run headless (browser mode)",
         ),
     }
-    #[cfg(windows)]
-    {
-        let key =
-            r"HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}";
-        let found = std::process::Command::new("reg")
-            .args(["query", key, "/v", "pv"])
-            .output()
-            .map(|o| o.status.success())
-            .unwrap_or(false);
-        if found {
-            r.ok("WebView2 runtime installed");
-        } else {
-            r.warn("WebView2 runtime not detected (preinstalled on Windows 11; otherwise install it from Microsoft)");
+        #[cfg(windows)]
+        {
+            let key = r"HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}";
+            let found = std::process::Command::new("reg")
+                .args(["query", key, "/v", "pv"])
+                .output()
+                .map(|o| o.status.success())
+                .unwrap_or(false);
+            if found {
+                r.ok("WebView2 runtime installed");
+            } else {
+                r.warn("WebView2 runtime not detected (preinstalled on Windows 11; otherwise install it from Microsoft)");
+            }
         }
+        #[cfg(target_os = "linux")]
+        println!("  {}", dim("Linux needs WebKitGTK 4.1 (e.g. `apt install libwebkit2gtk-4.1-0`)"));
     }
-    #[cfg(target_os = "linux")]
-    println!("  {}", dim("Linux needs WebKitGTK 4.1 (e.g. `apt install libwebkit2gtk-4.1-0`)"));
 
     println!("\n{}", bold("Toolchain"));
     for (cmd, arg) in [
@@ -213,10 +254,14 @@ pub async fn run(dir: &Path) -> Result<()> {
         ("cmake", "--version"),
         ("g++", "--version"),
         ("clang++", "--version"),
+        ("cargo", "--version"),
     ] {
         match tool_version(cmd, arg) {
             Some(v) => println!("  {} {cmd:<8} {}", green("✔"), dim(&v)),
-            None => println!("  {} {cmd:<8} {}", dim("·"), dim("not found")),
+            None => match adapter.install_hint(cmd) {
+                Some(h) => println!("  {} {cmd:<8} {}", dim("·"), dim(&format!("not found – `{h}`"))),
+                None => println!("  {} {cmd:<8} {}", dim("·"), dim("not found")),
+            },
         }
     }
 

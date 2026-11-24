@@ -547,3 +547,154 @@ async fn remote_gateway_requires_the_pairing_token() {
     assert!(audit["entries"].as_array().unwrap().iter().any(|e| e["channel"] == "remote"), "{audit}");
     shell.shutdown().await;
 }
+
+/// A tiny HTTP server answering every request with `hello from <name>` (stands in for a service).
+async fn hello_server(name: &'static str) -> u16 {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let l = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port = l.local_addr().unwrap().port();
+    tokio::spawn(async move {
+        loop {
+            let (mut s, _) = l.accept().await.unwrap();
+            tokio::spawn(async move {
+                let mut buf = [0u8; 4096];
+                let n = s.read(&mut buf).await.unwrap_or(0);
+                let req = String::from_utf8_lossy(&buf[..n]).to_string();
+                let body = format!("hello from {name}; cookie-sent={}", req.contains("openshell_token"));
+                let _ = s
+                    .write_all(
+                        format!(
+                            "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                            body.len()
+                        )
+                        .as_bytes(),
+                    )
+                    .await;
+            });
+        }
+    });
+    port
+}
+
+#[tokio::test]
+async fn remote_devices_exposed_services_and_lockout() {
+    let gw_port = openshell_runtime::process::free_port().unwrap();
+    let http_port = openshell_runtime::process::free_port().unwrap();
+    let tcp_port = openshell_runtime::process::free_port().unwrap();
+    let backend = hello_server("web").await;
+    let extra = format!(
+        r#","runtime":{{"remote":{{"enabled":true,"bind":"127.0.0.1","port":{gw_port},
+            "rate_limit":{{"max_failed_auth":3,"block_minutes":1}},
+            "expose":[{{"service":"web","port":{http_port}}},
+                      {{"service":"web","port":{tcp_port},"protocol":"tcp","allow":["127.0.0.1"]}}]}}}},
+        "capabilities":[{{"name":"ping","description":"pong","permission":"read","run":{{"command":"echo pong"}}}}]"#
+    );
+    let extra = extra.replace(
+        r#","runtime""#,
+        &format!(
+            r#","services":[{{"name":"api","command":"{}"}},{{"name":"web","external":true,"url":"http://127.0.0.1:{backend}"}}],"runtime""#,
+            sleep_cmd()
+        ),
+    );
+    // `launch` adds its own services list; build the project by hand instead
+    let dir = tempfile::tempdir().unwrap();
+    let json = format!(r#"{{"app":{{"name":"Mesh App"}}{extra}}}"#);
+    let config = parse_json(&json).unwrap();
+    let issues = openshell_config::validate(&config);
+    assert!(issues.iter().all(|i| !i.is_error()), "{issues:?}");
+    let project = Project {
+        root: dir.path().to_path_buf(),
+        config_path: dir.path().join("openshell.json"),
+        config,
+        state_dir_override: None,
+    };
+    let shell = Shell::launch(project, Mode::Production, Arc::new(HeadlessHost::default())).await.unwrap();
+    shell.start();
+    let client = ControlClient::connect(&dir.path().join(".openshell")).await.unwrap();
+    let http = reqwest::Client::builder().redirect(reqwest::redirect::Policy::none()).build().unwrap();
+    let base = format!("http://127.0.0.1:{gw_port}");
+
+    // pair a device, use it, revoke it
+    let pair = client.post("/v1/remote/devices", &json!({ "name": "laptop" })).await.unwrap();
+    let device_token = pair["token"].as_str().unwrap().to_string();
+    assert!(pair["pairing_uri"].as_str().unwrap().starts_with("openshell://pair?app=Mesh%20App&url="));
+    let r = http.get(format!("{base}/v1/remote/info")).bearer_auth(&device_token).send().await.unwrap();
+    assert_eq!(r.status(), 200);
+    let info: Value = r.json().await.unwrap();
+    assert_eq!(info["exposed"][0]["service"], "web");
+    let devices = client.get("/v1/remote/devices").await.unwrap();
+    assert_eq!(devices["devices"][0]["name"], "laptop");
+    assert!(devices["devices"][0]["last_seen"].is_string());
+
+    // exposed HTTP service: token required, browser login via query sets a cookie
+    let url = format!("http://127.0.0.1:{http_port}/page?x=1");
+    let r = http.get(&url).send().await.unwrap();
+    assert_eq!(r.status(), 401);
+    let r = http.get(&url).bearer_auth(&device_token).send().await.unwrap();
+    assert_eq!(r.status(), 200);
+    assert!(r.text().await.unwrap().starts_with("hello from web"));
+    let r = http.get(format!("{url}&openshell_token={device_token}")).send().await.unwrap();
+    assert_eq!(r.status(), 302);
+    assert_eq!(r.headers()["location"], "/page?x=1");
+    assert!(r.headers()["set-cookie"].to_str().unwrap().contains("HttpOnly"));
+    let r = http.get(&url).header("cookie", format!("openshell_token={device_token}")).send().await.unwrap();
+    assert_eq!(r.status(), 200);
+
+    // exposed TCP port: bytes are forwarded unchanged (allowlist only)
+    {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let mut s = tokio::net::TcpStream::connect(("127.0.0.1", tcp_port)).await.unwrap();
+        s.write_all(b"GET / HTTP/1.1\r\nHost: x\r\n\r\n").await.unwrap();
+        let mut out = String::new();
+        s.read_to_string(&mut out).await.unwrap();
+        assert!(out.contains("hello from web"), "{out}");
+    }
+
+    let r = client.post("/v1/remote/devices/laptop/revoke", &json!({})).await.unwrap();
+    assert_eq!(r["ok"], true);
+    let r = http.get(format!("{base}/v1/remote/info")).bearer_auth(&device_token).send().await.unwrap();
+    assert_eq!(r.status(), 401);
+    let r = http.get(&url).bearer_auth(&device_token).send().await.unwrap();
+    assert_eq!(r.status(), 401);
+
+    // failed logins are audited (loopback itself is never blocked)
+    let audit = client.get("/v1/audit?limit=50").await.unwrap();
+    let entries = audit["entries"].as_array().unwrap();
+    assert!(entries.iter().any(|e| e["channel"] == "remote" && e["outcome"] == "denied"), "{audit}");
+    assert!(
+        entries.iter().any(|e| e["agent"].as_str().unwrap_or("").starts_with("device:laptop")),
+        "{audit}"
+    );
+    shell.shutdown().await;
+}
+
+#[tokio::test]
+async fn remote_gateway_over_tls_with_shared_token_off() {
+    let port = openshell_runtime::process::free_port().unwrap();
+    let extra = format!(
+        r#","runtime":{{"remote":{{"enabled":true,"bind":"127.0.0.1","port":{port},"shared_token":false,"tls":{{"enabled":true}}}}}}"#
+    );
+    let (_dir, shell, client) = launch(&extra, Mode::Production).await;
+    let remote = client.get("/v1/remote").await.unwrap();
+    assert_eq!(remote["token"], Value::Null, "shared token is off");
+    assert!(remote["urls"][0].as_str().unwrap().starts_with("https://"));
+    let fp = remote["tls_fingerprint"].as_str().unwrap();
+    assert_eq!(fp.len(), 95);
+    assert_eq!(remote["self_signed"], true);
+
+    let shared = shell.remote().unwrap().token.clone();
+    let device = client.post("/v1/remote/devices", &json!({ "name": "phone" })).await.unwrap();
+    let device = device["token"].as_str().unwrap().to_string();
+    // self-signed: a real client pins the fingerprint; here certificate checks are off
+    let https = reqwest::Client::builder().danger_accept_invalid_certs(true).build().unwrap();
+    let base = format!("https://127.0.0.1:{port}");
+    let r = https.get(format!("{base}/v1/health")).send().await.unwrap();
+    assert_eq!(r.status(), 200);
+    let r = https.get(format!("{base}/v1/remote/info")).bearer_auth(&shared).send().await.unwrap();
+    assert_eq!(r.status(), 401, "shared token disabled");
+    let r = https.get(format!("{base}/v1/remote/info")).bearer_auth(&device).send().await.unwrap();
+    assert_eq!(r.status(), 200);
+    // plain HTTP on the TLS port does not work
+    assert!(reqwest::get(format!("http://127.0.0.1:{port}/v1/health")).await.is_err());
+    shell.shutdown().await;
+}

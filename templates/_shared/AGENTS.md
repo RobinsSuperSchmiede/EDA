@@ -18,6 +18,7 @@ openshell doctor              # config + toolchain check
 openshell add frontend | backend [--lang node] | database [name] | function <name>   # add a building block
 openshell stop
 openshell build && openshell package   # production build + native installer
+openshell package --target bundle       # portable .osapp (Android app, Termux, servers)
 ```
 
 ## Rules for this app
@@ -36,7 +37,10 @@ openshell build && openshell package   # production build + native installer
    Schema changes go into new files in the migrations folder.
 9. The app may also run on Android or a server (`openshell call app_info` → `platform`). On Android only system
    tools and bundled programs start: prefer static frontends, the database and functions, and mark services that
-   need a toolchain with `"platforms": ["desktop", "server"]`.
+   need a toolchain with `"platforms": ["desktop", "server"]`. In Termux (`toolchains: true`) every installed
+   runtime works.
+10. Services stay on `127.0.0.1`. To make one reachable from other devices, add it to `runtime.remote.expose`
+    (token login, allowlist, TLS) instead of binding it to `0.0.0.0`.
 
 ## Verify a change
 

@@ -109,9 +109,9 @@ enum Command {
     Doctor,
     /// Build for production: frontend (`frontend.build`) and compiled services (`services[].build`)
     Build,
-    /// Build a native installer (NSIS/MSI, DMG, DEB/AppImage) for the app
+    /// Build a native installer (NSIS/MSI, DMG, DEB/AppImage) or the portable app bundle (.osapp)
     Package {
-        /// Installer format(s): nsis, msi, app, dmg, deb, rpm, appimage
+        /// Format(s): nsis, msi, app, dmg, deb, rpm, appimage, bundle (portable .osapp for every host)
         #[arg(short, long)]
         target: Vec<String>,
         /// Copy the installers into this directory
@@ -152,17 +152,74 @@ enum Command {
         #[arg(short = 'n', long, default_value_t = 30)]
         lines: usize,
     },
-    /// Show how other devices reach the app (remote gateway URL, MCP endpoint, pairing token)
-    Remote,
+    /// Remote gateway: how other devices reach the app; pair, list and revoke devices
+    Remote {
+        #[command(subcommand)]
+        action: Option<RemoteAction>,
+    },
     /// Simulate an app lifecycle event: foreground, background, low-memory (tests mobile behaviour)
     Lifecycle {
         #[arg(value_parser = ["foreground", "background", "low-memory"])]
         event: String,
     },
+    /// Release the app for every system: CI workflow, downloads.json and download page
+    Release {
+        #[command(subcommand)]
+        action: ReleaseAction,
+    },
+    /// Install an app bundle (.osapp) on this device (desktop, server, Termux)
+    Install {
+        /// The .osapp file
+        file: PathBuf,
+        /// Start it right away (headless)
+        #[arg(long)]
+        start: bool,
+    },
+    /// List installed app bundles
+    Apps,
+    /// Check whether a newer release exists (`package.update_url`)
+    Update,
     /// Print the JSON Schema of openshell.json
     Schema,
     /// Print the guide for AI coding agents that build apps on OpenShell
     Guide,
+}
+
+#[derive(Subcommand)]
+enum ReleaseAction {
+    /// Write a GitHub Actions workflow that builds every platform on a tag push
+    Workflow {
+        /// Overwrite an existing workflow
+        #[arg(long)]
+        force: bool,
+    },
+    /// Write downloads.json and a download page (index.html) for the release files in a directory
+    Manifest {
+        /// Directory with installers and .osapp bundles
+        #[arg(default_value = "dist")]
+        dir: PathBuf,
+        /// Where the files will be downloaded from, e.g. https://github.com/me/app/releases/download/v1.0.0
+        #[arg(long)]
+        base_url: Option<String>,
+    },
+}
+
+#[derive(Subcommand)]
+enum RemoteAction {
+    /// Pair a device: creates its own token (shown once) and a QR code with everything it needs
+    Pair {
+        /// Device name, e.g. `laptop` or `phone`
+        device: String,
+        /// Do not print a QR code
+        #[arg(long)]
+        no_qr: bool,
+    },
+    /// List paired devices
+    Devices,
+    /// Revoke a device's token
+    Revoke { device: String },
+    /// Lift the block of an address after too many failed logins
+    Unblock { address: String },
 }
 
 #[derive(Subcommand)]
@@ -212,3 +269,5 @@ fn main() {
 }
 
 pub(crate) use Command as Cmd;
+pub(crate) use ReleaseAction as ReleaseCmd;
+pub(crate) use RemoteAction as RemoteCmd;

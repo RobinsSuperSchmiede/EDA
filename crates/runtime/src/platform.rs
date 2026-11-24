@@ -5,9 +5,12 @@
 //!
 //! * **Desktop / server** – any program can be started, process trees are killed as a whole,
 //!   services run as long as the shell runs.
-//! * **Android** – apps may only execute binaries shipped inside the APK (the native library
+//! * **Android app** – apps may only execute binaries shipped inside the APK (the native library
 //!   directory, "W^X" since Android 10), there is no `PATH` with toolchains, and the system
 //!   stops background work unless a foreground service keeps the app alive.
+//! * **Android in Termux** – a terminal environment with its own package manager: Python,
+//!   Node.js, Java, Rust, Go, C/C++ and databases install with `pkg install` and run like on
+//!   Linux. The phone becomes a development machine and a portable host.
 //!
 //! A [`RuntimeAdapter`] encapsulates these differences. The runtime asks the adapter to build
 //! every command (services, setup and build steps, functions, tasks) and reports the
@@ -63,6 +66,14 @@ pub struct Capabilities {
     pub tray: bool,
     /// `openshell package` can build installers on this platform.
     pub installers: bool,
+    /// Language toolchains and package managers can run (build steps, dev servers, `npm`,
+    /// `pip`, `cargo` …): desktop, server and Termux, not the Android app.
+    #[serde(default)]
+    pub toolchains: bool,
+    /// The host can keep the device awake while services must run (Termux wake lock,
+    /// Android foreground service).
+    #[serde(default)]
+    pub wake_lock: bool,
 }
 
 /// Platform specific part of the runtime. Implemented for desktop/server and Android; a host
@@ -85,12 +96,32 @@ pub trait RuntimeAdapter: Send + Sync + 'static {
 
     /// Whether the program of a command can be started here (`openshell doctor`, validation).
     fn program_available(&self, spec: &CommandSpec, cwd: &Path) -> bool;
+
+    /// How to install a missing program on this platform (`openshell doctor`).
+    fn install_hint(&self, _program: &str) -> Option<String> {
+        None
+    }
+
+    /// Keep the device awake while services must run (`true`) or release it (`false`).
+    /// Hosts call this when the runtime starts and stops; a no-op where not needed.
+    fn keep_awake(&self, _on: bool) {}
 }
 
-/// The adapter for the platform this binary was built for.
+/// The adapter for the platform this binary was built for. On Android: the Termux adapter
+/// inside Termux, the app adapter otherwise; `OPENSHELL_ANDROID_MODE=app|termux` overrides.
 pub fn default_adapter() -> Arc<dyn RuntimeAdapter> {
     #[cfg(target_os = "android")]
     {
+        let mode = std::env::var("OPENSHELL_ANDROID_MODE").unwrap_or_default();
+        if mode != "app" {
+            if let Some(t) = TermuxAdapter::detect(
+                std::env::var("PREFIX").ok().as_deref(),
+                std::env::var("TERMUX_VERSION").ok().as_deref(),
+                mode == "termux",
+            ) {
+                return Arc::new(t);
+            }
+        }
         Arc::new(AndroidAdapter::from_env())
     }
     #[cfg(not(target_os = "android"))]
@@ -136,6 +167,8 @@ impl RuntimeAdapter for DesktopAdapter {
             app_window: desktop,
             tray: desktop,
             installers: desktop,
+            toolchains: true,
+            wake_lock: false,
         }
     }
 
@@ -284,6 +317,204 @@ impl AndroidAdapter {
     }
 }
 
+// --------------------------------------------------------------------------- termux
+
+/// Android inside Termux: a Linux-like environment where packages from `pkg install` (Python,
+/// Node.js, OpenJDK, Rust, Go, Clang, PostgreSQL, Redis …) live in `$PREFIX/bin` and may run.
+/// Projects are created, developed and run on the phone like on a desktop; only installers and
+/// app windows are missing (the frontend opens in the phone's browser).
+#[derive(Debug, Clone)]
+pub struct TermuxAdapter {
+    prefix: PathBuf,
+}
+
+/// Termux packages that provide a program (for `openshell doctor` hints).
+const TERMUX_PACKAGES: &[(&str, &str)] = &[
+    ("python", "python"),
+    ("python3", "python"),
+    ("pip", "python"),
+    ("node", "nodejs"),
+    ("npm", "nodejs"),
+    ("npx", "nodejs"),
+    ("java", "openjdk-17"),
+    ("javac", "openjdk-17"),
+    ("mvn", "maven"),
+    ("gradle", "gradle"),
+    ("cargo", "rust"),
+    ("rustc", "rust"),
+    ("go", "golang"),
+    ("gcc", "clang"),
+    ("cc", "clang"),
+    ("clang", "clang"),
+    ("g++", "clang"),
+    ("make", "make"),
+    ("cmake", "cmake"),
+    ("git", "git"),
+    ("php", "php"),
+    ("ruby", "ruby"),
+    ("deno", "deno"),
+    ("bun", "bun"),
+    ("dotnet", "dotnet8.0"),
+    ("postgres", "postgresql"),
+    ("psql", "postgresql"),
+    ("redis-server", "redis"),
+    ("mariadbd", "mariadb"),
+    ("mysqld", "mariadb"),
+    ("mongod", "mongodb"),
+    ("nginx", "nginx"),
+    ("sqlite3", "sqlite"),
+];
+
+impl TermuxAdapter {
+    pub fn new(prefix: impl Into<PathBuf>) -> Self {
+        Self { prefix: prefix.into() }
+    }
+
+    /// Detect Termux from `$PREFIX` (`/data/data/com.termux/files/usr`) or `$TERMUX_VERSION`;
+    /// `force` accepts any existing prefix (other Termux-like environments).
+    pub fn detect(prefix: Option<&str>, termux_version: Option<&str>, force: bool) -> Option<Self> {
+        let prefix = prefix.filter(|p| !p.is_empty())?;
+        let termux = prefix.contains("com.termux") || termux_version.is_some_and(|v| !v.is_empty());
+        (termux || force).then(|| Self::new(prefix))
+    }
+
+    pub fn prefix(&self) -> &Path {
+        &self.prefix
+    }
+
+    fn bin(&self) -> PathBuf {
+        self.prefix.join("bin")
+    }
+
+    /// `$PREFIX/bin` first, then the inherited `PATH`.
+    fn path_env(&self, env: &BTreeMap<String, String>) -> String {
+        let inherited = env.get("PATH").cloned().or_else(|| std::env::var("PATH").ok()).unwrap_or_default();
+        let bin = self.bin().display().to_string();
+        if inherited.split(':').any(|p| p == bin) {
+            inherited
+        } else if inherited.is_empty() {
+            format!("{bin}:/system/bin")
+        } else {
+            format!("{bin}:{inherited}")
+        }
+    }
+
+    fn find(&self, program: &str, cwd: &Path, path: &str) -> Option<PathBuf> {
+        if program.contains('/') {
+            let p = Path::new(program);
+            let p = if p.is_absolute() { p.to_path_buf() } else { cwd.join(p) };
+            return p.is_file().then_some(p);
+        }
+        let names: &[&str] = match program {
+            "python" => &["python", "python3"],
+            "python3" => &["python3", "python"],
+            _ => &[],
+        };
+        let names: Vec<&str> = if names.is_empty() { vec![program] } else { names.to_vec() };
+        for name in names {
+            for dir in path.split(':').filter(|d| !d.is_empty()) {
+                let candidate = Path::new(dir).join(name);
+                if candidate.is_file() {
+                    return Some(candidate);
+                }
+            }
+        }
+        None
+    }
+
+    fn missing(&self, program: &str) -> String {
+        match self.install_hint(program) {
+            Some(hint) => format!("`{program}` is not installed in Termux – install it with `{hint}`"),
+            None => format!("`{program}` was not found in Termux ($PREFIX/bin or PATH)"),
+        }
+    }
+}
+
+impl RuntimeAdapter for TermuxAdapter {
+    fn capabilities(&self) -> Capabilities {
+        Capabilities {
+            platform: Platform::Android,
+            os: "android".into(),
+            arch: std::env::consts::ARCH.into(),
+            processes: ProcessSupport::Full,
+            background: BackgroundModel::ForegroundService,
+            file_watching: true,
+            app_window: false,
+            tray: false,
+            installers: false,
+            toolchains: true,
+            wake_lock: true,
+        }
+    }
+
+    fn command(
+        &self,
+        spec: &CommandSpec,
+        extra_args: &[String],
+        cwd: &Path,
+        env: &BTreeMap<String, String>,
+    ) -> Result<Command> {
+        let path = self.path_env(env);
+        let mut cmd = match spec {
+            CommandSpec::Shell(line) => {
+                let mut full = line.clone();
+                for a in extra_args {
+                    full.push(' ');
+                    full.push_str(&posix_quote(a));
+                }
+                let sh = self.bin().join("sh");
+                let mut c = Command::new(if sh.is_file() { sh } else { PathBuf::from("/system/bin/sh") });
+                c.arg("-c").arg(full);
+                c
+            }
+            CommandSpec::Argv(argv) => {
+                let program = argv.first().ok_or_else(|| anyhow!("empty command"))?;
+                let resolved =
+                    self.find(program, cwd, &path).ok_or_else(|| anyhow!("{}", self.missing(program)))?;
+                let mut c = Command::new(resolved);
+                c.args(&argv[1..]).args(extra_args);
+                c
+            }
+        };
+        cmd.current_dir(cwd)
+            .envs(env)
+            .env("PATH", path)
+            .env("PREFIX", &self.prefix)
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .kill_on_drop(true);
+        #[cfg(unix)]
+        cmd.process_group(0);
+        Ok(cmd)
+    }
+
+    fn program_available(&self, spec: &CommandSpec, cwd: &Path) -> bool {
+        match spec {
+            CommandSpec::Shell(line) if plain_words(line).is_none() => true,
+            _ => spec
+                .program()
+                .map(|p| self.find(&p, cwd, &self.path_env(&BTreeMap::new())).is_some())
+                .unwrap_or(false),
+        }
+    }
+
+    fn install_hint(&self, program: &str) -> Option<String> {
+        TERMUX_PACKAGES.iter().find(|(p, _)| *p == program).map(|(_, pkg)| format!("pkg install {pkg}"))
+    }
+
+    fn keep_awake(&self, on: bool) {
+        let tool = self.bin().join(if on { "termux-wake-lock" } else { "termux-wake-unlock" });
+        if tool.is_file() {
+            let _ = std::process::Command::new(tool)
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status();
+        }
+    }
+}
+
 /// Split a shell line into words if it is a plain command without shell syntax.
 fn plain_words(line: &str) -> Option<Vec<String>> {
     if line.chars().any(|c| "|&;<>()$`\"'\\*?~{}[]#=\n".contains(c)) {
@@ -312,6 +543,8 @@ impl RuntimeAdapter for AndroidAdapter {
             app_window: true,
             tray: false,
             installers: false,
+            toolchains: false,
+            wake_lock: true,
         }
     }
 
@@ -418,6 +651,46 @@ mod tests {
     }
 
     #[test]
+    fn termux_detection() {
+        let p = "/data/data/com.termux/files/usr";
+        assert!(TermuxAdapter::detect(Some(p), None, false).is_some());
+        assert!(TermuxAdapter::detect(Some("/usr"), Some("0.118"), false).is_some());
+        assert!(TermuxAdapter::detect(Some("/usr"), None, false).is_none());
+        assert!(TermuxAdapter::detect(Some("/opt/env"), None, true).is_some(), "forced");
+        assert!(TermuxAdapter::detect(None, Some("0.118"), true).is_none(), "needs a prefix");
+    }
+
+    #[test]
+    fn termux_runs_installed_toolchains() {
+        let prefix = tempfile::tempdir().unwrap();
+        let bin = prefix.path().join("bin");
+        std::fs::create_dir_all(&bin).unwrap();
+        std::fs::write(bin.join("python3"), "#!/bin/sh\n").unwrap();
+        let t = TermuxAdapter::new(prefix.path());
+        let c = t.capabilities();
+        assert_eq!(c.platform, Platform::Android);
+        assert_eq!(c.processes, ProcessSupport::Full);
+        assert!(c.toolchains && c.wake_lock && !c.installers && !c.app_window);
+
+        let cwd = prefix.path();
+        // `python` falls back to `python3`, like on the desktop
+        let path = t.path_env(&BTreeMap::from([("PATH".to_string(), "/system/bin".to_string())]));
+        assert_eq!(path, format!("{}:/system/bin", bin.display()));
+        // (Termux paths are `:`-separated; on a Windows test host the drive letter splits off)
+        let found = t.find("python", cwd, &path).expect("python3 found for `python`");
+        assert_eq!(found.file_name().unwrap(), "python3");
+        assert!(t.find("cargo", cwd, &path).is_none());
+        assert!(t.program_available(&CommandSpec::Shell("npm run build && node x".into()), cwd));
+        let env = BTreeMap::from([("PATH".to_string(), bin.display().to_string())]);
+        let err = t.command(&argv(&["cargo", "run"]), &[], cwd, &env).unwrap_err().to_string();
+        assert!(err.contains("pkg install rust"), "{err}");
+        assert!(t.command(&argv(&["python", "app.py"]), &[], cwd, &env).is_ok());
+        assert_eq!(t.install_hint("java").as_deref(), Some("pkg install openjdk-17"));
+        assert_eq!(t.install_hint("postgres").as_deref(), Some("pkg install postgresql"));
+        assert!(t.install_hint("frobnicate").is_none());
+    }
+
+    #[test]
     fn desktop_capabilities() {
         let c = DesktopAdapter::desktop().capabilities();
         assert_eq!(c.platform, Platform::Desktop);
@@ -426,5 +699,6 @@ mod tests {
         let s = DesktopAdapter::server().capabilities();
         assert_eq!(s.platform, Platform::Server);
         assert!(!s.tray && !s.app_window);
+        assert!(c.toolchains && !AndroidAdapter::new().capabilities().toolchains);
     }
 }

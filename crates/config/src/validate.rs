@@ -149,6 +149,64 @@ pub fn validate(config: &Config) -> Vec<Issue> {
     if config.runtime.control_port == Some(remote.port) && remote.enabled {
         issues.push(Issue::error("runtime.remote.port", "must differ from `runtime.control_port`"));
     }
+    let check_allow = |list: &[String], p: &str, issues: &mut Vec<Issue>| {
+        for (i, a) in list.iter().enumerate() {
+            if parse_cidr(a).is_none() {
+                issues.push(Issue::error(
+                    format!("{p}[{i}]"),
+                    format!("`{a}` is not an IP address or CIDR range (for example `192.168.1.0/24`)"),
+                ));
+            }
+        }
+    };
+    check_allow(&remote.allow, "runtime.remote.allow", &mut issues);
+    if remote.tls.cert.is_some() != remote.tls.key.is_some() {
+        issues
+            .push(Issue::error("runtime.remote.tls", "set both `cert` and `key`, or neither (self-signed)"));
+    }
+    if remote.rate_limit.max_failed_auth > 0 && remote.rate_limit.block_minutes == 0 {
+        issues.push(Issue::warning(
+            "runtime.remote.rate_limit.block_minutes",
+            "is 0: addresses with too many failed logins are not blocked",
+        ));
+    }
+    let mut exposed_ports = BTreeSet::new();
+    for (i, e) in remote.expose.iter().enumerate() {
+        let p = format!("runtime.remote.expose[{i}]");
+        if e.service != FRONTEND_SERVICE && !names.contains(&e.service) {
+            issues.push(Issue::error(format!("{p}.service"), format!("unknown service `{}`", e.service)));
+        }
+        if e.port == 0 {
+            issues.push(Issue::error(format!("{p}.port"), "must be a fixed port"));
+        } else if e.port == remote.port || config.runtime.control_port == Some(e.port) {
+            issues.push(Issue::error(
+                format!("{p}.port"),
+                "must differ from `runtime.remote.port` and `runtime.control_port`",
+            ));
+        } else if !exposed_ports.insert(e.port) {
+            issues.push(Issue::error(format!("{p}.port"), format!("port {} is exposed twice", e.port)));
+        }
+        if let Some(allow) = &e.allow {
+            check_allow(allow, &format!("{p}.allow"), &mut issues);
+        }
+        if e.protocol == ExposeProtocol::Tcp && e.auth == Some(ExposeAuth::Token) {
+            issues.push(Issue::error(
+                format!("{p}.auth"),
+                "`tcp` cannot carry a token; protect the port with `allow` or use `http`",
+            ));
+        }
+        let allow_empty = e.allow.as_ref().unwrap_or(&remote.allow).is_empty();
+        if e.effective_auth() == ExposeAuth::None && allow_empty {
+            issues.push(Issue::warning(
+                format!("{p}.allow"),
+                "this port has neither a login nor an address allowlist: everyone who reaches it can use it",
+            ));
+        }
+    }
+    if !remote.expose.is_empty() && !remote.enabled {
+        issues
+            .push(Issue::warning("runtime.remote.expose", "ignored while `runtime.remote.enabled` is false"));
+    }
 
     // dependency references (after collecting names)
     let deps_of = |deps: &[String], p: &str, issues: &mut Vec<Issue>| {
@@ -333,10 +391,39 @@ pub fn validate(config: &Config) -> Vec<Issue> {
 
     // --- package ------------------------------------------------------------
     for (i, t) in config.package.targets.iter().enumerate() {
-        if !["nsis", "msi", "app", "dmg", "deb", "rpm", "appimage"].contains(&t.as_str()) {
+        if !["nsis", "msi", "app", "dmg", "deb", "rpm", "appimage", "bundle"].contains(&t.as_str()) {
             issues.push(Issue::error(
                 format!("package.targets[{i}]"),
-                format!("unknown installer format `{t}` (nsis, msi, app, dmg, deb, rpm, appimage)"),
+                format!("unknown installer format `{t}` (nsis, msi, app, dmg, deb, rpm, appimage, bundle)"),
+            ));
+        }
+    }
+    if let Some(w) = &config.package.signing.windows {
+        if !w.sign_command.is_empty() && !w.sign_command.iter().any(|a| a.contains("%1")) {
+            issues.push(Issue::error(
+                "package.signing.windows.sign_command",
+                "must contain `%1` (replaced with the file to sign)",
+            ));
+        }
+        if !w.sign_command.is_empty() && w.certificate_thumbprint.is_some() {
+            issues.push(Issue::warning(
+                "package.signing.windows",
+                "`sign_command` is used; `certificate_thumbprint` is ignored",
+            ));
+        }
+    }
+    if let Some(m) = &config.package.signing.macos {
+        if m.signing_identity.trim().is_empty() {
+            issues.push(Issue::error("package.signing.macos.signing_identity", "must not be empty"));
+        }
+    }
+    if let Some(u) = &config.package.update_url {
+        if !u.starts_with("https://") && !u.starts_with("http://") {
+            issues.push(Issue::error("package.update_url", "must be an http(s) URL of a downloads.json"));
+        } else if u.starts_with("http://") {
+            issues.push(Issue::warning(
+                "package.update_url",
+                "use https so update information cannot be changed in transit",
             ));
         }
     }

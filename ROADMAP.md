@@ -31,8 +31,11 @@ Legend: ✅ done · 🚧 partial · ⏳ planned
 - ✅ Production mode, tray, close-to-tray / background mode, headless mode (`--headless`, `--detach`)
 - ✅ `openshell package`: per-app installers (NSIS, MSI, DMG, DEB, RPM, AppImage) with name, icon (exe re-branding)
   and identifier; per-user data directory; single instance; `--mcp` / `--headless` modes of installed apps
-- ⏳ Code signing settings, bundled runtimes (JRE via jlink, embedded Python/Node)
-- ⏳ Runtime bundling (embedded Python/Node), auto-updates (Tauri updater), autostart
+- ✅ Code signing settings (`package.signing`: Windows thumbprint / sign command, macOS identity + notarisation)
+- ✅ Portable app bundles (`.osapp`), `openshell install`, release workflow for every platform with
+  `downloads.json` and a download page (`openshell release`)
+- 🚧 Updates: update check (`package.update_url`, `GET /v1/update`, `openshell update`); automatic install ⏳
+- ⏳ Bundled runtimes (JRE via jlink, embedded Python/Node)
 - ⏳ Single-instance handling, deep links
 
 ## Phase 5 – Agent Interaction Layer 🚧
@@ -52,11 +55,15 @@ Legend: ✅ done · 🚧 partial · ⏳ planned
 - ✅ `services[].platforms`, `services[].background` (`keep` / `pause`), lifecycle events (`openshell lifecycle`, `POST /v1/lifecycle`)
 - ✅ Core and CLI build for Android (CI); verified headless on an Android 16 emulator; usable in Termux
 - ✅ Remote gateway (`runtime.remote`): app profile over MCP for other devices, pairing token, `openshell remote`
-- ⏳ Android app: Tauri 2 mobile shell, foreground-service plugin (Kotlin), battery-optimisation exemption,
-  notification with running services
+- ✅ Remote security: per-device tokens with QR pairing, IP/CIDR allowlist, rate limit + lockout, TLS (self-signed
+  with pinned fingerprint or own certificate), opt-in exposure of services (HTTP with token login, raw TCP), audit
+- ✅ Termux: `TermuxAdapter` (toolchains from `pkg`, wake lock, install hints), Android CLI in releases
+- 🚧 Android app: Kotlin host + JNI bridge (`apps/android`, `crates/android`), foreground service (`specialUse`),
+  notification, app manager for `.osapp` bundles, AAB build for the Play Store in CI; not yet verified on a device
+- ⏳ Play Store release (developer account, upload key, store review)
 - ⏳ Bundled runtimes for Android (Node.js, Python as `lib*.so`), app manager for several apps on the phone
-- ⏳ Device mesh: per-device pairing (QR), TLS, mDNS discovery, remote control API (`--device`), project sync and
-  deploy (`openshell deploy --device phone`)
+- 🚧 Device mesh: ✅ per-device pairing (QR), ✅ TLS; ⏳ mDNS discovery, remote control API (`--device`), project
+  sync and deploy (`openshell deploy --device phone`)
 
 ## Phase 7 – Ecosystem ⏳
 - 🚧 SDK (`@openshell/sdk`) – runtime, window, notifications, agent actions; publish to npm

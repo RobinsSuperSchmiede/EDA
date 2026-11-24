@@ -124,6 +124,8 @@ async fn run_headless(project: Project, mode: Mode) -> Result<()> {
         }
     });
     shell.start();
+    // Termux: hold a wake lock while the app runs, so the phone keeps serving with the screen off
+    shell.runtime().adapter().keep_awake(true);
     if let Some(url) = shell.runtime().frontend_url() {
         let rt = shell.runtime().clone();
         tokio::spawn(async move {
@@ -138,6 +140,7 @@ async fn run_headless(project: Project, mode: Mode) -> Result<()> {
     }
     println!("\n{}", dim("stopping services…"));
     shell.shutdown().await;
+    shell.runtime().adapter().keep_awake(false);
     output::ok("stopped");
     Ok(())
 }

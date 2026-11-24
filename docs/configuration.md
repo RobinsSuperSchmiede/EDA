@@ -118,7 +118,33 @@ Usable in commands, args, env values, URLs, health checks and proxy targets:
 | `log_buffer_lines` | 10000 | Lines kept in memory (files in `.openshell/logs/`) |
 | `shutdown_timeout_ms` | 5000 | Default grace period when stopping |
 | `launch_at_login` | `false` | Start the installed app when the user logs in (installed apps only) |
-| `remote` | off | Remote access gateway for other devices: `{ "enabled": true, "bind": "0.0.0.0", "port": 7420 }`. Serves only the app profile, protected by a pairing token (`openshell remote`). See [platforms.md](platforms.md#remote-access) |
+| `remote` | off | Remote access for other devices – see [`runtime.remote`](#runtimeremote) |
+
+### `runtime.remote`
+
+Makes the app usable from other devices (a laptop using an app hosted on a phone, an agent on another machine).
+Everything except `enabled` is optional. Full guide: [remote-access.md](remote-access.md).
+
+| Field | Default | Description |
+|---|---|---|
+| `enabled` | `false` | Start the gateway (app profile over MCP) and the exposed ports |
+| `bind` | `0.0.0.0` | Address to listen on; a VPN address (Tailscale `100.x.y.z`) limits access to your devices |
+| `port` | 7420 | Gateway port |
+| `allow` | everyone | IP addresses / CIDR ranges that may connect, e.g. `["192.168.1.0/24", "100.64.0.0/10"]`. Loopback is always allowed |
+| `shared_token` | `true` | Accept the shared pairing token; `false` = only per-device tokens (`openshell remote pair <device>`) |
+| `rate_limit` | 120 / 10 / 5 | `{ "requests_per_minute": 120, "max_failed_auth": 10, "block_minutes": 5 }` per address; `0` switches a limit off |
+| `tls` | off | `{ "enabled": true }` with a self-signed certificate (clients pin its SHA-256 fingerprint), or `{ "enabled": true, "cert": "certs/fullchain.pem", "key": "certs/key.pem" }` |
+| `expose` | none | Services reachable on their own port: `[{ "service": "api", "port": 8080 }]` – see below |
+
+`expose[]` entries:
+
+| Field | Default | Description |
+|---|---|---|
+| `service` | – | Service name, or `frontend` |
+| `port` | – | Port other devices connect to (must differ from the gateway and control ports) |
+| `protocol` | `http` | `http` (websites, APIs; token login, TLS) or `tcp` (any protocol, e.g. PostgreSQL, Redis, MQTT) |
+| `auth` | `token` for `http` | `token`: pairing/device token as `Authorization: Bearer`, cookie, or once `?openshell_token=…` in the browser; `none`: no login (use `allow`). `tcp` is always `none` |
+| `allow` | `runtime.remote.allow` | Addresses / CIDR ranges for this port only |
 
 ## `agents`
 

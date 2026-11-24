@@ -644,17 +644,192 @@ pub struct RemoteConfig {
     /// Fixed port (default: 7420).
     #[serde(default = "default_remote_port")]
     pub port: u16,
+    /// IP addresses or CIDR ranges that may connect (`192.168.1.0/24`, `100.64.0.0/10`,
+    /// `fd7a:115c:a1e0::/48`). Applies to the gateway and every exposed service. Empty: everyone
+    /// who can reach the port.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub allow: Vec<String>,
+    /// Accept the shared pairing token (`.openshell/data/remote-token`). Set to `false` to accept
+    /// only per-device tokens from `openshell remote pair <device>`.
+    #[serde(default = "default_true")]
+    pub shared_token: bool,
+    /// Requests per minute per client address and a lockout after failed logins.
+    #[serde(default, skip_serializing_if = "RateLimitConfig::is_default")]
+    pub rate_limit: RateLimitConfig,
+    /// HTTPS for the gateway and exposed HTTP services.
+    #[serde(default, skip_serializing_if = "TlsConfig::is_disabled")]
+    pub tls: TlsConfig,
+    /// Services reachable from other devices on their own port (opt-in per service).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub expose: Vec<ExposeConfig>,
 }
 
 impl Default for RemoteConfig {
     fn default() -> Self {
-        Self { enabled: false, bind: default_remote_bind(), port: default_remote_port() }
+        Self {
+            enabled: false,
+            bind: default_remote_bind(),
+            port: default_remote_port(),
+            allow: Vec::new(),
+            shared_token: true,
+            rate_limit: RateLimitConfig::default(),
+            tls: TlsConfig::default(),
+            expose: Vec::new(),
+        }
     }
 }
 
 impl RemoteConfig {
     fn is_disabled(&self) -> bool {
-        !self.enabled && self.bind == default_remote_bind() && self.port == default_remote_port()
+        !self.enabled
+            && self.bind == default_remote_bind()
+            && self.port == default_remote_port()
+            && self.allow.is_empty()
+            && self.shared_token
+            && self.rate_limit.is_default()
+            && self.tls.is_disabled()
+            && self.expose.is_empty()
+    }
+}
+
+/// Limits per client address. `0` switches a limit off.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RateLimitConfig {
+    /// Requests (gateway) and new connections (exposed services) per minute and address.
+    #[serde(default = "default_requests_per_minute")]
+    pub requests_per_minute: u32,
+    /// Failed logins (wrong or missing token) before the address is blocked.
+    #[serde(default = "default_max_failed_auth")]
+    pub max_failed_auth: u32,
+    /// How long a blocked address stays blocked.
+    #[serde(default = "default_block_minutes")]
+    pub block_minutes: u64,
+}
+
+impl Default for RateLimitConfig {
+    fn default() -> Self {
+        Self {
+            requests_per_minute: default_requests_per_minute(),
+            max_failed_auth: default_max_failed_auth(),
+            block_minutes: default_block_minutes(),
+        }
+    }
+}
+
+impl RateLimitConfig {
+    fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
+}
+
+fn default_requests_per_minute() -> u32 {
+    120
+}
+fn default_max_failed_auth() -> u32 {
+    10
+}
+fn default_block_minutes() -> u64 {
+    5
+}
+
+/// TLS for the remote gateway. Without `cert` and `key` OpenShell creates a self-signed
+/// certificate in the app's data directory; clients pin its SHA-256 fingerprint
+/// (`openshell remote` shows it).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct TlsConfig {
+    #[serde(default)]
+    pub enabled: bool,
+    /// PEM certificate chain (relative to the project).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cert: Option<String>,
+    /// PEM private key (relative to the project).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub key: Option<String>,
+}
+
+impl TlsConfig {
+    fn is_disabled(&self) -> bool {
+        *self == Self::default()
+    }
+}
+
+/// A service made reachable from other devices on its own port.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ExposeConfig {
+    /// Service name, or `frontend` for the app's frontend.
+    pub service: String,
+    /// Port other devices connect to.
+    pub port: u16,
+    /// `http` (websites and APIs; token login, TLS) or `tcp` (any protocol, e.g. a database;
+    /// protected by the address allowlist only).
+    #[serde(default)]
+    pub protocol: ExposeProtocol,
+    /// `token` (default for `http`): a pairing or device token is required – as
+    /// `Authorization: Bearer`, cookie, or once as `?openshell_token=` in the browser.
+    /// `none`: no login (rely on `allow`). Always `none` for `tcp`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub auth: Option<ExposeAuth>,
+    /// Addresses / CIDR ranges for this port; replaces `runtime.remote.allow`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub allow: Option<Vec<String>>,
+}
+
+impl ExposeConfig {
+    pub fn effective_auth(&self) -> ExposeAuth {
+        match self.protocol {
+            ExposeProtocol::Tcp => ExposeAuth::None,
+            ExposeProtocol::Http => self.auth.unwrap_or(ExposeAuth::Token),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum ExposeProtocol {
+    #[default]
+    Http,
+    Tcp,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum ExposeAuth {
+    Token,
+    None,
+}
+
+/// Parse an IP address or CIDR range (`10.0.0.0/8`, `192.168.1.7`, `::1`).
+pub fn parse_cidr(s: &str) -> Option<(std::net::IpAddr, u8)> {
+    let (ip, len) = match s.trim().split_once('/') {
+        Some((ip, len)) => (ip.parse::<std::net::IpAddr>().ok()?, Some(len.parse::<u8>().ok()?)),
+        None => (s.trim().parse::<std::net::IpAddr>().ok()?, None),
+    };
+    let max = if ip.is_ipv4() { 32 } else { 128 };
+    let len = len.unwrap_or(max);
+    (len <= max).then_some((ip, len))
+}
+
+/// Whether `addr` lies inside the range from [`parse_cidr`]. IPv4-mapped IPv6 addresses match
+/// IPv4 ranges.
+pub fn cidr_contains(range: (std::net::IpAddr, u8), addr: std::net::IpAddr) -> bool {
+    use std::net::IpAddr;
+    let addr = match addr {
+        IpAddr::V6(v6) => v6.to_ipv4_mapped().map(IpAddr::V4).unwrap_or(addr),
+        a => a,
+    };
+    match (range.0, addr) {
+        (IpAddr::V4(net), IpAddr::V4(a)) => {
+            let mask = if range.1 == 0 { 0 } else { u32::MAX << (32 - range.1) };
+            u32::from(net) & mask == u32::from(a) & mask
+        }
+        (IpAddr::V6(net), IpAddr::V6(a)) => {
+            let mask = if range.1 == 0 { 0 } else { u128::MAX << (128 - range.1) };
+            u128::from(net) & mask == u128::from(a) & mask
+        }
+        _ => false,
     }
 }
 
@@ -1067,9 +1242,65 @@ pub struct PackageConfig {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub exclude: Vec<String>,
     /// Installer formats: `nsis`, `msi` (Windows), `app`, `dmg` (macOS), `deb`, `rpm`, `appimage` (Linux).
-    /// Default: `nsis` / `dmg` / `deb` + `appimage`.
+    /// Default: `nsis` / `dmg` / `deb` + `appimage`. `bundle` builds the portable app bundle
+    /// (`.osapp`) on every platform, including Android.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub targets: Vec<String>,
+    /// Code signing of installers. Secrets come from the environment, never from this file.
+    #[serde(default, skip_serializing_if = "SigningConfig::is_empty")]
+    pub signing: SigningConfig,
+    /// URL of the `downloads.json` of the newest release (`openshell release manifest`). The
+    /// installed app compares versions and reports updates (`GET /v1/update`, `openshell update`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub update_url: Option<String>,
+}
+
+/// Code signing for `openshell package`.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SigningConfig {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub windows: Option<WindowsSigning>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub macos: Option<MacosSigning>,
+}
+
+impl SigningConfig {
+    fn is_empty(&self) -> bool {
+        self.windows.is_none() && self.macos.is_none()
+    }
+}
+
+/// Windows Authenticode signing: a certificate in the certificate store (thumbprint) or a
+/// custom command (Azure Trusted Signing, a cloud HSM, `osslsigncode` …).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct WindowsSigning {
+    /// SHA-1 thumbprint of a code-signing certificate in the user's or machine's store.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub certificate_thumbprint: Option<String>,
+    /// RFC 3161 / Authenticode timestamp server, e.g. `http://timestamp.digicert.com`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub timestamp_url: Option<String>,
+    /// Custom sign command; `%1` is replaced with the file to sign,
+    /// e.g. `["trusted-signing-cli", "-e", "https://…", "%1"]`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub sign_command: Vec<String>,
+}
+
+/// macOS code signing and notarisation (credentials from `APPLE_ID`, `APPLE_PASSWORD`,
+/// `APPLE_TEAM_ID` or `APPLE_API_KEY` / `APPLE_API_ISSUER` in the environment).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct MacosSigning {
+    /// `Developer ID Application: Example Inc. (TEAMID)`, or `-` for ad-hoc signing.
+    pub signing_identity: String,
+    /// Entitlements plist (relative to the project).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub entitlements: Option<String>,
+    /// Team short name for notarisation when the Apple ID belongs to several teams.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider_short_name: Option<String>,
 }
 
 impl Config {

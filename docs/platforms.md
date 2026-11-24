@@ -20,7 +20,7 @@ on Android today and where the Android work is going.
 
 ```
             ┌───────────────────────── hosts ─────────────────────────┐
-            │ desktop app (Tauri)   headless CLI   Android app (planned)│
+            │ desktop app (Tauri)   headless CLI   Android app (Kotlin) │
             │ window, tray, dialogs  terminal       Activity + WebView, │
             │                                       foreground service  │
             └──────────────┬──────────────────────────────┬──────────────┘
@@ -33,9 +33,11 @@ on Android today and where the Android work is going.
             └──────────────┬─────────────────────────────────────────────┘
                            │ RuntimeAdapter
             ┌──────────────▼─────────────────────────────────────────────┐
-            │ DesktopAdapter (desktop, server)   AndroidAdapter           │
+            │ DesktopAdapter (desktop, server)   AndroidAdapter (app)     │
             │ any program in PATH, job objects   system tools + programs  │
             │ / process groups                   bundled with the app     │
+            │                                    TermuxAdapter (Termux)   │
+            │                                    pkg-installed toolchains │
             └────────────────────────────────────────────────────────────┘
 ```
 
@@ -44,10 +46,12 @@ on Android today and where the Android work is going.
 | `Platform` | `crates/config` | `desktop`, `android`, `server` – used in `services[].platforms` |
 | `RuntimeAdapter` | `crates/runtime/src/platform.rs` | builds every command (services, setup, build, functions, tasks), reports `Capabilities` |
 | `DesktopAdapter` | same | any program from `PATH` or the project; `server` variant without window and tray |
-| `AndroidAdapter` | same | only system tools (`/system/bin`) and programs registered by the host (`node` → `libnode.so`) |
+| `AndroidAdapter` | same | the Android app: only system tools (`/system/bin`) and programs registered by the host (`node` → `libnode.so`) |
+| `TermuxAdapter` | same | Android in Termux: everything installed with `pkg install` (Python, Node.js, Java, Rust, Go, databases) |
 | `LifecycleEvent` | `crates/runtime/src/lib.rs` | `foreground`, `background`, `low_memory`, `power_save`, `network` |
 | `Host` | `crates/core/src/lib.rs` | window, notifications, approvals – implemented per front-end |
-| Remote gateway | `crates/core/src/remote.rs` | the app profile for other devices, protected by a pairing token |
+| Remote gateway | `crates/core/src/remote*` | the app profile and exposed services for other devices: tokens, allowlist, rate limit, TLS |
+| Android host | `apps/android`, `crates/android` | Kotlin app + JNI bridge – see [android-app.md](android-app.md) |
 
 `Runtime::new` / `Shell::launch` pick the adapter for the platform the binary was built for.
 Hosts can pass their own with `Runtime::with_adapter` / `Shell::launch_with`.
@@ -60,16 +64,19 @@ Every runtime reports what its platform offers. Agents see it in `app_info` and 
 "platform": {
   "platform": "android", "os": "android", "arch": "aarch64",
   "processes": "restricted", "background": "foreground_service",
-  "file_watching": true, "app_window": true, "tray": false, "installers": false
+  "file_watching": true, "app_window": true, "tray": false, "installers": false,
+  "toolchains": false, "wake_lock": true
 }
 ```
 
-| Field | Desktop | Server | Android |
-|---|---|---|---|
-| `processes` | `full` | `full` | `restricted` – system tools and bundled programs |
-| `background` | `always` | `always` | `foreground_service` – needs a foreground service to stay alive |
-| `app_window` / `tray` | yes / yes | no / no | yes / no |
-| `installers` | yes | no | no |
+| Field | Desktop | Server | Android app | Termux |
+|---|---|---|---|---|
+| `processes` | `full` | `full` | `restricted` – system tools and bundled programs | `full` |
+| `background` | `always` | `always` | `foreground_service` | `foreground_service` (wake lock) |
+| `app_window` / `tray` | yes / yes | no / no | yes / no | no / no (browser) |
+| `installers` | yes | no | no | no (`.osapp` bundles yes) |
+| `toolchains` – build steps, dev servers, `npm`/`pip`/`cargo` | yes | yes | no | yes |
+| `wake_lock` | no | no | yes | yes |
 
 ## Configuration
 
@@ -123,9 +130,34 @@ let adapter = AndroidAdapter::new()                        // allows /system/bin
 let shell = Shell::launch_with(project, Mode::Production, host, Arc::new(adapter)).await?;
 ```
 
-Without a host (for example in a terminal app) the adapter reads `OPENSHELL_ANDROID_EXEC_DIRS`
-(`:`-separated) and `OPENSHELL_ANDROID_PROGRAMS` (`node=/path/libnode.so;python=/path/libpython.so`);
-inside Termux its `$PREFIX/bin` is allowed automatically.
+Without a host the adapter reads `OPENSHELL_ANDROID_EXEC_DIRS` (`:`-separated) and
+`OPENSHELL_ANDROID_PROGRAMS` (`node=/path/libnode.so;python=/path/libpython.so`). Inside Termux
+the [`TermuxAdapter`](#termux-apps-on-the-phone) is used instead.
+
+### Termux: apps on the phone
+
+[Termux](https://termux.dev) is a Linux environment for Android with its own package manager. The
+OpenShell CLI runs there and detects it (`$PREFIX` / `$TERMUX_VERSION`), so the phone becomes a
+development machine and a portable host – no computer needed:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/scripts/install.sh | sh
+pkg install python nodejs openjdk-17 rust golang postgresql   # what your apps need
+openshell create notes --with frontend,backend,database
+cd notes && openshell dev          # dev server, file watching, agents – like on the desktop
+openshell start --headless         # production; open the URL in the phone's browser
+openshell package --target bundle  # notes-0.1.0.osapp for the Android app or other hosts
+```
+
+- Every program from `$PREFIX/bin` runs: services, setup and build steps (`npm install`, `pip`,
+  `cargo build`, `mvn`), dev servers and functions. `python` falls back to `python3`.
+- `openshell doctor` shows the platform and turns missing programs into `pkg install …` hints.
+- While an app runs, OpenShell holds a Termux wake lock (`termux-wake-lock`, from the Termux:API
+  package) so services keep running with the screen off, and releases it on stop.
+- Databases: the built-in SQLite needs nothing; PostgreSQL, Redis or MariaDB from `pkg` run as
+  services and can be [exposed](remote-access.md) to other devices.
+- `OPENSHELL_ANDROID_MODE=app` forces the restricted app adapter (to test what the Android app
+  allows); `OPENSHELL_ANDROID_MODE=termux` forces the Termux adapter in Termux-like environments.
 
 ### Lifecycle, battery and network
 
@@ -161,62 +193,49 @@ curl -X POST -H "Authorization: Bearer $TOKEN" -H "content-type: application/jso
   migrates the database, runs functions through `/system/bin/sh`, leaves desktop-only services
   out, pauses and resumes services on lifecycle events and serves the app profile to a laptop
   through the remote gateway.
-- ✅ Usable today in a terminal app such as Termux (`pkg install nodejs python` adds runtimes).
-- ⏳ Android app (see below).
+- ✅ Termux: `TermuxAdapter` with toolchains, wake lock and `pkg install` hints; prebuilt CLI for
+  `aarch64-linux-android` in releases, `install.sh` detects Termux.
+- 🚧 Android app: Kotlin host + JNI bridge in `apps/android` / `crates/android`, AAB build for the
+  Play Store in CI – see [android-app.md](android-app.md).
 
-### The Android app (next phase)
+### The Android app
 
-The OpenShell Android app is a host around the unchanged core:
+The OpenShell Android app is a host around the unchanged core – see [android-app.md](android-app.md):
 
-1. **Shell app** – Tauri 2 mobile target (same WebView/IPC model as the desktop app) with the core
-   as a library; the frontend runs in the app's WebView.
-2. **Foreground service plugin** (Kotlin) – keeps the runtime alive while `keep_alive()` is not
-   empty, shows a notification with the running services, forwards lifecycle, memory, battery and
-   network events, requests the battery-optimisation exemption.
-3. **Bundled runtimes** – Node.js and Python as `lib*.so` in the APK, registered with
-   `AndroidAdapter::with_program`; optional runtime packs downloaded per app ABI.
-4. **App manager** – install, update, start and remove multiple OpenShell apps on the phone; an
-   agent creates an app as a project folder, OpenShell runs it, no code editing by the user.
-5. **On-device agents** – local models (for example via Ollama-compatible servers on the phone or
-   on another device) and remote agents through the gateway.
+1. **Shell app** – Kotlin Activity with a WebView (no JavaScript bridge for app pages) and the core
+   as a JNI library (`libopenshell_android.so`).
+2. **Foreground service** (`specialUse`) – keeps the runtime alive, shows a notification with the
+   running services, forwards lifecycle, memory and network events, partial wake lock.
+3. **App manager** – install apps from `.osapp` bundles (file picker, share sheet), open, stop.
+4. **Bundled runtimes** (planned) – Node.js and Python as `lib*.so` in the APK, registered
+   automatically when present.
+5. **On-device agents** – remote agents through the gateway today; local models planned.
 
 ## Remote access
 
 The remote gateway makes an app usable from other devices – a laptop agent using functions of an
-app hosted on the phone, or a phone using an app on a home server.
+app hosted on the phone, a browser opening a website the phone serves, a desktop tool using a
+database on the phone. Off by default; tokens per device, an address allowlist, rate limits with
+lockout, TLS, opt-in exposure per service and an audit trail can be combined:
 
 ```json
-"runtime": { "remote": { "enabled": true } }
+"runtime": { "remote": { "enabled": true, "allow": ["192.168.1.0/24"], "tls": { "enabled": true },
+                         "expose": [{ "service": "frontend", "port": 8080 }] } }
 ```
 
 ```bash
-openshell remote     # URL, MCP endpoint, pairing token and a ready MCP client configuration
+openshell remote pair laptop     # token for one device, QR code, links
+openshell remote                 # URLs, fingerprint, devices, blocked addresses
 ```
 
-| Route | Auth | Purpose |
-|---|---|---|
-| `GET /v1/health` | public | app name, platform, version |
-| `GET /v1/remote/info` | pairing token | app, platform capabilities, functions |
-| `POST /mcp/app` | pairing token | the app profile over MCP (Streamable HTTP) |
+Full guide: [remote-access.md](remote-access.md).
 
-Security model:
-
-- Off by default. Only the **app profile** is exposed – the app's own functions, never developer
-  tools (files, logs, services, UI automation) and never the admin token.
-- A separate pairing token (`.openshell/data/remote-token`, stays the same across restarts). Delete
-  the file to revoke all paired devices.
-- Requests with an `Origin` header are rejected, so websites in a browser cannot call the gateway.
-- Permissions, approvals and the audit log apply as for local agents; remote calls are audited
-  with the channel `remote`.
-- Plain HTTP: use it in a trusted network or bind it to a VPN address (`"bind": "100.x.y.z"` for
-  Tailscale). TLS and per-device tokens are planned.
-
-## Device mesh (planned)
+## Device mesh (in progress)
 
 Desktop, phone and server running OpenShell should form one personal mesh:
 
-- **Pairing** – devices exchange per-device tokens (QR code on the phone, `openshell pair` on the
-  desktop) instead of one shared token; TLS with pinned certificates.
+- ✅ **Pairing** – per-device tokens with a QR code / pairing URI (`openshell remote pair`), TLS with
+  pinned self-signed certificates, revocation per device.
 - **Discovery** – mDNS (`_openshell._tcp`) in the local network, VPN addresses otherwise.
 - **Remote control API** – manage services, logs and approvals of another device's apps with the
   same CLI (`openshell --device phone status`).

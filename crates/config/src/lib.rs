@@ -10,10 +10,12 @@
 //! The schema is intentionally technology-agnostic: services are arbitrary
 //! executables, the frontend is "something that serves a URL".
 
+mod files;
 mod interpolate;
 mod model;
 mod validate;
 
+pub use files::{package_files, DEFAULT_EXCLUDES};
 pub use interpolate::{interpolate, variables, InterpolationError};
 pub use model::*;
 pub use validate::{startup_order, validate, Issue, FRONTEND_SERVICE};

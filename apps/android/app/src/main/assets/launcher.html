@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenShell</title>
+<style>
+  :root { --bg: #101412; --fg: #e8ece9; --dim: #8a948e; --line: #232a26; --accent: #3ddc84; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+  header { padding: 1.4rem 1.2rem .6rem; }
+  h1 { font-size: 1.3rem; margin: 0; font-family: ui-monospace, monospace; }
+  h1 span { color: var(--accent); }
+  p.sub { color: var(--dim); margin: .3rem 0 0; font-size: .9rem; }
+  ul { list-style: none; margin: 0; padding: 0 1.2rem; }
+  li { display: flex; align-items: center; gap: .8rem; padding: .9rem 0; border-bottom: 1px solid var(--line); }
+  li .name { flex: 1; }
+  li .name small { display: block; color: var(--dim); }
+  li.running .name::after { content: "running"; color: var(--accent); font-size: .75rem; margin-left: .4rem; }
+  button { font: inherit; border: 1px solid var(--line); background: transparent; color: var(--fg); padding: .55rem .9rem; border-radius: .5rem; }
+  button.primary { background: var(--accent); color: #08110c; border-color: var(--accent); font-weight: 600; }
+  .actions { display: flex; flex-wrap: wrap; gap: .6rem; padding: 1.2rem; }
+  .empty { color: var(--dim); padding: 1.2rem; line-height: 1.5; }
+  #msg { padding: 0 1.2rem; color: var(--accent); min-height: 1.2rem; font-size: .9rem; }
+  #msg.error { color: #ff7a7a; }
+</style>
+</head>
+<body>
+<header>
+  <h1><span>&gt;_</span> OpenShell</h1>
+  <p class="sub">Apps on this phone. Their web server, database and functions run here.</p>
+</header>
+<div id="msg"></div>
+<ul id="apps"></ul>
+<div class="empty" id="empty" hidden>
+  No apps yet. Build one with <code>openshell package --target bundle</code> on a computer (or in Termux),
+  then open the <code>.osapp</code> file here or share it to OpenShell.
+</div>
+<div class="actions">
+  <button class="primary" onclick="OpenShellHost.importBundle()">Add app (.osapp)</button>
+  <button onclick="OpenShellHost.stopRuntime(); setTimeout(render, 500)">Stop running app</button>
+  <button onclick="OpenShellHost.batterySettings()">Run in background…</button>
+</div>
+<script>
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function render() {
+    var apps = JSON.parse(OpenShellHost.listApps()).apps || [];
+    var status = JSON.parse(OpenShellHost.status());
+    var list = document.getElementById("apps");
+    document.getElementById("empty").hidden = apps.length > 0;
+    list.innerHTML = apps.map(function (a) {
+      var running = status.running && status.app === a.app;
+      return '<li class="' + (running ? "running" : "") + '"><div class="name">' + esc(a.app) +
+        "<small>" + esc(a.identifier) + " · " + esc(a.version) + "</small></div>" +
+        '<button data-id="' + esc(a.identifier) + '">Open</button></li>';
+    }).join("");
+    Array.prototype.forEach.call(list.querySelectorAll("button[data-id]"), function (b) {
+      b.onclick = function () { OpenShellHost.openApp(b.getAttribute("data-id")); };
+    });
+  }
+  function message(text, error) {
+    var m = document.getElementById("msg");
+    m.textContent = text;
+    m.className = error ? "error" : "";
+  }
+  window.onAppsChanged = render;
+  window.onImported = function (r) {
+    if (r.ok) message("Installed " + r.app + " " + r.version);
+    else message("Could not add the app: " + r.error, true);
+    render();
+  };
+  render();
+</script>
+</body>
+</html>

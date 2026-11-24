@@ -501,6 +501,8 @@ openshell build              # frontend.build + services[].build
 openshell start --headless   # production mode (static dist, no file watching, restricted agent permissions)
 openshell status && openshell stop
 openshell package            # native installer (needs app.version as semver, optional app.icon PNG)
+openshell package --target bundle   # portable .osapp for Android, Termux, servers (any host)
+openshell release workflow   # CI workflow: one tag push builds every platform + download page
 ```
 
 ## `openshell.json` cheat sheet
@@ -573,8 +575,11 @@ in order, at startup). Access: services/functions `OPENSHELL_DB_MAIN` (+ `DATABA
 - **Absolute URLs to the backend in the frontend** → break in production. Use `/api` + proxy.
 - **`frontend.dist` must exist for production** → run `openshell build`.
 - **Installing global tools** or changing the user's system is not needed; templates have no dependencies except the language runtime and (for Vite templates) `npm install`, which OpenShell runs itself via `setup`.
-- **Assuming a desktop** → apps can run on Android or a server too. Check `platform` in `app_info`; on Android only
-  system tools and bundled programs start (see docs/platforms.md).
+- **Assuming a desktop** → apps can run on Android or a server too. Check `platform` in `app_info`: in the Android
+  app (`toolchains: false`) only system tools and bundled programs start; in Termux (`toolchains: true`) everything
+  installed with `pkg install` runs (see docs/platforms.md).
+- **Opening ports to other devices yourself** → use `runtime.remote` (`expose`, `allow`, tokens, TLS) instead of
+  binding services to `0.0.0.0` (see docs/remote-access.md).
 - **Do not edit `.openshell/`** – it is runtime state (logs, audit log, `runtime.json` with the control token).
 
 ## Definition of done
@@ -1146,7 +1151,33 @@ Usable in commands, args, env values, URLs, health checks and proxy targets:
 | `log_buffer_lines` | 10000 | Lines kept in memory (files in `.openshell/logs/`) |
 | `shutdown_timeout_ms` | 5000 | Default grace period when stopping |
 | `launch_at_login` | `false` | Start the installed app when the user logs in (installed apps only) |
-| `remote` | off | Remote access gateway for other devices: `{ "enabled": true, "bind": "0.0.0.0", "port": 7420 }`. Serves only the app profile, protected by a pairing token (`openshell remote`). See [platforms.md](platforms.md#remote-access) |
+| `remote` | off | Remote access for other devices – see [`runtime.remote`](#runtimeremote) |
+
+### `runtime.remote`
+
+Makes the app usable from other devices (a laptop using an app hosted on a phone, an agent on another machine).
+Everything except `enabled` is optional. Full guide: [remote-access.md](remote-access.md).
+
+| Field | Default | Description |
+|---|---|---|
+| `enabled` | `false` | Start the gateway (app profile over MCP) and the exposed ports |
+| `bind` | `0.0.0.0` | Address to listen on; a VPN address (Tailscale `100.x.y.z`) limits access to your devices |
+| `port` | 7420 | Gateway port |
+| `allow` | everyone | IP addresses / CIDR ranges that may connect, e.g. `["192.168.1.0/24", "100.64.0.0/10"]`. Loopback is always allowed |
+| `shared_token` | `true` | Accept the shared pairing token; `false` = only per-device tokens (`openshell remote pair <device>`) |
+| `rate_limit` | 120 / 10 / 5 | `{ "requests_per_minute": 120, "max_failed_auth": 10, "block_minutes": 5 }` per address; `0` switches a limit off |
+| `tls` | off | `{ "enabled": true }` with a self-signed certificate (clients pin its SHA-256 fingerprint), or `{ "enabled": true, "cert": "certs/fullchain.pem", "key": "certs/key.pem" }` |
+| `expose` | none | Services reachable on their own port: `[{ "service": "api", "port": 8080 }]` – see below |
+
+`expose[]` entries:
+
+| Field | Default | Description |
+|---|---|---|
+| `service` | – | Service name, or `frontend` |
+| `port` | – | Port other devices connect to (must differ from the gateway and control ports) |
+| `protocol` | `http` | `http` (websites, APIs; token login, TLS) or `tcp` (any protocol, e.g. PostgreSQL, Redis, MQTT) |
+| `auth` | `token` for `http` | `token`: pairing/device token as `Authorization: Bearer`, cookie, or once `?openshell_token=…` in the browser; `none`: no login (use `allow`). `tcp` is always `none` |
+| `allow` | `runtime.remote.allow` | Addresses / CIDR ranges for this port only |
 
 ## `agents`
 
@@ -1644,10 +1675,84 @@ embedded Python, referenced by a relative `command`). Compiled services (C++, Ru
 nothing extra. If a runtime is missing, the loading screen shows the error (`java was not found in PATH`).
 Bundled runtimes are on the [roadmap](../ROADMAP.md).
 
+## Portable app bundle (`.osapp`)
+
+```bash
+openshell package --target bundle        # dist/my-app-1.2.0.osapp – works on every platform, also in Termux
+```
+
+A bundle is a zip with the shipped files (same `include` / `exclude` rules) and
+`openshell-bundle.json` (app, identifier, version). It runs **unchanged** on every OpenShell host:
+
+| Host | How |
+|---|---|
+| Android app | open or share the `.osapp` with OpenShell ([android-app.md](android-app.md)) |
+| Termux, servers, desktops with the CLI | `openshell install my-app-1.2.0.osapp --start` |
+
+`openshell install` unpacks into `~/.openshell/apps/<identifier>/` (`OPENSHELL_APPS_DIR`); installing
+a newer bundle replaces the files and keeps the app's data (`.openshell/`). `openshell apps` lists
+installed bundles.
+
+## One link per system
+
+A developer builds once, users download one file for their system – without changing the program.
+
+```bash
+openshell release workflow               # writes .github/workflows/openshell-release.yml
+git tag v1.2.0 && git push origin v1.2.0
+```
+
+On every tag the workflow builds in parallel and publishes a GitHub release with:
+
+| File | For |
+|---|---|
+| `My App_1.2.0_x64-setup.exe` | Windows (NSIS, per-user install) |
+| `My App_1.2.0_aarch64.dmg`, `My App_1.2.0_x64.dmg` | macOS Apple Silicon / Intel |
+| `my-app_1.2.0_amd64.AppImage`, `.deb` | Linux |
+| `my-app-1.2.0.osapp` | Android (OpenShell app, Termux), servers, any host |
+| `downloads.json` | machine-readable list: platform, arch, URL, size, SHA-256 |
+| `index.html` | download page that offers the visitor's system first |
+
+`https://github.com/<owner>/<repo>/releases/latest` always points at the newest release. Without
+GitHub, build on each system and run `openshell release manifest dist --base-url https://example.com/my-app/v1.2.0`
+to get the same `downloads.json` and page for any web server.
+
+## Update checks
+
+```json
+"package": { "update_url": "https://github.com/<owner>/<repo>/releases/latest/download/downloads.json" }
+```
+
+`openshell update` and the control API (`GET /v1/update`) compare the running version with the
+newest release and return the right download for the current system. Installing updates
+automatically (download, verify, replace) is planned.
+
 ## Signing
 
-Unsigned installers trigger SmartScreen / Gatekeeper warnings. Sign `bundle/nsis/*.exe` with `signtool` (Windows) or
-use `codesign` + notarization (macOS) after packaging. Built-in signing settings are planned.
+Unsigned installers trigger SmartScreen / Gatekeeper warnings. Configure signing in
+`openshell.json`; secrets stay in the environment or the certificate store:
+
+```json
+"package": {
+  "signing": {
+    "windows": { "certificate_thumbprint": "A1B2…", "timestamp_url": "http://timestamp.digicert.com" },
+    "macos": { "signing_identity": "Developer ID Application: Example Inc. (TEAMID)" }
+  }
+}
+```
+
+| Platform | Setting | Notes |
+|---|---|---|
+| Windows | `certificate_thumbprint` | Certificate in the user's/machine's store (import a `.pfx` first); SHA-256 digest |
+| Windows | `sign_command` | Any signer, e.g. Azure Trusted Signing or a cloud HSM: `["trusted-signing-cli", "-e", "…", "%1"]` (`%1` = file) |
+| Windows | `timestamp_url` | RFC 3161 timestamp server, keeps signatures valid after the certificate expires |
+| macOS | `signing_identity` | `Developer ID Application: …` (hardened runtime on), `-` for ad-hoc |
+| macOS | `entitlements`, `provider_short_name` | Optional |
+| macOS | notarisation | `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID` (or `APPLE_API_KEY`, `APPLE_API_ISSUER`) in the environment |
+
+The release workflow imports certificates from repository secrets (`WINDOWS_CERTIFICATE`,
+`APPLE_CERTIFICATE`, …, see the comments at its top). Certificates and Apple Developer accounts are
+not part of OpenShell – you need your own.
 
 
 ================================================================================
@@ -1676,7 +1781,7 @@ on Android today and where the Android work is going.
 
 ```
             ┌───────────────────────── hosts ─────────────────────────┐
-            │ desktop app (Tauri)   headless CLI   Android app (planned)│
+            │ desktop app (Tauri)   headless CLI   Android app (Kotlin) │
             │ window, tray, dialogs  terminal       Activity + WebView, │
             │                                       foreground service  │
             └──────────────┬──────────────────────────────┬──────────────┘
@@ -1689,9 +1794,11 @@ on Android today and where the Android work is going.
             └──────────────┬─────────────────────────────────────────────┘
                            │ RuntimeAdapter
             ┌──────────────▼─────────────────────────────────────────────┐
-            │ DesktopAdapter (desktop, server)   AndroidAdapter           │
+            │ DesktopAdapter (desktop, server)   AndroidAdapter (app)     │
             │ any program in PATH, job objects   system tools + programs  │
             │ / process groups                   bundled with the app     │
+            │                                    TermuxAdapter (Termux)   │
+            │                                    pkg-installed toolchains │
             └────────────────────────────────────────────────────────────┘
 ```
 
@@ -1700,10 +1807,12 @@ on Android today and where the Android work is going.
 | `Platform` | `crates/config` | `desktop`, `android`, `server` – used in `services[].platforms` |
 | `RuntimeAdapter` | `crates/runtime/src/platform.rs` | builds every command (services, setup, build, functions, tasks), reports `Capabilities` |
 | `DesktopAdapter` | same | any program from `PATH` or the project; `server` variant without window and tray |
-| `AndroidAdapter` | same | only system tools (`/system/bin`) and programs registered by the host (`node` → `libnode.so`) |
+| `AndroidAdapter` | same | the Android app: only system tools (`/system/bin`) and programs registered by the host (`node` → `libnode.so`) |
+| `TermuxAdapter` | same | Android in Termux: everything installed with `pkg install` (Python, Node.js, Java, Rust, Go, databases) |
 | `LifecycleEvent` | `crates/runtime/src/lib.rs` | `foreground`, `background`, `low_memory`, `power_save`, `network` |
 | `Host` | `crates/core/src/lib.rs` | window, notifications, approvals – implemented per front-end |
-| Remote gateway | `crates/core/src/remote.rs` | the app profile for other devices, protected by a pairing token |
+| Remote gateway | `crates/core/src/remote*` | the app profile and exposed services for other devices: tokens, allowlist, rate limit, TLS |
+| Android host | `apps/android`, `crates/android` | Kotlin app + JNI bridge – see [android-app.md](android-app.md) |
 
 `Runtime::new` / `Shell::launch` pick the adapter for the platform the binary was built for.
 Hosts can pass their own with `Runtime::with_adapter` / `Shell::launch_with`.
@@ -1716,16 +1825,19 @@ Every runtime reports what its platform offers. Agents see it in `app_info` and 
 "platform": {
   "platform": "android", "os": "android", "arch": "aarch64",
   "processes": "restricted", "background": "foreground_service",
-  "file_watching": true, "app_window": true, "tray": false, "installers": false
+  "file_watching": true, "app_window": true, "tray": false, "installers": false,
+  "toolchains": false, "wake_lock": true
 }
 ```
 
-| Field | Desktop | Server | Android |
-|---|---|---|---|
-| `processes` | `full` | `full` | `restricted` – system tools and bundled programs |
-| `background` | `always` | `always` | `foreground_service` – needs a foreground service to stay alive |
-| `app_window` / `tray` | yes / yes | no / no | yes / no |
-| `installers` | yes | no | no |
+| Field | Desktop | Server | Android app | Termux |
+|---|---|---|---|---|
+| `processes` | `full` | `full` | `restricted` – system tools and bundled programs | `full` |
+| `background` | `always` | `always` | `foreground_service` | `foreground_service` (wake lock) |
+| `app_window` / `tray` | yes / yes | no / no | yes / no | no / no (browser) |
+| `installers` | yes | no | no | no (`.osapp` bundles yes) |
+| `toolchains` – build steps, dev servers, `npm`/`pip`/`cargo` | yes | yes | no | yes |
+| `wake_lock` | no | no | yes | yes |
 
 ## Configuration
 
@@ -1779,9 +1891,34 @@ let adapter = AndroidAdapter::new()                        // allows /system/bin
 let shell = Shell::launch_with(project, Mode::Production, host, Arc::new(adapter)).await?;
 ```
 
-Without a host (for example in a terminal app) the adapter reads `OPENSHELL_ANDROID_EXEC_DIRS`
-(`:`-separated) and `OPENSHELL_ANDROID_PROGRAMS` (`node=/path/libnode.so;python=/path/libpython.so`);
-inside Termux its `$PREFIX/bin` is allowed automatically.
+Without a host the adapter reads `OPENSHELL_ANDROID_EXEC_DIRS` (`:`-separated) and
+`OPENSHELL_ANDROID_PROGRAMS` (`node=/path/libnode.so;python=/path/libpython.so`). Inside Termux
+the [`TermuxAdapter`](#termux-apps-on-the-phone) is used instead.
+
+### Termux: apps on the phone
+
+[Termux](https://termux.dev) is a Linux environment for Android with its own package manager. The
+OpenShell CLI runs there and detects it (`$PREFIX` / `$TERMUX_VERSION`), so the phone becomes a
+development machine and a portable host – no computer needed:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/scripts/install.sh | sh
+pkg install python nodejs openjdk-17 rust golang postgresql   # what your apps need
+openshell create notes --with frontend,backend,database
+cd notes && openshell dev          # dev server, file watching, agents – like on the desktop
+openshell start --headless         # production; open the URL in the phone's browser
+openshell package --target bundle  # notes-0.1.0.osapp for the Android app or other hosts
+```
+
+- Every program from `$PREFIX/bin` runs: services, setup and build steps (`npm install`, `pip`,
+  `cargo build`, `mvn`), dev servers and functions. `python` falls back to `python3`.
+- `openshell doctor` shows the platform and turns missing programs into `pkg install …` hints.
+- While an app runs, OpenShell holds a Termux wake lock (`termux-wake-lock`, from the Termux:API
+  package) so services keep running with the screen off, and releases it on stop.
+- Databases: the built-in SQLite needs nothing; PostgreSQL, Redis or MariaDB from `pkg` run as
+  services and can be [exposed](remote-access.md) to other devices.
+- `OPENSHELL_ANDROID_MODE=app` forces the restricted app adapter (to test what the Android app
+  allows); `OPENSHELL_ANDROID_MODE=termux` forces the Termux adapter in Termux-like environments.
 
 ### Lifecycle, battery and network
 
@@ -1817,62 +1954,49 @@ curl -X POST -H "Authorization: Bearer $TOKEN" -H "content-type: application/jso
   migrates the database, runs functions through `/system/bin/sh`, leaves desktop-only services
   out, pauses and resumes services on lifecycle events and serves the app profile to a laptop
   through the remote gateway.
-- ✅ Usable today in a terminal app such as Termux (`pkg install nodejs python` adds runtimes).
-- ⏳ Android app (see below).
+- ✅ Termux: `TermuxAdapter` with toolchains, wake lock and `pkg install` hints; prebuilt CLI for
+  `aarch64-linux-android` in releases, `install.sh` detects Termux.
+- 🚧 Android app: Kotlin host + JNI bridge in `apps/android` / `crates/android`, AAB build for the
+  Play Store in CI – see [android-app.md](android-app.md).
 
-### The Android app (next phase)
+### The Android app
 
-The OpenShell Android app is a host around the unchanged core:
+The OpenShell Android app is a host around the unchanged core – see [android-app.md](android-app.md):
 
-1. **Shell app** – Tauri 2 mobile target (same WebView/IPC model as the desktop app) with the core
-   as a library; the frontend runs in the app's WebView.
-2. **Foreground service plugin** (Kotlin) – keeps the runtime alive while `keep_alive()` is not
-   empty, shows a notification with the running services, forwards lifecycle, memory, battery and
-   network events, requests the battery-optimisation exemption.
-3. **Bundled runtimes** – Node.js and Python as `lib*.so` in the APK, registered with
-   `AndroidAdapter::with_program`; optional runtime packs downloaded per app ABI.
-4. **App manager** – install, update, start and remove multiple OpenShell apps on the phone; an
-   agent creates an app as a project folder, OpenShell runs it, no code editing by the user.
-5. **On-device agents** – local models (for example via Ollama-compatible servers on the phone or
-   on another device) and remote agents through the gateway.
+1. **Shell app** – Kotlin Activity with a WebView (no JavaScript bridge for app pages) and the core
+   as a JNI library (`libopenshell_android.so`).
+2. **Foreground service** (`specialUse`) – keeps the runtime alive, shows a notification with the
+   running services, forwards lifecycle, memory and network events, partial wake lock.
+3. **App manager** – install apps from `.osapp` bundles (file picker, share sheet), open, stop.
+4. **Bundled runtimes** (planned) – Node.js and Python as `lib*.so` in the APK, registered
+   automatically when present.
+5. **On-device agents** – remote agents through the gateway today; local models planned.
 
 ## Remote access
 
 The remote gateway makes an app usable from other devices – a laptop agent using functions of an
-app hosted on the phone, or a phone using an app on a home server.
+app hosted on the phone, a browser opening a website the phone serves, a desktop tool using a
+database on the phone. Off by default; tokens per device, an address allowlist, rate limits with
+lockout, TLS, opt-in exposure per service and an audit trail can be combined:
 
 ```json
-"runtime": { "remote": { "enabled": true } }
+"runtime": { "remote": { "enabled": true, "allow": ["192.168.1.0/24"], "tls": { "enabled": true },
+                         "expose": [{ "service": "frontend", "port": 8080 }] } }
 ```
 
 ```bash
-openshell remote     # URL, MCP endpoint, pairing token and a ready MCP client configuration
+openshell remote pair laptop     # token for one device, QR code, links
+openshell remote                 # URLs, fingerprint, devices, blocked addresses
 ```
 
-| Route | Auth | Purpose |
-|---|---|---|
-| `GET /v1/health` | public | app name, platform, version |
-| `GET /v1/remote/info` | pairing token | app, platform capabilities, functions |
-| `POST /mcp/app` | pairing token | the app profile over MCP (Streamable HTTP) |
+Full guide: [remote-access.md](remote-access.md).
 
-Security model:
-
-- Off by default. Only the **app profile** is exposed – the app's own functions, never developer
-  tools (files, logs, services, UI automation) and never the admin token.
-- A separate pairing token (`.openshell/data/remote-token`, stays the same across restarts). Delete
-  the file to revoke all paired devices.
-- Requests with an `Origin` header are rejected, so websites in a browser cannot call the gateway.
-- Permissions, approvals and the audit log apply as for local agents; remote calls are audited
-  with the channel `remote`.
-- Plain HTTP: use it in a trusted network or bind it to a VPN address (`"bind": "100.x.y.z"` for
-  Tailscale). TLS and per-device tokens are planned.
-
-## Device mesh (planned)
+## Device mesh (in progress)
 
 Desktop, phone and server running OpenShell should form one personal mesh:
 
-- **Pairing** – devices exchange per-device tokens (QR code on the phone, `openshell pair` on the
-  desktop) instead of one shared token; TLS with pinned certificates.
+- ✅ **Pairing** – per-device tokens with a QR code / pairing URI (`openshell remote pair`), TLS with
+  pinned self-signed certificates, revocation per device.
 - **Discovery** – mDNS (`_openshell._tcp`) in the local network, VPN addresses otherwise.
 - **Remote control API** – manage services, logs and approvals of another device's apps with the
   same CLI (`openshell --device phone status`).
@@ -1890,7 +2014,8 @@ FILE: docs/cli.md
 
 Global option: `-p, --project <dir>` – project directory (default: current directory or the nearest parent with an
 `openshell.json`). Environment: `OPENSHELL_LOG` (log filter, e.g. `debug`), `OPENSHELL_DESKTOP` (path of the desktop
-binary), `NO_COLOR`.
+binary), `NO_COLOR`, `OPENSHELL_APPS_DIR` (installed bundles), `OPENSHELL_ANDROID_MODE` (`termux` / `app`, see
+[platforms.md](platforms.md#termux-apps-on-the-phone)).
 
 ## Project setup
 
@@ -1904,7 +2029,12 @@ binary), `NO_COLOR`.
 | `openshell schema` | Print the JSON Schema of the configuration. |
 | `openshell guide` | Print the guide for AI coding agents that build apps on OpenShell (docs/ai/app-development.md). |
 | `openshell build` | Production build: `services[].build` (C++, Java, …) and `frontend.build` (with `frontend.setup` if needed). |
-| `openshell package [-t nsis\|msi\|dmg\|deb\|…] [-o dir] [--skip-build]` | Build a native installer – see [installers.md](installers.md). |
+| `openshell package [-t nsis\|msi\|dmg\|deb\|…\|bundle] [-o dir] [--skip-build]` | Build a native installer, or with `-t bundle` the portable app bundle (`.osapp`, also on Android/Termux) – see [installers.md](installers.md). |
+| `openshell release workflow [--force]` | Write `.github/workflows/openshell-release.yml`: a tag push builds Windows, macOS, Linux installers and the `.osapp` bundle and publishes them with a download page. |
+| `openshell release manifest [dir] [--base-url <url>]` | Write `downloads.json` (platform, file, size, SHA-256) and a download page (`index.html`) for the files in `dir` (default `dist`). |
+| `openshell install <file.osapp> [--start]` | Install an app bundle into `~/.openshell/apps/<identifier>` (`OPENSHELL_APPS_DIR`); app data survives updates. |
+| `openshell apps` | List installed app bundles. |
+| `openshell update` | Check `package.update_url` for a newer release and print the download for this system. |
 
 ## Running
 
@@ -1924,7 +2054,11 @@ binary), `NO_COLOR`.
 | `openshell status [--json]` | Mode, URLs, services (state, pid, port, CPU, memory, restarts, errors), bridged pages, pending approvals. |
 | `openshell logs [service] [-f] [-n 100] [--errors] [--grep <text>]` | Logs of all or one service. |
 | `openshell audit [-n 30]` | Recent agent actions. |
-| `openshell remote` | Remote gateway: URLs, MCP endpoint, pairing token and an MCP client configuration (`runtime.remote`). |
+| `openshell remote` | Remote gateway: URLs, MCP endpoint, TLS fingerprint, allowlist, exposed services, paired devices, blocked addresses, shared token and an MCP client configuration (`runtime.remote`). |
+| `openshell remote pair <device> [--no-qr]` | Create a token for one device (shown once) with a QR code / pairing URI and links to exposed services. |
+| `openshell remote devices` | Paired devices with last use. |
+| `openshell remote revoke <device>` | Revoke one device's token. |
+| `openshell remote unblock <address>` | Lift the block of an address after too many failed logins. |
 | `openshell lifecycle <foreground\|background\|low-memory>` | Simulate a mobile lifecycle event, e.g. to test `"background": "pause"`. |
 
 ## Agents
@@ -2077,10 +2211,15 @@ non-allow-listed `Origin` are rejected with 403.
 | `GET /v1/sdk/info` | app | App info and SDK permissions |
 | `POST /v1/sdk/call/{tool}` | app | Call a tool with the **SDK** policy |
 | `POST /v1/lifecycle` | admin | App lifecycle from the host: `{ "kind": "foreground" \| "background" \| "low_memory" }`, `{ "kind": "power_save", "enabled": true }`, `{ "kind": "network", "connected": true, "metered": false }` → paused/resumed services and `keep_alive` |
-| `GET /v1/remote` | admin | Remote gateway: `enabled`, `urls`, `mcp_url`, pairing `token` |
+| `GET /v1/remote` | admin | Remote gateway: `enabled`, `urls`, `mcp_url`, shared `token` (if `shared_token`), `tls_fingerprint`, `allow`, `exposed`, `devices`, `blocked`, `pairing_uri` |
+| `GET /v1/remote/devices` | admin | Paired devices (`name`, `paired_at`, `last_seen`) |
+| `POST /v1/remote/devices` | admin | Pair a device: `{"name":"laptop"}` → its `token` (only in this answer) and `pairing_uri` |
+| `POST /v1/remote/devices/{name}/revoke` | admin | Revoke a device's token |
+| `POST /v1/remote/unblock` | admin | `{"address":"192.168.1.7"}` – lift a lockout |
+| `GET /v1/update` | admin | `{configured, update: {current, latest, available, download, page}}` from `package.update_url` |
 
 The optional remote gateway (`runtime.remote`) is a separate listener with `GET /v1/health`, `GET /v1/remote/info`
-and `POST /mcp/app` only, authorised with the pairing token – see [platforms.md](platforms.md#remote-access).
+and `POST /mcp/app` only, authorised with the shared or a device token – see [remote-access.md](remote-access.md).
 
 ## Example
 
