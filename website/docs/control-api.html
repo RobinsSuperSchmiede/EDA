@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en" data-theme="green" data-surface="tinted" data-header="fade" data-field="off" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Control API – OpenShell docs</title>
+    <meta name="description" content="The local HTTP API behind the CLI, the SDK and MCP." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="../assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/site.css" />
+    <link rel="stylesheet" href="../assets/pages.css" />
+  </head>
+  <body data-page="docs" class="page docs-page">
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="../use.html">Users</a>
+          <a href="../teams.html">Teams</a>
+          <a href="../developers.html">Developers</a>
+          <a href="../agents.html">AI agents</a>
+          <a href="../docs/index.html" aria-current="page">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="../download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main class="docs">
+      <aside class="docs-nav" id="docs-nav"><div class="docs-search"><input type="search" id="doc-search" placeholder="Search the docs" autocomplete="off" aria-label="Search the docs" /><div class="search-results" id="search-results" hidden></div></div><nav aria-label="Documentation"><a class="docs-home" href="index.html">Overview</a><h4>Learn</h4><a href="getting-started.html">Getting started</a><a href="tutorial.html">Tutorial</a><a href="building-blocks.html">Building blocks</a><a href="languages.html">Languages</a><h4>Reference</h4><a href="configuration.html">Configuration</a><a href="cli.html">CLI</a><a href="sdk.html">Frontend SDK</a><a href="control-api.html" aria-current="page">Control API</a><h4>Ship and run</h4><a href="installers.html">Installers and releases</a><a href="platforms.html">Platforms</a><a href="remote-access.html">Remote access</a><a href="android-app.html">Android app</a><h4>AI agents</h4><a href="agents.html">Agent Interaction Layer</a><a href="ai.html">AI material</a><a href="ai-app-development.html">Building apps with AI</a><h4>Project</h4><a href="architecture.html">Architecture</a><a href="platform-milestones.html">Platform milestones</a><a href="roadmap.html">Roadmap</a><a href="changelog.html">Changelog</a><a href="security.html">Security policy</a><a href="contributing.html">Contributing</a></nav></aside>
+      <article class="prose" data-source="docs/control-api.md">
+        <div class="crumbs"><a href="index.html">Docs</a><span>/</span><span>Reference</span></div>
+        <h1 id="control-api">Control API</h1>
+<p>Every running shell exposes a local HTTP API on <code>127.0.0.1:&lt;port&gt;</code>. Its URL and admin token are written to
+<code>&lt;project&gt;/.openshell/runtime.json</code> while the shell runs:</p>
+<div class="codeblock" data-lang="json"><pre><code>{ <span class="tk">"pid"</span>: <span class="tn">648</span>, <span class="tk">"url"</span>: <span class="ts">"http://127.0.0.1:52472"</span>, <span class="tk">"token"</span>: <span class="ts">"…"</span>, <span class="tk">"mode"</span>: <span class="ts">"development"</span>, <span class="tk">"host"</span>: <span class="ts">"desktop"</span>, <span class="tk">"app"</span>: <span class="ts">"Todo App"</span>, <span class="tk">"started_at"</span>: <span class="ts">"…"</span>, <span class="tk">"version"</span>: <span class="ts">"0.1.0"</span> }</code></pre></div>
+<p>Authenticate with <code>Authorization: Bearer &lt;token&gt;</code> (WebSocket: <code>?token=</code>). Requests with a foreign <code>Host</code> header or a
+non-allow-listed <code>Origin</code> are rejected with 403.</p>
+<h2 id="endpoints">Endpoints<a class="anchor" href="#endpoints" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Method &amp; path</th><th>Token</th><th>Description</th></tr></thead><tbody><tr><td><code>GET /v1/health</code></td><td>–</td><td><code>{ ok, app, mode, host, platform, version }</code></td></tr><tr><td><code>GET /sdk.js</code>, <code>GET /bridge.js</code></td><td>–</td><td>Frontend SDK, UI bridge script</td></tr><tr><td><code>GET /v1/status</code> (alias <code>/v1/info</code>)</td><td>admin</td><td>App, mode, host, platform capabilities, pid, URLs, services, bridged pages, pending approvals, agent permissions, <code>in_background</code>, <code>keep_alive</code>, <code>remote</code></td></tr><tr><td><code>POST /v1/services/{name}/{start|stop|restart}</code></td><td>admin</td><td>Change the desired state (returns immediately)</td></tr><tr><td><code>GET /v1/logs?service=&amp;since=&amp;limit=&amp;contains=&amp;errors_only=</code></td><td>admin</td><td><code>{ lines: [{ seq, ts, service, stream, text }], last_seq }</code></td></tr><tr><td><code>POST /v1/shutdown</code></td><td>admin</td><td>Stop all services and exit</td></tr><tr><td><code>GET /v1/approvals</code></td><td>admin</td><td><code>{ pending: [{ id, agent, tool, permission, summary, args, created_at, expires_at }] }</code></td></tr><tr><td><code>POST /v1/approvals/{id}/{approve|deny}</code></td><td>admin</td><td>Answer an approval request</td></tr><tr><td><code>GET /v1/audit?limit=</code></td><td>admin</td><td>Recent audit entries</td></tr><tr><td><code>GET /v1/tools</code></td><td>admin</td><td>Tools with <code>permission</code>, <code>access</code> and <code>input_schema</code></td></tr><tr><td><code>POST /v1/tools/{name}</code></td><td>admin</td><td>Call a tool with the <strong>agent</strong> policy. Header <code>X-OpenShell-Agent</code> names the agent.</td></tr><tr><td><code>POST /mcp</code></td><td>admin</td><td>MCP Streamable HTTP (JSON-RPC, JSON responses, <code>Mcp-Session-Id</code>)</td></tr><tr><td><code>GET /v1/ui/bridge</code></td><td>app or admin</td><td>WebSocket for <code>bridge.js</code></td></tr><tr><td><code>GET /v1/sdk/info</code></td><td>app</td><td>App info and SDK permissions</td></tr><tr><td><code>POST /v1/sdk/call/{tool}</code></td><td>app</td><td>Call a tool with the <strong>SDK</strong> policy</td></tr><tr><td><code>POST /v1/lifecycle</code></td><td>admin</td><td>App lifecycle from the host: <code>{ "kind": "foreground" | "background" | "low_memory" }</code>, <code>{ "kind": "power_save", "enabled": true }</code>, <code>{ "kind": "network", "connected": true, "metered": false }</code> → paused/resumed services and <code>keep_alive</code></td></tr><tr><td><code>GET /v1/remote</code></td><td>admin</td><td>Remote gateway: <code>enabled</code>, <code>urls</code>, <code>mcp_url</code>, shared <code>token</code> (if <code>shared_token</code>), <code>tls_fingerprint</code>, <code>allow</code>, <code>exposed</code>, <code>devices</code>, <code>blocked</code>, <code>pairing_uri</code></td></tr><tr><td><code>GET /v1/remote/devices</code></td><td>admin</td><td>Paired devices (<code>name</code>, <code>paired_at</code>, <code>last_seen</code>)</td></tr><tr><td><code>POST /v1/remote/devices</code></td><td>admin</td><td>Pair a device: <code>{"name":"laptop"}</code> → its <code>token</code> (only in this answer) and <code>pairing_uri</code></td></tr><tr><td><code>POST /v1/remote/devices/{name}/revoke</code></td><td>admin</td><td>Revoke a device's token</td></tr><tr><td><code>POST /v1/remote/unblock</code></td><td>admin</td><td><code>{"address":"192.168.1.7"}</code> – lift a lockout</td></tr><tr><td><code>GET /v1/update</code></td><td>admin</td><td><code>{configured, update: {current, latest, available, download, page}}</code> from <code>package.update_url</code></td></tr></tbody></table></div>
+<p>The optional remote gateway (<code>runtime.remote</code>) is a separate listener with <code>GET /v1/health</code>, <code>GET /v1/remote/info</code>
+and <code>POST /mcp/app</code> only, authorised with the shared or a device token – see <a href="remote-access.html">Remote access</a>.</p>
+<h2 id="example">Example<a class="anchor" href="#example" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="bash"><pre><code>URL=$(jq -r .url .openshell/runtime.json); TOKEN=$(jq -r .token .openshell/runtime.json)
+curl -s -H "Authorization: Bearer $TOKEN" $URL/v1/status
+curl -s -H "Authorization: Bearer $TOKEN" -H "X-OpenShell-Agent: my-script" -H "Content-Type: application/json" \
+     -d '{"service":"backend","errors_only":true}' $URL/v1/tools/logs_read</code></pre></div>
+        <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/control-api.md" rel="noopener">View this page on GitHub</a></div>
+      </article>
+      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#endpoints">Endpoints</a><a class="l2" href="#example">Example</a></aside>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="../download.html">Download</a>
+            <a href="../use.html">For users</a>
+            <a href="../teams.html">For teams</a>
+            <a href="../developers.html">For developers</a>
+            <a href="../agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="../docs/getting-started.html">Getting started</a>
+            <a href="../docs/configuration.html">Configuration</a>
+            <a href="../docs/cli.html">CLI</a>
+            <a href="../docs/platforms.html">Platforms</a>
+            <a href="../docs/remote-access.html">Remote access</a>
+            <a href="../docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="../docs/changelog.html">Changelog</a>
+            <a href="../docs/roadmap.html">Roadmap</a>
+            <a href="../docs/security.html">Security</a>
+            <a href="../docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="../assets/search-index.js"></script>
+    <script src="../assets/site.js"></script>
+    <script src="../assets/pages.js"></script>
+  </body>
+</html>

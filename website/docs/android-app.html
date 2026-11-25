@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en" data-theme="green" data-surface="tinted" data-header="fade" data-field="off" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The OpenShell Android app – OpenShell docs</title>
+    <meta name="description" content="The native Android host: how it works, building the AAB, Play Store checklist." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="../assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/site.css" />
+    <link rel="stylesheet" href="../assets/pages.css" />
+  </head>
+  <body data-page="docs" class="page docs-page">
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="../use.html">Users</a>
+          <a href="../teams.html">Teams</a>
+          <a href="../developers.html">Developers</a>
+          <a href="../agents.html">AI agents</a>
+          <a href="../docs/index.html" aria-current="page">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="../download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main class="docs">
+      <aside class="docs-nav" id="docs-nav"><div class="docs-search"><input type="search" id="doc-search" placeholder="Search the docs" autocomplete="off" aria-label="Search the docs" /><div class="search-results" id="search-results" hidden></div></div><nav aria-label="Documentation"><a class="docs-home" href="index.html">Overview</a><h4>Learn</h4><a href="getting-started.html">Getting started</a><a href="tutorial.html">Tutorial</a><a href="building-blocks.html">Building blocks</a><a href="languages.html">Languages</a><h4>Reference</h4><a href="configuration.html">Configuration</a><a href="cli.html">CLI</a><a href="sdk.html">Frontend SDK</a><a href="control-api.html">Control API</a><h4>Ship and run</h4><a href="installers.html">Installers and releases</a><a href="platforms.html">Platforms</a><a href="remote-access.html">Remote access</a><a href="android-app.html" aria-current="page">Android app</a><h4>AI agents</h4><a href="agents.html">Agent Interaction Layer</a><a href="ai.html">AI material</a><a href="ai-app-development.html">Building apps with AI</a><h4>Project</h4><a href="architecture.html">Architecture</a><a href="platform-milestones.html">Platform milestones</a><a href="roadmap.html">Roadmap</a><a href="changelog.html">Changelog</a><a href="security.html">Security policy</a><a href="contributing.html">Contributing</a></nav></aside>
+      <article class="prose" data-source="docs/android-app.md">
+        <div class="crumbs"><a href="index.html">Docs</a><span>/</span><span>Ship and run</span></div>
+        <h1 id="the-openshell-android-app">The OpenShell Android app</h1>
+<p><code>apps/android/</code> is the native Android host: it runs OpenShell apps on the phone with the unchanged
+core, keeps them alive with a foreground service and can be published in the Google Play Store.</p>
+<div class="codeblock"><pre><code>apps/android/                    Gradle project (Kotlin, no third-party libraries)
+  app/src/main/java/…/
+    LauncherActivity.kt          app manager: installed apps, add .osapp, stop, battery settings
+    AppActivity.kt               one app: its frontend in a WebView, lifecycle events
+    RuntimeService.kt            foreground service (specialUse), notification, wake lock, network events
+    NativeRuntime.kt             JNI functions of libopenshell_android.so
+    Apps.kt                      bundle import, app and state directories
+  app/src/main/assets/launcher.html
+  store/                         Play listing, policy answers, privacy policy template
+crates/android/                  openshell-android: the Rust side (JNI bridge around openshell-core)</code></pre></div>
+<h2 id="how-it-works">How it works<a class="anchor" href="#how-it-works" aria-label="Link to this section">#</a></h2>
+<ol><li>The user adds an app bundle (<code>.osapp</code>, built with <code>openshell package --target bundle</code>) from the
+file picker or the share sheet. It is unpacked into the app's private storage
+(<code>files/apps/&lt;identifier&gt;/</code>); its data lives in <code>files/state/&lt;identifier&gt;/</code> and survives updates.</li><li>Opening the app starts <code>RuntimeService</code> (foreground service, type <code>specialUse</code>) which calls
+<code>NativeRuntime.start(…)</code>. The core runs with an <code>AndroidAdapter</code> that allows the APK's native
+library directory and registers bundled runtimes (<code>libnode.so</code> → <code>node</code>, <code>libpython.so</code> →
+<code>python</code>) when the APK contains them.</li><li><code>AppActivity</code> shows the frontend from <code>http://127.0.0.1:&lt;port&gt;</code> in a WebView without any
+JavaScript bridge to Android, and forwards <code>onStart</code> / <code>onStop</code> / <code>onTrimMemory</code> as lifecycle
+events (<code>foreground</code>, <code>background</code>, <code>low_memory</code>); the service forwards network changes.</li><li>The notification lists the running services and has a <em>Stop</em> action. A partial wake lock keeps
+the CPU serving requests with the screen off; <em>Run in background…</em> opens the system's battery
+optimisation settings so the user can exempt OpenShell (always-on server).</li><li>The remote gateway (<code>runtime.remote</code>) works as on the desktop – see <a href="remote-access.html">Remote access</a>.</li></ol>
+<p>What runs inside the app: static frontends, the built-in database, functions with system tools or a
+bundled runtime, services with bundled programs. Dev servers and toolchains do not – that is what
+<a href="platforms.html#termux-apps-on-the-phone">Termux</a> is for.</p>
+<h2 id="build">Build<a class="anchor" href="#build" aria-label="Link to this section">#</a></h2>
+<p>Requirements: JDK 17, Android SDK (API 36), Android NDK, Rust with
+<code>rustup target add aarch64-linux-android x86_64-linux-android</code>, and
+<a href="https://github.com/bbqsrc/cargo-ndk" rel="noopener"><code>cargo-ndk</code></a> (<code>cargo install cargo-ndk</code>).</p>
+<div class="codeblock" data-lang="bash"><pre><code><span class="tc"># 1. the Rust core as libopenshell_android.so, 16 KB page aligned (required for Android 15+ / Play)</span>
+RUSTFLAGS="-C link-arg=-Wl,-z,max-page-size=16384" \
+  cargo ndk --platform 26 -t arm64-v8a -t x86_64 -o apps/android/app/src/main/jniLibs \
+  build --release -p openshell-android
+
+<span class="tc"># 2. APK for testing and AAB for the Play Store</span>
+cd apps/android
+gradle assembleRelease bundleRelease     <span class="tc"># Gradle 8.14 (or add a wrapper: `gradle wrapper`)</span>
+adb install app/build/outputs/apk/release/app-release.apk</code></pre></div>
+<p>CI does the same in <code>.github/workflows/android-app.yml</code> and uploads the APK and AAB as artifacts.</p>
+<div class="table-wrap"><table><thead><tr><th>Setting</th><th>Value</th></tr></thead><tbody><tr><td>Application ID</td><td><code>dev.openshell.android</code></td></tr><tr><td><code>minSdk</code> / <code>targetSdk</code> / <code>compileSdk</code></td><td>26 / 36 / 36</td></tr><tr><td>ABIs</td><td><code>arm64-v8a</code> (phones), <code>x86_64</code> (emulators, Chromebooks)</td></tr><tr><td>Native libraries</td><td>extracted (<code>useLegacyPackaging = true</code>) so bundled runtimes can be executed</td></tr><tr><td>Version</td><td><code>VERSION_NAME</code> / <code>VERSION_CODE</code> environment variables (CI: tag and run number)</td></tr></tbody></table></div>
+<h2 id="signing">Signing<a class="anchor" href="#signing" aria-label="Link to this section">#</a></h2>
+<p>Google Play uses <strong>Play App Signing</strong>: you sign the AAB with an <em>upload key</em>, Google re-signs for
+distribution.</p>
+<div class="codeblock" data-lang="bash"><pre><code>keytool -genkeypair -v -keystore upload.jks -alias upload -keyalg RSA -keysize 4096 -validity 10000
+cp apps/android/keystore.properties.example apps/android/keystore.properties   <span class="tc"># fill in, never commit</span></code></pre></div>
+<p>In CI set the secrets <code>ANDROID_KEYSTORE</code> (base64 of <code>upload.jks</code>), <code>ANDROID_KEYSTORE_PASSWORD</code>,
+<code>ANDROID_KEY_ALIAS</code>, <code>ANDROID_KEY_PASSWORD</code>. Without them the release build is unsigned.</p>
+<h2 id="publishing-in-the-play-store--checklist">Publishing in the Play Store – checklist<a class="anchor" href="#publishing-in-the-play-store--checklist" aria-label="Link to this section">#</a></h2>
+<p>What this repository prepares and what the account owner has to do:</p>
+<div class="table-wrap"><table><thead><tr><th>Step</th><th>Prepared here</th><th>You do</th></tr></thead><tbody><tr><td>Developer account</td><td>–</td><td>Register at play.google.com/console (one-time fee, identity verification)</td></tr><tr><td>App and package name</td><td><code>dev.openshell.android</code></td><td>Create the app in the console (change the ID first if you publish under your own name)</td></tr><tr><td>Signed AAB</td><td>CI workflow, <code>keystore.properties</code></td><td>Create the upload key, add the secrets, enable Play App Signing</td></tr><tr><td>Target API level</td><td><code>targetSdk 36</code></td><td>Keep it current every year (Play deadlines usually end of August)</td></tr><tr><td>16 KB page size</td><td>linker flag + CI check</td><td>–</td></tr><tr><td>Store listing</td><td><code>store/listing.md</code></td><td>Add icon (512 px), feature graphic (1024 × 500), screenshots</td></tr><tr><td>Privacy policy</td><td><code>store/privacy-policy.md</code> (template)</td><td>Fill in publisher and contact, host it, enter the URL</td></tr><tr><td>Data safety form</td><td>answers in <code>store/policy.md</code></td><td>Enter them in <em>App content</em></td></tr><tr><td>Foreground service declaration</td><td>justification in <code>store/policy.md</code></td><td>Submit it with a short video</td></tr><tr><td>Content rating, target audience</td><td>answers in <code>store/policy.md</code></td><td>Complete the questionnaires</td></tr><tr><td>Testing</td><td>–</td><td>New personal accounts must run a closed test (12+ testers, 14 days) before production</td></tr><tr><td>Release</td><td>–</td><td>Upload the AAB to internal testing → closed → production</td></tr></tbody></table></div>
+<h2 id="status-and-open-points">Status and open points<a class="anchor" href="#status-and-open-points" aria-label="Link to this section">#</a></h2>
+<ul><li>✅ JNI bridge (<code>crates/android</code>) with tests on the desktop; builds for <code>aarch64-linux-android</code> in CI.</li><li>✅ Kotlin host: launcher, app view, foreground service, notification, wake lock, network and
+lifecycle events, bundle import.</li><li>🚧 Not yet verified on a device in this round (the Gradle build runs in CI; no Android SDK on
+the development machine).</li><li>⏳ Bundled runtimes (<code>libnode.so</code>, <code>libpython.so</code>): need prebuilt Android binaries and their
+licences in the APK.</li><li>⏳ Approvals on the phone (agent asks for permission): the core supports it; the app has no dialog yet.</li><li>⏳ Pairing by scanning a QR code (<code>openshell://pair?...</code>) and using apps hosted on other devices.</li><li>⏳ Tauri mobile shell: the plain Kotlin host was chosen for full control over the foreground
+service and Play policies; the core is the same either way.</li></ul>
+        <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/android-app.md" rel="noopener">View this page on GitHub</a></div>
+      </article>
+      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#how-it-works">How it works</a><a class="l2" href="#build">Build</a><a class="l2" href="#signing">Signing</a><a class="l2" href="#publishing-in-the-play-store--checklist">Publishing in the Play Store – checklist</a><a class="l2" href="#status-and-open-points">Status and open points</a></aside>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="../download.html">Download</a>
+            <a href="../use.html">For users</a>
+            <a href="../teams.html">For teams</a>
+            <a href="../developers.html">For developers</a>
+            <a href="../agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="../docs/getting-started.html">Getting started</a>
+            <a href="../docs/configuration.html">Configuration</a>
+            <a href="../docs/cli.html">CLI</a>
+            <a href="../docs/platforms.html">Platforms</a>
+            <a href="../docs/remote-access.html">Remote access</a>
+            <a href="../docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="../docs/changelog.html">Changelog</a>
+            <a href="../docs/roadmap.html">Roadmap</a>
+            <a href="../docs/security.html">Security</a>
+            <a href="../docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="../assets/search-index.js"></script>
+    <script src="../assets/site.js"></script>
+    <script src="../assets/pages.js"></script>
+  </body>
+</html>

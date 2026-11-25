@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en" data-theme="green" data-surface="tinted" data-header="fade" data-field="off" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Roadmap – OpenShell docs</title>
+    <meta name="description" content="What is done, in progress and planned." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="../assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/site.css" />
+    <link rel="stylesheet" href="../assets/pages.css" />
+  </head>
+  <body data-page="docs" class="page docs-page">
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="../use.html">Users</a>
+          <a href="../teams.html">Teams</a>
+          <a href="../developers.html">Developers</a>
+          <a href="../agents.html">AI agents</a>
+          <a href="../docs/index.html" aria-current="page">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="../download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main class="docs">
+      <aside class="docs-nav" id="docs-nav"><div class="docs-search"><input type="search" id="doc-search" placeholder="Search the docs" autocomplete="off" aria-label="Search the docs" /><div class="search-results" id="search-results" hidden></div></div><nav aria-label="Documentation"><a class="docs-home" href="index.html">Overview</a><h4>Learn</h4><a href="getting-started.html">Getting started</a><a href="tutorial.html">Tutorial</a><a href="building-blocks.html">Building blocks</a><a href="languages.html">Languages</a><h4>Reference</h4><a href="configuration.html">Configuration</a><a href="cli.html">CLI</a><a href="sdk.html">Frontend SDK</a><a href="control-api.html">Control API</a><h4>Ship and run</h4><a href="installers.html">Installers and releases</a><a href="platforms.html">Platforms</a><a href="remote-access.html">Remote access</a><a href="android-app.html">Android app</a><h4>AI agents</h4><a href="agents.html">Agent Interaction Layer</a><a href="ai.html">AI material</a><a href="ai-app-development.html">Building apps with AI</a><h4>Project</h4><a href="architecture.html">Architecture</a><a href="platform-milestones.html">Platform milestones</a><a href="roadmap.html" aria-current="page">Roadmap</a><a href="changelog.html">Changelog</a><a href="security.html">Security policy</a><a href="contributing.html">Contributing</a></nav></aside>
+      <article class="prose" data-source="ROADMAP.md">
+        <div class="crumbs"><a href="index.html">Docs</a><span>/</span><span>Project</span></div>
+        <h1 id="roadmap">Roadmap</h1>
+<p>Legend: ✅ done · 🚧 partial · ⏳ planned</p>
+<h2 id="phase-1--foundation-">Phase 1 – Foundation ✅<a class="anchor" href="#phase-1--foundation-" aria-label="Link to this section">#</a></h2>
+<ul><li>✅ Cargo workspace (config, runtime, agent, core, cli, desktop)</li><li>✅ Tauri 2 desktop shell with WebView, loading screen, window settings from config</li><li>✅ Versioned configuration (<code>version: 1</code>), JSON + TOML, validation with precise paths, JSON Schema</li></ul>
+<h2 id="phase-2--runtime-manager-">Phase 2 – Runtime Manager ✅<a class="anchor" href="#phase-2--runtime-manager-" aria-label="Link to this section">#</a></h2>
+<ul><li>✅ Process start/stop/restart, process-tree termination, Windows job objects</li><li>✅ HTTP / TCP health checks, readiness, unhealthy detection</li><li>✅ Restart policies (<code>never</code>, <code>on-failure</code>, <code>always</code>), backoff, crash-loop limit</li><li>✅ Dependencies and startup order, reverse-order shutdown</li><li>✅ Dynamic ports, <code>${...}</code> variables, external services</li><li>✅ Log store (ring buffer + files), log queries</li><li>✅ Static frontend server with SPA fallback and reverse proxy</li></ul>
+<h2 id="phase-3--developer-experience-">Phase 3 – Developer Experience 🚧<a class="anchor" href="#phase-3--developer-experience-" aria-label="Link to this section">#</a></h2>
+<ul><li>✅ CLI: init, create, dev, start, stop, restart, run, status, logs, doctor, build, schema</li><li>✅ Templates: vanilla-python, react-python, react-node, vue-python, svelte-go, vanilla-java, vanilla-cpp, custom</li><li>✅ Build steps for compiled services (C++, Java, Go, Rust, .NET), rebuild on change, detection in <code>openshell init</code></li><li>✅ Resource monitoring (CPU/memory per service process tree) in CLI, runtime panel, title bar and tray menus</li><li>✅ Development mode with file watching (service restart / window reload)</li><li>⏳ Publish CLI binaries (GitHub releases, <code>cargo install</code>, npm wrapper <code>npx openshell</code>)</li><li>✅ Building blocks: <code>openshell add frontend|backend|database|function</code>, <code>openshell create --with …</code> (interactive)</li><li>✅ Built-in SQLite databases with migrations, SDK and agent access; script functions (<code>run</code>) without a server</li><li>✅ Apps without frontend (console window) or without window (tray only); launch at login</li></ul>
+<h2 id="phase-4--production-">Phase 4 – Production 🚧<a class="anchor" href="#phase-4--production-" aria-label="Link to this section">#</a></h2>
+<ul><li>✅ Production mode, tray, close-to-tray / background mode, headless mode (<code>--headless</code>, <code>--detach</code>)</li><li>✅ <code>openshell package</code>: per-app installers (NSIS, MSI, DMG, DEB, RPM, AppImage) with name, icon (exe re-branding)
+and identifier; per-user data directory; single instance; <code>--mcp</code> / <code>--headless</code> modes of installed apps</li><li>✅ Code signing settings (<code>package.signing</code>: Windows thumbprint / sign command, macOS identity + notarisation)</li><li>✅ Portable app bundles (<code>.osapp</code>), <code>openshell install</code>, release workflow for every platform with
+<code>downloads.json</code> and a download page (<code>openshell release</code>)</li><li>🚧 Updates: update check (<code>package.update_url</code>, <code>GET /v1/update</code>, <code>openshell update</code>); automatic install ⏳</li><li>⏳ Bundled runtimes (JRE via jlink, embedded Python/Node)</li><li>⏳ Single-instance handling, deep links</li></ul>
+<h2 id="phase-5--agent-interaction-layer-">Phase 5 – Agent Interaction Layer 🚧<a class="anchor" href="#phase-5--agent-interaction-layer-" aria-label="Link to this section">#</a></h2>
+<ul><li>✅ Tool catalogue (32 built-in tools), HTTP/JSON API, MCP over stdio and Streamable HTTP</li><li>✅ Semantic UI bridge (snapshot, click, fill, press, read, wait, navigate, reload, eval)</li><li>✅ Capability discovery (config, OpenAPI import, frontend-registered actions)</li><li>✅ App profile ("use the app"): only the application's functions as MCP tools; installed apps start headless on demand</li><li>✅ Permission scopes per mode, approvals (dialog/CLI/API), audit log</li><li>✅ Local provider discovery (Ollama, LM Studio) and configured providers</li><li>⏳ Screenshot / vision fallback for canvas-heavy UIs</li><li>⏳ Agent sessions with individual permissions and tokens (instead of one agent policy)</li><li>⏳ Agent runner integration (hand tasks to a configured agent, stream progress into the UI)</li><li>✅ MCP resources (status, config, logs, capabilities, database schemas) and <code>tools/list_changed</code> notifications</li></ul>
+<h2 id="phase-6--platforms-android-and-connected-devices-">Phase 6 – Platforms: Android and connected devices 🚧<a class="anchor" href="#phase-6--platforms-android-and-connected-devices-" aria-label="Link to this section">#</a></h2>
+<ul><li>✅ Platform-neutral core: <code>RuntimeAdapter</code> (desktop, server, Android), capabilities in status and <code>app_info</code></li><li>✅ <code>services[].platforms</code>, <code>services[].background</code> (<code>keep</code> / <code>pause</code>), lifecycle events (<code>openshell lifecycle</code>, <code>POST /v1/lifecycle</code>)</li><li>✅ Core and CLI build for Android (CI); verified headless on an Android 16 emulator; usable in Termux</li><li>✅ Remote gateway (<code>runtime.remote</code>): app profile over MCP for other devices, pairing token, <code>openshell remote</code></li><li>✅ Remote security: per-device tokens with QR pairing, IP/CIDR allowlist, rate limit + lockout, TLS (self-signed
+with pinned fingerprint or own certificate), opt-in exposure of services (HTTP with token login, raw TCP), audit</li><li>✅ Termux: <code>TermuxAdapter</code> (toolchains from <code>pkg</code>, wake lock, install hints), Android CLI in releases</li><li>🚧 Android app: Kotlin host + JNI bridge (<code>apps/android</code>, <code>crates/android</code>), foreground service (<code>specialUse</code>),
+notification, app manager for <code>.osapp</code> bundles, AAB build for the Play Store in CI; not yet verified on a device</li><li>⏳ Play Store release (developer account, upload key, store review)</li><li>⏳ Bundled runtimes for Android (Node.js, Python as <code>lib*.so</code>), app manager for several apps on the phone</li><li>🚧 Device mesh: ✅ per-device pairing (QR), ✅ TLS; ⏳ mDNS discovery, remote control API (<code>--device</code>), project
+sync and deploy (<code>openshell deploy --device phone</code>)</li></ul>
+<h2 id="phase-7--ecosystem-">Phase 7 – Ecosystem ⏳<a class="anchor" href="#phase-7--ecosystem-" aria-label="Link to this section">#</a></h2>
+<ul><li>🚧 SDK (<code>@openshell/sdk</code>) – runtime, window, notifications, agent actions; publish to npm</li><li>⏳ Extension system (shell plugins)</li><li>⏳ More templates (Next.js, FastAPI with venv, Django, Rails, .NET)</li><li>✅ Website: landing page, pages for users, teams, developers and AI agents, download page, searchable documentation
+(<code>website/</code>, <code>scripts/build-website.py</code>); ⏳ publish it (GitHub Pages or similar)</li><li>⏳ Demo video ("an agent adds a feature to a running desktop app")</li></ul>
+        <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/ROADMAP.md" rel="noopener">View this page on GitHub</a></div>
+      </article>
+      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#phase-1--foundation-">Phase 1 – Foundation ✅</a><a class="l2" href="#phase-2--runtime-manager-">Phase 2 – Runtime Manager ✅</a><a class="l2" href="#phase-3--developer-experience-">Phase 3 – Developer Experience 🚧</a><a class="l2" href="#phase-4--production-">Phase 4 – Production 🚧</a><a class="l2" href="#phase-5--agent-interaction-layer-">Phase 5 – Agent Interaction Layer 🚧</a><a class="l2" href="#phase-6--platforms-android-and-connected-devices-">Phase 6 – Platforms: Android and connected devices 🚧</a><a class="l2" href="#phase-7--ecosystem-">Phase 7 – Ecosystem ⏳</a></aside>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="../download.html">Download</a>
+            <a href="../use.html">For users</a>
+            <a href="../teams.html">For teams</a>
+            <a href="../developers.html">For developers</a>
+            <a href="../agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="../docs/getting-started.html">Getting started</a>
+            <a href="../docs/configuration.html">Configuration</a>
+            <a href="../docs/cli.html">CLI</a>
+            <a href="../docs/platforms.html">Platforms</a>
+            <a href="../docs/remote-access.html">Remote access</a>
+            <a href="../docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="../docs/changelog.html">Changelog</a>
+            <a href="../docs/roadmap.html">Roadmap</a>
+            <a href="../docs/security.html">Security</a>
+            <a href="../docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="../assets/search-index.js"></script>
+    <script src="../assets/site.js"></script>
+    <script src="../assets/pages.js"></script>
+  </body>
+</html>

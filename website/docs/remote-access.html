@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en" data-theme="green" data-surface="tinted" data-header="fade" data-field="off" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Remote access: use an app from other devices – OpenShell docs</title>
+    <meta name="description" content="Use an app from other devices: pairing, allowlist, TLS, exposed services." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="../assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/site.css" />
+    <link rel="stylesheet" href="../assets/pages.css" />
+  </head>
+  <body data-page="docs" class="page docs-page">
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="../use.html">Users</a>
+          <a href="../teams.html">Teams</a>
+          <a href="../developers.html">Developers</a>
+          <a href="../agents.html">AI agents</a>
+          <a href="../docs/index.html" aria-current="page">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="../download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main class="docs">
+      <aside class="docs-nav" id="docs-nav"><div class="docs-search"><input type="search" id="doc-search" placeholder="Search the docs" autocomplete="off" aria-label="Search the docs" /><div class="search-results" id="search-results" hidden></div></div><nav aria-label="Documentation"><a class="docs-home" href="index.html">Overview</a><h4>Learn</h4><a href="getting-started.html">Getting started</a><a href="tutorial.html">Tutorial</a><a href="building-blocks.html">Building blocks</a><a href="languages.html">Languages</a><h4>Reference</h4><a href="configuration.html">Configuration</a><a href="cli.html">CLI</a><a href="sdk.html">Frontend SDK</a><a href="control-api.html">Control API</a><h4>Ship and run</h4><a href="installers.html">Installers and releases</a><a href="platforms.html">Platforms</a><a href="remote-access.html" aria-current="page">Remote access</a><a href="android-app.html">Android app</a><h4>AI agents</h4><a href="agents.html">Agent Interaction Layer</a><a href="ai.html">AI material</a><a href="ai-app-development.html">Building apps with AI</a><h4>Project</h4><a href="architecture.html">Architecture</a><a href="platform-milestones.html">Platform milestones</a><a href="roadmap.html">Roadmap</a><a href="changelog.html">Changelog</a><a href="security.html">Security policy</a><a href="contributing.html">Contributing</a></nav></aside>
+      <article class="prose" data-source="docs/remote-access.md">
+        <div class="crumbs"><a href="index.html">Docs</a><span>/</span><span>Ship and run</span></div>
+        <h1 id="remote-access-use-an-app-from-other-devices">Remote access: use an app from other devices</h1>
+<p>An OpenShell app can be reached from your other devices over IP address and port – for example a
+phone that hosts an app, its database and its API, and a laptop (or an AI agent on it) that uses
+them. Everything is <strong>off by default</strong> and every security layer can be switched on separately.</p>
+<div class="codeblock" data-lang="json"><pre><code><span class="tk">"runtime"</span>: {
+  <span class="tk">"remote"</span>: {
+    <span class="tk">"enabled"</span>: <span class="tn">true</span>,
+    <span class="tk">"bind"</span>: <span class="ts">"0.0.0.0"</span>,
+    <span class="tk">"port"</span>: <span class="tn">7420</span>,
+    <span class="tk">"allow"</span>: [<span class="ts">"192.168.1.0/24"</span>, <span class="ts">"100.64.0.0/10"</span>],
+    <span class="tk">"shared_token"</span>: <span class="tn">false</span>,
+    <span class="tk">"tls"</span>: { <span class="tk">"enabled"</span>: <span class="tn">true</span> },
+    <span class="tk">"rate_limit"</span>: { <span class="tk">"requests_per_minute"</span>: <span class="tn">120</span>, <span class="tk">"max_failed_auth"</span>: <span class="tn">10</span>, <span class="tk">"block_minutes"</span>: <span class="tn">5</span> },
+    <span class="tk">"expose"</span>: [
+      { <span class="tk">"service"</span>: <span class="ts">"frontend"</span>, <span class="tk">"port"</span>: <span class="tn">8080</span> },
+      { <span class="tk">"service"</span>: <span class="ts">"api"</span>, <span class="tk">"port"</span>: <span class="tn">8081</span> },
+      { <span class="tk">"service"</span>: <span class="ts">"postgres"</span>, <span class="tk">"port"</span>: <span class="tn">5433</span>, <span class="tk">"protocol"</span>: <span class="ts">"tcp"</span>, <span class="tk">"allow"</span>: [<span class="ts">"100.64.0.0/10"</span>] }
+    ]
+  }
+}</code></pre></div>
+<h2 id="what-other-devices-can-reach">What other devices can reach<a class="anchor" href="#what-other-devices-can-reach" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Port</th><th>What</th><th>Login</th></tr></thead><tbody><tr><td><code>runtime.remote.port</code> (7420)</td><td>The <strong>gateway</strong>: <code>GET /v1/health</code> (public), <code>GET /v1/remote/info</code> and <code>POST /mcp/app</code> – the app's own functions over MCP, never developer tools, files, logs or the admin API</td><td>token</td></tr><tr><td><code>expose[].port</code>, <code>protocol: http</code></td><td>A service's website or API, forwarded unchanged (WebSockets, streaming and uploads work)</td><td>token (default) or none</td></tr><tr><td><code>expose[].port</code>, <code>protocol: tcp</code></td><td>Any TCP protocol (PostgreSQL, Redis, MQTT, a game server …), bytes forwarded unchanged</td><td>address allowlist only</td></tr></tbody></table></div>
+<p>The local control API (<code>127.0.0.1</code>, admin token) is never reachable from other devices.</p>
+<h2 id="security-layers">Security layers<a class="anchor" href="#security-layers" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Layer</th><th>Setting</th><th>Notes</th></tr></thead><tbody><tr><td>Off by default</td><td><code>enabled</code></td><td>Nothing listens until you switch it on</td></tr><tr><td>Bind address</td><td><code>bind</code></td><td><code>0.0.0.0</code> = every network; a VPN address (<code>100.x.y.z</code> for Tailscale) = only your devices</td></tr><tr><td>Opt-in per service</td><td><code>expose[]</code></td><td>A service is reachable only if you list it, on the port you choose</td></tr><tr><td>Address allowlist</td><td><code>allow</code>, <code>expose[].allow</code></td><td>IPs or CIDR ranges; others are dropped right after the TCP handshake. Loopback is always allowed</td></tr><tr><td>Tokens</td><td>shared token, <code>openshell remote pair &lt;device&gt;</code></td><td>Per-device tokens are stored as SHA-256 hashes, revocable one by one; <code>shared_token: false</code> accepts only them</td></tr><tr><td>Rate limit</td><td><code>rate_limit.requests_per_minute</code></td><td>Per address: requests on the gateway, new connections on exposed ports</td></tr><tr><td>Lockout</td><td><code>rate_limit.max_failed_auth</code>, <code>block_minutes</code></td><td>Too many wrong tokens block the address for a while; <code>openshell remote unblock &lt;ip&gt;</code> lifts it</td></tr><tr><td>TLS</td><td><code>tls</code></td><td>Gateway and exposed HTTP ports. Self-signed (fingerprint pinning) or your own certificate</td></tr><tr><td>Browser protection</td><td>–</td><td>The gateway rejects requests with an <code>Origin</code> header, so websites cannot call it</td></tr><tr><td>Audit</td><td>audit log, channel <code>remote</code></td><td>Function calls with the device name, logins, failed logins, blocks, connections to exposed ports</td></tr></tbody></table></div>
+<h2 id="pair-a-device">Pair a device<a class="anchor" href="#pair-a-device" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="bash"><pre><code>openshell remote pair laptop</code></pre></div>
+<p>prints the device's token (only once), the MCP endpoint, the TLS fingerprint, a link per exposed
+HTTP service and a QR code with a pairing URI:</p>
+<div class="codeblock"><pre><code>openshell://pair?app=Notes&amp;url=https%3A%2F%2F192.168.1.20%3A7420&amp;token=osd_…&amp;fp=AB%3ACD%3A…</code></pre></div>
+<p>Use the token as <code>Authorization: Bearer &lt;token&gt;</code> (MCP clients, scripts) or open
+<code>https://192.168.1.20:8080/?openshell_token=&lt;token&gt;</code> once in a browser: OpenShell sets an
+<code>HttpOnly</code>, <code>SameSite=Strict</code> cookie and reloads the page without the token in the address bar.</p>
+<div class="codeblock" data-lang="bash"><pre><code>openshell remote devices          <span class="tc"># paired devices, last use</span>
+openshell remote revoke laptop    <span class="tc"># the laptop's token stops working immediately</span>
+openshell remote                  <span class="tc"># everything at a glance</span></code></pre></div>
+<p>MCP client configuration (Claude Code, Cursor, …):</p>
+<div class="codeblock" data-lang="json"><pre><code>{ <span class="tk">"url"</span>: <span class="ts">"https://192.168.1.20:7420/mcp/app"</span>, <span class="tk">"headers"</span>: { <span class="tk">"Authorization"</span>: <span class="ts">"Bearer osd_…"</span> } }</code></pre></div>
+<h2 id="tls">TLS<a class="anchor" href="#tls" aria-label="Link to this section">#</a></h2>
+<p><code>"tls": { "enabled": true }</code> creates a self-signed certificate once
+(<code>.openshell/data/remote-cert.pem</code>, <code>remote-key.pem</code>) for <code>localhost</code>, the device's addresses and
+reuses it. Browsers warn about self-signed certificates; compare the fingerprint that
+<code>openshell remote</code> shows with the one the browser displays, or use your own certificate:</p>
+<div class="codeblock" data-lang="json"><pre><code><span class="tk">"tls"</span>: { <span class="tk">"enabled"</span>: <span class="tn">true</span>, <span class="tk">"cert"</span>: <span class="ts">"certs/fullchain.pem"</span>, <span class="tk">"key"</span>: <span class="ts">"certs/privkey.pem"</span> }</code></pre></div>
+<p>With Tailscale, <code>tailscale cert &lt;name&gt;.ts.net</code> gives a trusted certificate for the device.</p>
+<h2 id="typical-setups">Typical setups<a class="anchor" href="#typical-setups" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Goal</th><th>Configuration</th></tr></thead><tbody><tr><td>Phone hosts an app, laptop at home uses it</td><td><code>bind: "0.0.0.0"</code>, <code>allow: ["192.168.1.0/24"]</code>, <code>tls.enabled</code>, pair the laptop</td></tr><tr><td>Reachable only through a VPN</td><td><code>bind: "100.x.y.z"</code> (the phone's Tailscale address), <code>shared_token: false</code></td></tr><tr><td>Database on the phone for a desktop tool</td><td><code>expose: [{ "service": "postgres", "port": 5433, "protocol": "tcp", "allow": ["192.168.1.10"] }]</code></td></tr><tr><td>A website for the family in the LAN</td><td><code>expose: [{ "service": "frontend", "port": 8080 }]</code>, open the link from <code>openshell remote pair &lt;device&gt;</code></td></tr></tbody></table></div>
+<p>Never expose a port to the internet without TLS and an allowlist; prefer a VPN.</p>
+<h2 id="limits">Limits<a class="anchor" href="#limits" aria-label="Link to this section">#</a></h2>
+<ul><li>Exposed HTTP ports check the token on the <strong>first request of a connection</strong>; later requests on the
+same keep-alive connection are trusted. After revoking a device, its open connections end when the
+client closes them (restart the app to cut them immediately).</li><li><code>tcp</code> ports have no login – use <code>allow</code>, a VPN, or the service's own authentication.</li><li>Rate limits and blocks are kept in memory and reset when the app restarts.</li><li>The tokens give access to the app profile and exposed services only. Per-device <em>permissions</em>
+(different functions per device) are planned.</li></ul>
+        <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/remote-access.md" rel="noopener">View this page on GitHub</a></div>
+      </article>
+      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#what-other-devices-can-reach">What other devices can reach</a><a class="l2" href="#security-layers">Security layers</a><a class="l2" href="#pair-a-device">Pair a device</a><a class="l2" href="#tls">TLS</a><a class="l2" href="#typical-setups">Typical setups</a><a class="l2" href="#limits">Limits</a></aside>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="../download.html">Download</a>
+            <a href="../use.html">For users</a>
+            <a href="../teams.html">For teams</a>
+            <a href="../developers.html">For developers</a>
+            <a href="../agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="../docs/getting-started.html">Getting started</a>
+            <a href="../docs/configuration.html">Configuration</a>
+            <a href="../docs/cli.html">CLI</a>
+            <a href="../docs/platforms.html">Platforms</a>
+            <a href="../docs/remote-access.html">Remote access</a>
+            <a href="../docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="../docs/changelog.html">Changelog</a>
+            <a href="../docs/roadmap.html">Roadmap</a>
+            <a href="../docs/security.html">Security</a>
+            <a href="../docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="../assets/search-index.js"></script>
+    <script src="../assets/site.js"></script>
+    <script src="../assets/pages.js"></script>
+  </body>
+</html>

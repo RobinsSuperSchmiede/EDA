@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en" data-theme="green" data-surface="tinted" data-header="fade" data-field="off" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Frontend SDK (@openshell/sdk) – OpenShell docs</title>
+    <meta name="description" content="Runtime status, window control, notifications, databases and agent actions from the frontend." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="../assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/site.css" />
+    <link rel="stylesheet" href="../assets/pages.css" />
+  </head>
+  <body data-page="docs" class="page docs-page">
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="../use.html">Users</a>
+          <a href="../teams.html">Teams</a>
+          <a href="../developers.html">Developers</a>
+          <a href="../agents.html">AI agents</a>
+          <a href="../docs/index.html" aria-current="page">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="../download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main class="docs">
+      <aside class="docs-nav" id="docs-nav"><div class="docs-search"><input type="search" id="doc-search" placeholder="Search the docs" autocomplete="off" aria-label="Search the docs" /><div class="search-results" id="search-results" hidden></div></div><nav aria-label="Documentation"><a class="docs-home" href="index.html">Overview</a><h4>Learn</h4><a href="getting-started.html">Getting started</a><a href="tutorial.html">Tutorial</a><a href="building-blocks.html">Building blocks</a><a href="languages.html">Languages</a><h4>Reference</h4><a href="configuration.html">Configuration</a><a href="cli.html">CLI</a><a href="sdk.html" aria-current="page">Frontend SDK</a><a href="control-api.html">Control API</a><h4>Ship and run</h4><a href="installers.html">Installers and releases</a><a href="platforms.html">Platforms</a><a href="remote-access.html">Remote access</a><a href="android-app.html">Android app</a><h4>AI agents</h4><a href="agents.html">Agent Interaction Layer</a><a href="ai.html">AI material</a><a href="ai-app-development.html">Building apps with AI</a><h4>Project</h4><a href="architecture.html">Architecture</a><a href="platform-milestones.html">Platform milestones</a><a href="roadmap.html">Roadmap</a><a href="changelog.html">Changelog</a><a href="security.html">Security policy</a><a href="contributing.html">Contributing</a></nav></aside>
+      <article class="prose" data-source="docs/sdk.md">
+        <div class="crumbs"><a href="index.html">Docs</a><span>/</span><span>Reference</span></div>
+        <h1 id="frontend-sdk-openshellsdk">Frontend SDK (<code>@openshell/sdk</code>)</h1>
+<p>The SDK is optional. Your frontend works unchanged inside and outside OpenShell; the SDK adds access to the runtime,
+the native window and the agent layer when available.</p>
+<h2 id="loading">Loading<a class="anchor" href="#loading" aria-label="Link to this section">#</a></h2>
+<p>The shell serves the SDK at <code>{control_url}/sdk.js</code>, so no package installation is needed:</p>
+<div class="codeblock" data-lang="js"><pre><code>async function openshell() {
+  if (!window.__OPENSHELL__) return null; // plain browser
+  const { OpenShell } = await import(/* @vite-ignore */ `${window.__OPENSHELL__.api}/sdk.js`);
+  return OpenShell;
+}</code></pre></div>
+<p>Or copy <code>packages/sdk</code> into your project / install it from the repository (<code>npm install &lt;path&gt;/packages/sdk</code>) and
+<code>import { OpenShell } from "@openshell/sdk"</code>.</p>
+<h2 id="api">API<a class="anchor" href="#api" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="ts"><pre><code>OpenShell.available: boolean            // running inside OpenShell?
+OpenShell.mode: "development" | "production" | null
+OpenShell.host: "desktop" | "browser" | null
+
+await OpenShell.info()                  // app, mode, host, granted SDK permissions, service names
+
+await OpenShell.runtime.status()        // read
+await OpenShell.runtime.logs({ service: "backend", limit: 50 })   // read
+await OpenShell.runtime.restart("backend")                         // services
+await OpenShell.runtime.start("worker") / .stop("worker")          // services
+
+await OpenShell.window.minimize() / maximize() / unmaximize() / show() / hide() / focus()   // ui
+await OpenShell.notify("Export finished", "Saved to reports/q3.pdf")                       // ui
+await OpenShell.providers()             // read – configured and local AI providers
+
+// built-in databases (databases in openshell.json) – a frontend-only app can store data without a backend
+await OpenShell.db.list()                                            // read
+await OpenShell.db.query("SELECT * FROM notes WHERE done = ?", [0])  // read  → { columns, rows, row_count }
+await OpenShell.db.execute("INSERT INTO notes (title) VALUES (:t)", { t: "Hi" })   // actions → { changes, last_insert_rowid }
+await OpenShell.db.schema("notes")                                   // read
+
+// the app's functions (capabilities) – the same ones agents use
+await OpenShell.invoke("summarize_notes", { limit: 10 })            // the capability's own scope
+
+const unregister = OpenShell.agent.registerAction(name, { description, input_schema, permission }, handler)
+OpenShell.agent.unregisterAction(name)
+
+await OpenShell.call(tool, args)        // any tool allowed by agents.sdk_permissions</code></pre></div>
+<p>Calls are checked against <code>agents.sdk_permissions</code> (default <code>["read", "ui"]</code>). To let the frontend write to a
+database or call <code>actions</code> functions, add <code>"actions"</code> (<code>openshell add database</code> does this when the app has a
+frontend); to restart services, add <code>"services"</code>. A database's <code>agent_access</code> limits agents only, not the app's own
+frontend. Failures throw <code>OpenShellError</code>.</p>
+<h2 id="exposing-frontend-actions-to-agents">Exposing frontend actions to agents<a class="anchor" href="#exposing-frontend-actions-to-agents" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="js"><pre><code>OpenShell.agent.registerAction(
+  "open_invoice",
+  {
+    description: "Open the invoice editor for an invoice id",
+    permission: "ui",
+    input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
+  },
+  async ({ id }) =&gt; {
+    router.push(`/invoices/${id}`);
+    return { opened: id };
+  },
+);</code></pre></div>
+<p>Agents discover it with <code>capabilities_list</code> and call it as <code>cap_open_invoice</code> or <code>app_invoke</code>. The handler runs in the
+page; its return value (JSON) is sent back to the agent.</p>
+<h2 id="own-title-bar">Own title bar<a class="anchor" href="#own-title-bar" aria-label="Link to this section">#</a></h2>
+<p>With <code>"window": { "title_bar": "overlay" }</code> the desktop window has no system title bar (Windows, Linux) or shows
+only the window buttons over the content (macOS), and the frontend draws its own. The desktop window provides:</p>
+<div class="codeblock" data-lang="js"><pre><code>const win = window.__OPENSHELL__?.window;     // undefined in a plain browser
+if (win?.title_bar === "overlay") {
+  win.os;                 // "windows" | "macos" | "linux" – macOS: leave ~80px on the left for its buttons
+  await win.minimize();
+  await win.toggleMaximize();
+  await win.close();      // respects close_to_tray
+  await win.isMaximized();
+  await win.showMenu();   // the runtime menu (services, logs, reload) at the cursor
+}</code></pre></div>
+<p>Mark the bar with <code>data-tauri-drag-region="deep"</code>: dragging it moves the window, a double click maximizes it; buttons,
+links and inputs inside keep working. These functions are allowed only for the app's frontend origin.</p>
+        <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/sdk.md" rel="noopener">View this page on GitHub</a></div>
+      </article>
+      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#loading">Loading</a><a class="l2" href="#api">API</a><a class="l2" href="#exposing-frontend-actions-to-agents">Exposing frontend actions to agents</a><a class="l2" href="#own-title-bar">Own title bar</a></aside>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="../download.html">Download</a>
+            <a href="../use.html">For users</a>
+            <a href="../teams.html">For teams</a>
+            <a href="../developers.html">For developers</a>
+            <a href="../agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="../docs/getting-started.html">Getting started</a>
+            <a href="../docs/configuration.html">Configuration</a>
+            <a href="../docs/cli.html">CLI</a>
+            <a href="../docs/platforms.html">Platforms</a>
+            <a href="../docs/remote-access.html">Remote access</a>
+            <a href="../docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="../docs/changelog.html">Changelog</a>
+            <a href="../docs/roadmap.html">Roadmap</a>
+            <a href="../docs/security.html">Security</a>
+            <a href="../docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="../assets/search-index.js"></script>
+    <script src="../assets/site.js"></script>
+    <script src="../assets/pages.js"></script>
+  </body>
+</html>

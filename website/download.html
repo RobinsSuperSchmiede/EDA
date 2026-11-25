@@ -1,0 +1,270 @@
+<!doctype html>
+<!-- Download page for OpenShell itself. Header and footer are written by scripts/build-website.py. -->
+<html lang="en" data-theme="green" data-surface="tinted" data-hero="wordmark" data-header="fade" data-field="hero" data-calm="on" data-intensity="1" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Download OpenShell – Windows, macOS, Linux, Android</title>
+    <meta name="description" content="Download the OpenShell command line and desktop shell for Windows, macOS and Linux, install it with one command, run it in Termux on Android, or build it from source." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/site.css" />
+    <link rel="stylesheet" href="assets/pages.css" />
+  </head>
+  <body data-page="download" class="page">
+    <canvas id="field" aria-hidden="true"></canvas>
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="index.html"><img src="assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="use.html">Users</a>
+          <a href="teams.html">Teams</a>
+          <a href="developers.html">Developers</a>
+          <a href="agents.html">AI agents</a>
+          <a href="docs/index.html">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main>
+      <section class="hero hero--sub" id="hero">
+        <div class="wrap">
+          <div class="copy-block">
+            <div class="eyebrow rise">Download</div>
+            <h1 class="rise">Get OpenShell</h1>
+            <p class="lead rise">
+              The command line and the desktop shell you build and run apps with. Free and open source. We think you
+              are on <b data-detected>your system</b>.
+            </p>
+            <div class="actions rise">
+              <a class="cta" href="#get"><span>Choose your download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+              <a class="btn btn--lg" href="#script">One-line install</a>
+            </div>
+            <p class="note rise">MIT · alpha · Windows, macOS, Linux · Android through Termux</p>
+          </div>
+          <div class="hero-visual rise">
+            <div class="callout"><b>Looking for an app someone built with OpenShell?</b> Use that publisher's download page: installers contain everything, and you do not need this page. See <a href="use.html">for users</a>.</div>
+            <div class="term mt-s"><span class="c">$</span> openshell --version
+<span class="c">$</span> openshell create my-app
+<span class="c">$</span> cd my-app &amp;&amp; openshell dev</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ downloads -->
+      <section id="get">
+        <div class="wrap">
+          <div class="kicker reveal">Latest release</div>
+          <h2 class="reveal">Pick your system</h2>
+          <p class="lead reveal">Each archive holds the <span class="mono">openshell</span> command line and the <span class="mono">openshell-desktop</span> shell. Keep both in the same folder.</p>
+          <div class="dl-grid">
+            <div class="dl-card reveal" data-os="windows">
+              <span class="pill dl-flag">recommended for you</span>
+              <h3>Windows</h3>
+              <p>Windows 10 and 11, 64-bit. Windows 11 has everything the window needs.</p>
+              <div class="file">openshell-x86_64-pc-windows-msvc.zip</div>
+              <div class="actions"><a class="btn btn--lg" href="https://github.com/RobinsSuperSchmiede/EDA/releases/latest/download/openshell-x86_64-pc-windows-msvc.zip">Download .zip</a></div>
+            </div>
+            <div class="dl-card reveal" data-os="mac">
+              <span class="pill dl-flag">recommended for you</span>
+              <h3>macOS · Apple Silicon</h3>
+              <p>Macs with an M-series chip.</p>
+              <div class="file">openshell-aarch64-apple-darwin.tar.gz</div>
+              <div class="actions"><a class="btn btn--lg" href="https://github.com/RobinsSuperSchmiede/EDA/releases/latest/download/openshell-aarch64-apple-darwin.tar.gz">Download .tar.gz</a></div>
+            </div>
+            <div class="dl-card reveal" data-os="mac">
+              <span class="pill dl-flag">recommended for you</span>
+              <h3>macOS · Intel</h3>
+              <p>Macs with an Intel processor.</p>
+              <div class="file">openshell-x86_64-apple-darwin.tar.gz</div>
+              <div class="actions"><a class="btn btn--lg" href="https://github.com/RobinsSuperSchmiede/EDA/releases/latest/download/openshell-x86_64-apple-darwin.tar.gz">Download .tar.gz</a></div>
+            </div>
+            <div class="dl-card reveal" data-os="linux">
+              <span class="pill dl-flag">recommended for you</span>
+              <h3>Linux · x86-64</h3>
+              <p>The window needs WebKitGTK 4.1 (Debian and Ubuntu: <span class="mono">libwebkit2gtk-4.1-0</span>).</p>
+              <div class="file">openshell-x86_64-unknown-linux-gnu.tar.gz</div>
+              <div class="actions"><a class="btn btn--lg" href="https://github.com/RobinsSuperSchmiede/EDA/releases/latest/download/openshell-x86_64-unknown-linux-gnu.tar.gz">Download .tar.gz</a></div>
+            </div>
+            <div class="dl-card reveal" data-os="android">
+              <span class="pill dl-flag">recommended for you</span>
+              <h3>Android</h3>
+              <p>Run the command line in Termux today. The native OpenShell app for Android is in progress and not in the Play Store yet.</p>
+              <div class="file">Termux: install script below · CLI-only build comes with the next release</div>
+              <div class="actions"><a class="btn btn--lg" href="use.html#i-android">Android instructions</a></div>
+            </div>
+            <div class="dl-card reveal">
+              <h3>From source</h3>
+              <p>Always the newest code, and the way to try features that are not in a release yet. Needs Rust.</p>
+              <div class="file">git clone … · cargo build --release</div>
+              <div class="actions"><a class="btn btn--lg" href="#source">Build from source</a></div>
+            </div>
+          </div>
+          <p class="sub reveal">All releases, release notes and <span class="mono">SHA256SUMS.txt</span>: <a href="https://github.com/RobinsSuperSchmiede/EDA/releases">GitHub releases</a>. What changed: <a href="docs/changelog.html">changelog</a>.</p>
+        </div>
+      </section>
+
+      <!-- ============================================================ script -->
+      <section id="script">
+        <div class="wrap">
+          <div class="kicker reveal">One command</div>
+          <h2 class="reveal">Install with a script</h2>
+          <p class="lead reveal">The script downloads the right archive for your system, copies both programs to a folder in your home directory and tells you what to add to your PATH.</p>
+          <div class="cols mt-m">
+            <div class="reveal">
+              <h3 style="font-size: 18px; margin-bottom: 12px">macOS, Linux, Termux</h3>
+              <div class="codeblock" data-lang="bash"><pre><code>curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/scripts/install.sh | sh</code></pre></div>
+              <p class="sub">Installs to <span class="mono">~/.openshell/bin</span>. Set <span class="mono">OPENSHELL_VERSION=v0.2.1</span> to pin a version.</p>
+            </div>
+            <div class="reveal">
+              <h3 style="font-size: 18px; margin-bottom: 12px">Windows (PowerShell)</h3>
+              <div class="codeblock" data-lang="powershell"><pre><code>irm https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/scripts/install.ps1 | iex</code></pre></div>
+              <p class="sub">Installs to <span class="mono">%LOCALAPPDATA%\OpenShell\bin</span> and adds it to your user PATH. Open a new terminal afterwards.</p>
+            </div>
+          </div>
+          <p class="sub reveal">You are asked nothing and the script changes nothing outside those folders (and the user PATH on Windows). <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/scripts/install.sh">Read it first</a> if you like.</p>
+        </div>
+      </section>
+
+      <!-- ============================================================ verify -->
+      <section id="verify">
+        <div class="wrap">
+          <div class="kicker reveal">Check it</div>
+          <h2 class="reveal">Verify and prepare</h2>
+          <div class="cols mt-m">
+            <div class="reveal">
+              <h3 style="font-size: 20px; margin-bottom: 12px">Verify a download</h3>
+              <p class="sub mt-0">Every release has a <span class="mono">SHA256SUMS.txt</span>. Compare the checksum of your file with it.</p>
+              <div class="codeblock mt-s" data-lang="bash"><pre><code>sha256sum -c SHA256SUMS.txt --ignore-missing    # macOS: shasum -a 256 -c
+Get-FileHash openshell-x86_64-pc-windows-msvc.zip -Algorithm SHA256   # PowerShell</code></pre></div>
+            </div>
+            <div class="reveal">
+              <h3 style="font-size: 20px; margin-bottom: 12px">Check the installation</h3>
+              <p class="sub mt-0"><span class="mono">openshell doctor</span> checks the config, commands, folders and ports of a project, and your toolchain, the desktop binary and the WebView.</p>
+              <div class="codeblock mt-s" data-lang="bash"><pre><code>openshell --version
+openshell doctor</code></pre></div>
+            </div>
+          </div>
+          <div class="table-wrap reveal">
+            <table>
+              <thead><tr><th>System</th><th>What you need</th></tr></thead>
+              <tbody>
+                <tr><td>Windows</td><td>Windows 10 or 11. WebView2 comes with Windows 11.</td></tr>
+                <tr><td>macOS</td><td>Nothing for the prebuilt binaries. Xcode command line tools to build from source.</td></tr>
+                <tr><td>Linux</td><td>WebKitGTK 4.1 for the window. To build: <span class="mono">libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf</span>.</td></tr>
+                <tr><td>For your app</td><td>The runtime of your backend language (Python, Node.js, a JDK, a C++ toolchain …), as for any project.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ source -->
+      <section id="source">
+        <div class="wrap">
+          <div class="kicker reveal">From source</div>
+          <h2 class="reveal">Build it yourself</h2>
+          <div class="cols mt-m">
+            <div class="codeblock reveal" data-lang="bash"><pre><code>git clone https://github.com/RobinsSuperSchmiede/EDA.git
+cd EDA
+cargo build --release
+# put target/release on your PATH:
+# openshell and openshell-desktop must stay in the same folder</code></pre></div>
+            <ul class="ticks reveal">
+              <li><span>Needs a stable <b>Rust</b> toolchain. On Linux also the Tauri system packages.</span></li>
+              <li><span>Set <span class="mono">OPENSHELL_DESKTOP</span> if the desktop binary lives elsewhere.</span></li>
+              <li><span>Run <b>openshell doctor</b> to see what is missing.</span></li>
+              <li><span>Features marked “on main” on this site are available this way before the next release.</span></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ next -->
+      <section id="next">
+        <div class="wrap">
+          <div class="kicker reveal">What next</div>
+          <h2 class="reveal">Installed?<br /><span class="soft">Make something</span></h2>
+          <div class="steps steps--3">
+            <div class="step reveal"><div class="n">01</div><h3>Create an app</h3><p><span class="mono">openshell create my-app</span> gives you a window with a frontend and a backend, no other installs needed.</p></div>
+            <div class="step reveal"><div class="n">02</div><h3>Or wrap one</h3><p><span class="mono">openshell init</span> in an existing web project detects the stack and writes the config.</p></div>
+            <div class="step reveal"><div class="n">03</div><h3>Ship it</h3><p><span class="mono">openshell package</span> builds an installer, <span class="mono">openshell release workflow</span> publishes every system.</p></div>
+          </div>
+          <div class="actions reveal">
+            <a class="cta" href="docs/getting-started.html"><span>Getting started</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+            <a class="btn btn--lg" href="developers.html">For developers</a>
+            <a class="btn btn--lg" href="teams.html">For teams</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="final" id="download">
+        <div>
+          <h2 class="reveal">Free, open,<br />yours to inspect</h2>
+          <p class="lead reveal">MIT licensed. Read the code, report a bug or help test on macOS and Linux.</p>
+          <div class="actions reveal">
+            <a class="cta" href="https://github.com/RobinsSuperSchmiede/EDA"><span>View on GitHub</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+            <a class="btn btn--lg" href="docs/contributing.html">Contribute</a>
+          </div>
+        </div>
+        <div class="wordmark" aria-hidden="true">openshell</div>
+      </section>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="index.html"><img src="assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="download.html">Download</a>
+            <a href="use.html">For users</a>
+            <a href="teams.html">For teams</a>
+            <a href="developers.html">For developers</a>
+            <a href="agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="docs/getting-started.html">Getting started</a>
+            <a href="docs/configuration.html">Configuration</a>
+            <a href="docs/cli.html">CLI</a>
+            <a href="docs/platforms.html">Platforms</a>
+            <a href="docs/remote-access.html">Remote access</a>
+            <a href="docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="docs/changelog.html">Changelog</a>
+            <a href="docs/roadmap.html">Roadmap</a>
+            <a href="docs/security.html">Security</a>
+            <a href="docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="assets/site.js"></script>
+    <script src="assets/pages.js"></script>
+  </body>
+</html>

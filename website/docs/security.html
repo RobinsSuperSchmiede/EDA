@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en" data-theme="green" data-surface="tinted" data-header="fade" data-field="off" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Security Policy – OpenShell docs</title>
+    <meta name="description" content="Threat model and how to report a vulnerability." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="../assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/site.css" />
+    <link rel="stylesheet" href="../assets/pages.css" />
+  </head>
+  <body data-page="docs" class="page docs-page">
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="../use.html">Users</a>
+          <a href="../teams.html">Teams</a>
+          <a href="../developers.html">Developers</a>
+          <a href="../agents.html">AI agents</a>
+          <a href="../docs/index.html" aria-current="page">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="../download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main class="docs">
+      <aside class="docs-nav" id="docs-nav"><div class="docs-search"><input type="search" id="doc-search" placeholder="Search the docs" autocomplete="off" aria-label="Search the docs" /><div class="search-results" id="search-results" hidden></div></div><nav aria-label="Documentation"><a class="docs-home" href="index.html">Overview</a><h4>Learn</h4><a href="getting-started.html">Getting started</a><a href="tutorial.html">Tutorial</a><a href="building-blocks.html">Building blocks</a><a href="languages.html">Languages</a><h4>Reference</h4><a href="configuration.html">Configuration</a><a href="cli.html">CLI</a><a href="sdk.html">Frontend SDK</a><a href="control-api.html">Control API</a><h4>Ship and run</h4><a href="installers.html">Installers and releases</a><a href="platforms.html">Platforms</a><a href="remote-access.html">Remote access</a><a href="android-app.html">Android app</a><h4>AI agents</h4><a href="agents.html">Agent Interaction Layer</a><a href="ai.html">AI material</a><a href="ai-app-development.html">Building apps with AI</a><h4>Project</h4><a href="architecture.html">Architecture</a><a href="platform-milestones.html">Platform milestones</a><a href="roadmap.html">Roadmap</a><a href="changelog.html">Changelog</a><a href="security.html" aria-current="page">Security policy</a><a href="contributing.html">Contributing</a></nav></aside>
+      <article class="prose" data-source="SECURITY.md">
+        <div class="crumbs"><a href="index.html">Docs</a><span>/</span><span>Project</span></div>
+        <h1 id="security-policy">Security Policy</h1>
+<p>OpenShell runs processes on the user's machine and gives AI agents controlled access to applications, so security
+reports are very welcome.</p>
+<h2 id="supported-versions">Supported versions<a class="anchor" href="#supported-versions" aria-label="Link to this section">#</a></h2>
+<p>OpenShell is in alpha. Security fixes are made on <code>main</code> and in the latest release.</p>
+<h2 id="reporting-a-vulnerability">Reporting a vulnerability<a class="anchor" href="#reporting-a-vulnerability" aria-label="Link to this section">#</a></h2>
+<p>Please <strong>do not open a public issue</strong>. Report privately through
+<a href="https://github.com/RobinsSuperSchmiede/EDA/security/advisories/new" rel="noopener">GitHub security advisories</a> with:</p>
+<ul><li>affected component (runtime, control API, agent layer, UI bridge, installer, …) and version / commit,</li><li>steps to reproduce or a proof of concept,</li><li>impact as you understand it.</li></ul>
+<p>You can expect an acknowledgement within a few days. We will keep you informed and credit you in the release notes
+unless you prefer otherwise.</p>
+<h2 id="scope-and-threat-model">Scope and threat model<a class="anchor" href="#scope-and-threat-model" aria-label="Link to this section">#</a></h2>
+<p>In scope, for example: bypassing agent permissions or approvals, escaping the project directory with file tools,
+reaching the control API from a web page (CSRF, DNS rebinding, Origin bypass), token leaks, injection through
+configuration that is shipped in installers.</p>
+<p>The permission layer governs <strong>cooperating agents</strong>. A local process running as the same user can read
+<code>.openshell/runtime.json</code> and is out of scope; OpenShell is not a sandbox against local malware.
+See <a href="agents.html#security">docs/agents.md#security</a> and <a href="architecture.html#security-model-summary">Architecture</a>.</p>
+        <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/SECURITY.md" rel="noopener">View this page on GitHub</a></div>
+      </article>
+      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#supported-versions">Supported versions</a><a class="l2" href="#reporting-a-vulnerability">Reporting a vulnerability</a><a class="l2" href="#scope-and-threat-model">Scope and threat model</a></aside>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="../download.html">Download</a>
+            <a href="../use.html">For users</a>
+            <a href="../teams.html">For teams</a>
+            <a href="../developers.html">For developers</a>
+            <a href="../agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="../docs/getting-started.html">Getting started</a>
+            <a href="../docs/configuration.html">Configuration</a>
+            <a href="../docs/cli.html">CLI</a>
+            <a href="../docs/platforms.html">Platforms</a>
+            <a href="../docs/remote-access.html">Remote access</a>
+            <a href="../docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="../docs/changelog.html">Changelog</a>
+            <a href="../docs/roadmap.html">Roadmap</a>
+            <a href="../docs/security.html">Security</a>
+            <a href="../docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="../assets/search-index.js"></script>
+    <script src="../assets/site.js"></script>
+    <script src="../assets/pages.js"></script>
+  </body>
+</html>

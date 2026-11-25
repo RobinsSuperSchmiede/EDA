@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en" data-theme="green" data-surface="tinted" data-header="fade" data-field="off" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agent Interaction Layer – OpenShell docs</title>
+    <meta name="description" content="MCP profiles, tools, UI automation, capabilities, permissions and approvals." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="../assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/site.css" />
+    <link rel="stylesheet" href="../assets/pages.css" />
+  </head>
+  <body data-page="docs" class="page docs-page">
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="../use.html">Users</a>
+          <a href="../teams.html">Teams</a>
+          <a href="../developers.html">Developers</a>
+          <a href="../agents.html">AI agents</a>
+          <a href="../docs/index.html" aria-current="page">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="../download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main class="docs">
+      <aside class="docs-nav" id="docs-nav"><div class="docs-search"><input type="search" id="doc-search" placeholder="Search the docs" autocomplete="off" aria-label="Search the docs" /><div class="search-results" id="search-results" hidden></div></div><nav aria-label="Documentation"><a class="docs-home" href="index.html">Overview</a><h4>Learn</h4><a href="getting-started.html">Getting started</a><a href="tutorial.html">Tutorial</a><a href="building-blocks.html">Building blocks</a><a href="languages.html">Languages</a><h4>Reference</h4><a href="configuration.html">Configuration</a><a href="cli.html">CLI</a><a href="sdk.html">Frontend SDK</a><a href="control-api.html">Control API</a><h4>Ship and run</h4><a href="installers.html">Installers and releases</a><a href="platforms.html">Platforms</a><a href="remote-access.html">Remote access</a><a href="android-app.html">Android app</a><h4>AI agents</h4><a href="agents.html" aria-current="page">Agent Interaction Layer</a><a href="ai.html">AI material</a><a href="ai-app-development.html">Building apps with AI</a><h4>Project</h4><a href="architecture.html">Architecture</a><a href="platform-milestones.html">Platform milestones</a><a href="roadmap.html">Roadmap</a><a href="changelog.html">Changelog</a><a href="security.html">Security policy</a><a href="contributing.html">Contributing</a></nav></aside>
+      <article class="prose" data-source="docs/agents.md">
+        <div class="crumbs"><a href="index.html">Docs</a><span>/</span><span>AI agents</span></div>
+        <h1 id="agent-interaction-layer">Agent Interaction Layer</h1>
+<p>OpenShell gives AI agents a standardized, model-agnostic interface to a running desktop application – in two
+profiles:</p>
+<div class="table-wrap"><table><thead><tr><th>Profile</th><th>For</th><th>Tools</th></tr></thead><tbody><tr><td><strong>app</strong> ("use the app")</td><td>assistants that should <em>work with</em> the application, e.g. Claude Desktop on the user's PC</td><td>only the application's own functions (<code>list_todos</code>, <code>add_todo</code>, …) + <code>app_status</code></td></tr><tr><td><strong>full</strong> ("develop the app")</td><td>coding agents that build and evolve the application</td><td>everything below: runtime, logs, services, files, UI automation, capabilities</td></tr></tbody></table></div>
+<p>Neither profile needs the UI: the app profile calls the application's API directly; UI automation is an <em>extra</em>
+for the full profile.</p>
+<p>In the full profile agents can</p>
+<ul><li>query application and runtime state, read logs,</li><li>start, stop and restart services,</li><li>see and operate the user interface (semantic snapshot, click, fill, navigate, …),</li><li>discover and invoke application capabilities,</li><li>read and modify project files (scoped to the project),</li><li>run declared tasks,</li></ul>
+<p>all subject to permission scopes, optional human approval and an audit log. OpenShell does not ship or prescribe an
+AI model – it is infrastructure for any agent: Claude Code, Codex, Cursor, OpenAI- or Anthropic-based agents, local
+models via Ollama / LM Studio, or your own agent system.</p>
+<h2 id="connecting">Connecting<a class="anchor" href="#connecting" aria-label="Link to this section">#</a></h2>
+<h3 id="using-an-installed-app">Using an installed app<a class="anchor" href="#using-an-installed-app" aria-label="Link to this section">#</a></h3>
+<p>Installed apps (see <a href="installers.html">Installers and releases</a>) are MCP servers themselves:</p>
+<div class="codeblock" data-lang="json"><pre><code>{ <span class="tk">"mcpServers"</span>: { <span class="tk">"my-app"</span>: { <span class="tk">"command"</span>: <span class="ts">"C:\\Users\\me\\AppData\\Local\\Programs\\My App\\my-app.exe"</span>, <span class="tk">"args"</span>: [<span class="ts">"--mcp"</span>] } } }</code></pre></div>
+<p>If the app is not running, it starts <strong>in the background without a window</strong>, so an agent can use it while the user
+does something else. Opening the app later replaces the background instance with the window. The tool list contains
+only the app's functions; permissions follow <code>agents.permissions.production</code>. Add <code>--profile full</code> for the developer
+tool set. The runtime panel (title bar right-click → <em>Runtime panel</em>) shows both commands ready to copy.</p>
+<h3 id="using-a-project-from-the-cli">Using a project from the CLI<a class="anchor" href="#using-a-project-from-the-cli" aria-label="Link to this section">#</a></h3>
+<div class="codeblock" data-lang="bash"><pre><code>openshell mcp --app --start --project /path/to/app   <span class="tc"># app profile, start headless (production) if needed</span></code></pre></div>
+<h3 id="developing-mcp-over-stdio-recommended">Developing: MCP over stdio (recommended)<a class="anchor" href="#developing-mcp-over-stdio-recommended" aria-label="Link to this section">#</a></h3>
+<div class="codeblock" data-lang="bash"><pre><code>openshell mcp --project /path/to/app            <span class="tc"># add --start to launch `openshell dev --headless` on demand</span></code></pre></div>
+<p>Configure it as an MCP server in your client:</p>
+<div class="codeblock" data-lang="bash"><pre><code>claude mcp add my-app -- openshell mcp --project /path/to/app       <span class="tc"># Claude Code</span></code></pre></div>
+<div class="codeblock" data-lang="json"><pre><code>{ <span class="tk">"mcpServers"</span>: { <span class="tk">"my-app"</span>: { <span class="tk">"command"</span>: <span class="ts">"openshell"</span>, <span class="tk">"args"</span>: [<span class="ts">"mcp"</span>, <span class="ts">"--project"</span>, <span class="ts">"/path/to/app"</span>] } } }</code></pre></div>
+<p>The stdio server forwards to the running shell and reconnects automatically, so the agent can be started before the
+app. If the app is not running, <code>tools/list</code> still works and tool calls explain how to start it.</p>
+<h3 id="mcp-over-http">MCP over HTTP<a class="anchor" href="#mcp-over-http" aria-label="Link to this section">#</a></h3>
+<p><code>POST {control_url}/mcp</code> (full profile) and <code>POST {control_url}/mcp/app</code> (app profile) implement the Streamable HTTP
+transport (JSON responses). They require
+<code>Authorization: Bearer &lt;token&gt;</code> from <code>.openshell/runtime.json</code>. Because the port and token change on each start,
+stdio is more convenient; set <code>runtime.control_port</code> for a fixed port.</p>
+<h3 id="from-another-device-remote-gateway">From another device (remote gateway)<a class="anchor" href="#from-another-device-remote-gateway" aria-label="Link to this section">#</a></h3>
+<p>With <code>"runtime": { "remote": { "enabled": true } }</code> the app profile is also reachable from other devices – for
+example an agent on a laptop using an app hosted on a phone. <code>openshell remote</code> prints the URL and a ready MCP client
+configuration (<code>{ "url": "http://&lt;ip&gt;:7420/mcp/app", "headers": { "Authorization": "Bearer &lt;pairing token&gt;" } }</code>).
+Only the app's functions are exposed; see <a href="platforms.html#remote-access">Platforms</a>.</p>
+<h3 id="plain-http--json">Plain HTTP / JSON<a class="anchor" href="#plain-http--json" aria-label="Link to this section">#</a></h3>
+<div class="codeblock"><pre><code>GET  /v1/tools                      list tools with permission and access (allowed / approval / denied)
+POST /v1/tools/{name}               body = arguments → { "ok": true, "result": ... } or { "ok": false, "result": { "error": "..." } }</code></pre></div>
+<p>Send <code>X-OpenShell-Agent: &lt;name&gt;</code> to identify the agent in the audit log. From a terminal: <code>openshell call &lt;tool&gt; '&lt;json&gt;'</code>.</p>
+<h2 id="tools">Tools<a class="anchor" href="#tools" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Scope</th><th>Purpose</th></tr></thead><tbody><tr><td><code>app_info</code></td><td>read</td><td>Overview: app, mode, services, permissions, capabilities, hints. Call first.</td></tr><tr><td><code>runtime_status</code></td><td>read</td><td>State, pid, port, URL, restarts, last error per service</td></tr><tr><td><code>logs_read</code></td><td>read</td><td>Log lines (<code>service</code>, <code>since</code>, <code>limit</code>, <code>contains</code>, <code>errors_only</code>)</td></tr><tr><td><code>capabilities_list</code></td><td>read</td><td>Capabilities from config and frontend</td></tr><tr><td><code>config_get</code></td><td>read</td><td>Effective configuration</td></tr><tr><td><code>providers_list</code></td><td>read</td><td>Configured and detected AI providers with models</td></tr><tr><td><code>audit_read</code></td><td>read</td><td>Recent agent actions</td></tr><tr><td><code>ui_pages</code></td><td>ui</td><td>Pages connected to the UI bridge</td></tr><tr><td><code>ui_snapshot</code></td><td>ui</td><td>Title, URL, headings, dialogs, text and interactive elements with refs</td></tr><tr><td><code>ui_click</code></td><td>ui</td><td>Click by <code>ref</code>, <code>selector</code> or <code>text</code></td></tr><tr><td><code>ui_fill</code></td><td>ui</td><td>Set input/textarea/select/checkbox/contenteditable (<code>label</code>, <code>value</code>, <code>submit</code>)</td></tr><tr><td><code>ui_press</code></td><td>ui</td><td>Key press (<code>Enter</code>, <code>Escape</code>, …)</td></tr><tr><td><code>ui_read_text</code></td><td>ui</td><td>Text of page or element</td></tr><tr><td><code>ui_wait_for</code></td><td>ui</td><td>Wait for selector/text (or its disappearance)</td></tr><tr><td><code>ui_navigate</code></td><td>ui</td><td>Navigate to <code>path</code> (SPA-friendly) or <code>url</code></td></tr><tr><td><code>ui_reload</code></td><td>ui</td><td>Reload the frontend</td></tr><tr><td><code>window_control</code></td><td>ui</td><td>show / hide / focus / minimize / maximize / unmaximize</td></tr><tr><td><code>notify</code></td><td>ui</td><td>Native notification</td></tr><tr><td><code>app_invoke</code></td><td>capability's scope</td><td>Invoke a capability by name</td></tr><tr><td><code>cap_&lt;name&gt;</code></td><td>capability's scope</td><td>One tool per capability</td></tr><tr><td><code>service_start</code> / <code>service_stop</code> / <code>service_restart</code></td><td>services</td><td>Waits until the service is healthy and returns recent logs on failure</td></tr><tr><td><code>fs_list</code> / <code>fs_read</code> / <code>fs_search</code></td><td>files</td><td>Project files</td></tr><tr><td><code>fs_write</code></td><td>code</td><td>Create/overwrite a project file</td></tr><tr><td><code>db_list</code> / <code>db_schema</code> / <code>db_query</code></td><td>read</td><td>Databases, schema, read-only SQL (per database <code>agent_access</code> ≥ <code>read</code>)</td></tr><tr><td><code>db_execute</code></td><td>actions</td><td>SQL that changes data or schema (<code>agent_access: write</code>)</td></tr><tr><td><code>task_run</code></td><td>system</td><td>Run a task from <code>tasks</code> and return its output</td></tr><tr><td><code>ui_eval</code></td><td>system</td><td>Evaluate JavaScript in the page</td></tr></tbody></table></div>
+<h2 id="resources-and-notifications">Resources and notifications<a class="anchor" href="#resources-and-notifications" aria-label="Link to this section">#</a></h2>
+<p>Besides tools, the MCP server offers read-only <strong>resources</strong>: <code>openshell://status</code>, <code>openshell://config</code>,
+<code>openshell://logs</code>, <code>openshell://capabilities</code> (developer profile), <code>openshell://app</code> (app profile) and
+<code>openshell://db/&lt;name&gt;/schema</code> for every database agents may read.</p>
+<p><code>openshell mcp</code> (stdio) sends <code>notifications/tools/list_changed</code> whenever the tool list changes – for example when the
+frontend registers an action, an OpenAPI document is imported or the app is started after the agent connected.</p>
+<h2 id="ui-automation">UI automation<a class="anchor" href="#ui-automation" aria-label="Link to this section">#</a></h2>
+<p><code>ui_snapshot</code> returns a compact, semantic view of the page:</p>
+<div class="codeblock" data-lang="json"><pre><code>{
+  <span class="tk">"url"</span>: <span class="ts">"http://127.0.0.1:52471/"</span>,
+  <span class="tk">"title"</span>: <span class="ts">"Todo App"</span>,
+  <span class="tk">"headings"</span>: [{ <span class="tk">"level"</span>: <span class="tn">1</span>, <span class="tk">"text"</span>: <span class="ts">"Todo App"</span> }],
+  <span class="tk">"elements"</span>: [
+    { <span class="tk">"ref"</span>: <span class="ts">"e1"</span>, <span class="tk">"role"</span>: <span class="ts">"textbox"</span>, <span class="tk">"name"</span>: <span class="ts">"New todo"</span>, <span class="tk">"value"</span>: <span class="ts">""</span> },
+    { <span class="tk">"ref"</span>: <span class="ts">"e2"</span>, <span class="tk">"role"</span>: <span class="ts">"button"</span>, <span class="tk">"name"</span>: <span class="ts">"Add"</span> },
+    { <span class="tk">"ref"</span>: <span class="ts">"e6"</span>, <span class="tk">"role"</span>: <span class="ts">"checkbox"</span>, <span class="tk">"name"</span>: <span class="ts">"Buy milk"</span>, <span class="tk">"checked"</span>: <span class="tn">false</span> }
+  ],
+  <span class="tk">"text"</span>: <span class="ts">"Todo App 3 todos · 1 done …"</span>,
+  <span class="tk">"actions"</span>: [{ <span class="tk">"name"</span>: <span class="ts">"set_filter"</span>, <span class="tk">"description"</span>: <span class="ts">"…"</span> }]
+}</code></pre></div>
+<p>Use the refs with <code>ui_click {"ref": "e2"}</code> or <code>ui_fill {"ref": "e1", "value": "…", "submit": true}</code>. Refs stay stable
+while the element exists; take a new snapshot after larger UI changes. The bridge (<code>bridge.js</code>) is injected into the
+desktop WebView and into pages served by OpenShell's static server, so it works with any framework and also in
+browser mode (<code>openshell dev --headless</code>). Password values are never included in snapshots.</p>
+<h2 id="capabilities-the-applications-own-functions">Capabilities: the application's own functions<a class="anchor" href="#capabilities-the-applications-own-functions" aria-label="Link to this section">#</a></h2>
+<p>Prefer capabilities over UI automation – they are faster and more reliable, and they are what the app profile
+exposes. Three sources:</p>
+<ul><li><strong>OpenAPI import</strong> – set <code>"openapi": "/openapi.json"</code> (FastAPI), <code>"/v3/api-docs"</code> (Spring/springdoc),
+<code>"/swagger/v1/swagger.json"</code> (ASP.NET) or a file/URL on a service. When the service becomes healthy, every operation
+becomes a tool: name from <code>operationId</code>, input schema from path/query parameters and the JSON request body,
+<code>GET</code> → scope <code>read</code>, other methods → <code>actions</code>. Filter with <code>{ "location": "...", "include": [...], "exclude": [...], "prefix": "shop" }</code>.</li><li><strong>Declared</strong> in <code>openshell.json</code> (<code>capabilities</code>), backed by an HTTP endpoint, a <strong>script</strong> (<code>run</code> – JSON in on
+stdin, JSON out on stdout, no server needed) or a task.</li><li><strong>Databases</strong>: with <code>agent_access</code> <code>read</code>/<code>write</code>, the app profile also offers <code>db_list</code>, <code>db_schema</code>, <code>db_query</code>
+and <code>db_execute</code> – an app can be <em>only</em> a database plus functions.</li><li><strong>Registered by the frontend</strong> at runtime with the SDK:</li></ul>
+<div class="codeblock" data-lang="js"><pre><code>OpenShell.agent.registerAction("set_filter", {
+  description: "Show all, open or done todos",
+  permission: "ui",
+  input_schema: { type: "object", properties: { filter: { enum: ["all", "open", "done"] } } },
+}, ({ filter }) =&gt; setFilter(filter));</code></pre></div>
+<h2 id="permissions-and-approvals">Permissions and approvals<a class="anchor" href="#permissions-and-approvals" aria-label="Link to this section">#</a></h2>
+<p>Every tool needs exactly one scope:</p>
+<div class="table-wrap"><table><thead><tr><th>Scope</th><th>Allows</th><th>Default dev</th><th>Default prod</th></tr></thead><tbody><tr><td><code>read</code></td><td>state, logs, config, capabilities list</td><td>✅</td><td>✅</td></tr><tr><td><code>ui</code></td><td>UI automation, window control, notifications</td><td>✅</td><td>✅</td></tr><tr><td><code>actions</code></td><td>capabilities that change data</td><td>✅</td><td>✅</td></tr><tr><td><code>services</code></td><td>start/stop/restart services</td><td>✅</td><td>–</td></tr><tr><td><code>files</code></td><td>read project files</td><td>✅</td><td>–</td></tr><tr><td><code>code</code></td><td>write project files</td><td>✅</td><td>–</td></tr><tr><td><code>system</code></td><td>declared tasks, JavaScript evaluation</td><td>–</td><td>–</td></tr></tbody></table></div>
+<p>Configure with <code>agents.permissions</code>. Scopes in <code>agents.approval_required</code> (default <code>["system"]</code>) need a human
+decision: the desktop app shows a dialog (and the runtime panel lists pending requests), headless mode prints the
+request; answer with <code>openshell approve &lt;id&gt;</code> / <code>openshell deny &lt;id&gt;</code>. Unanswered requests are denied after
+<code>approval_timeout_ms</code>.</p>
+<p>Every call – allowed, denied, rejected or failed – is appended to <code>.openshell/audit.jsonl</code> with agent name, channel,
+tool, scope, (truncated) arguments, outcome and duration. View it with <code>openshell audit</code>.</p>
+<h2 id="security">Security<a class="anchor" href="#security" aria-label="Link to this section">#</a></h2>
+<ul><li>The control API listens on <code>127.0.0.1</code> only and requires a bearer token. The admin token lives in
+<code>.openshell/runtime.json</code> (mode 0600 on Unix, ignored by git).</li><li>Requests with a foreign <code>Host</code> header (DNS rebinding) or a non-allow-listed <code>Origin</code> (other websites) are rejected.</li><li>The frontend gets a separate app token limited to <code>/v1/sdk/*</code> and the bridge, with <code>agents.sdk_permissions</code>.</li><li>Application frontends loaded from http(s) URLs get no Tauri IPC access.</li><li>File tools reject absolute paths, <code>..</code>, symlink escapes and OpenShell's state directory; <code>fs_write</code> also protects <code>.git</code>.</li><li>Agents cannot run arbitrary shell commands; only tasks declared in the config, under the <code>system</code> scope.</li><li>The remote gateway (off by default) exposes only the app profile, uses its own pairing token, rejects browser
+requests (<code>Origin</code>) and audits calls with the channel <code>remote</code>.</li><li>Limits: the permission layer governs cooperating agents. A local process running as the same user can read the token
+file; OpenShell is not a sandbox against local malware.</li></ul>
+<h2 id="a-typical-agent-loop">A typical agent loop<a class="anchor" href="#a-typical-agent-loop" aria-label="Link to this section">#</a></h2>
+<ol><li><code>app_info</code> → understand the app, its services and capabilities.</li><li>Edit code with the agent's own file tools (or <code>fs_write</code>).</li><li>Services with <code>watch</code> restart automatically; otherwise <code>service_restart</code>. Check <code>runtime_status</code> / <code>logs_read {"errors_only": true}</code>.</li><li><code>ui_reload</code> (static frontends reload automatically), then <code>ui_snapshot</code> and <code>ui_click</code> / <code>ui_fill</code> to verify the feature like a user would.</li></ol>
+        <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/agents.md" rel="noopener">View this page on GitHub</a></div>
+      </article>
+      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#connecting">Connecting</a><a class="l3" href="#using-an-installed-app">Using an installed app</a><a class="l3" href="#using-a-project-from-the-cli">Using a project from the CLI</a><a class="l3" href="#developing-mcp-over-stdio-recommended">Developing: MCP over stdio (recommended)</a><a class="l3" href="#mcp-over-http">MCP over HTTP</a><a class="l3" href="#from-another-device-remote-gateway">From another device (remote gateway)</a><a class="l3" href="#plain-http--json">Plain HTTP / JSON</a><a class="l2" href="#tools">Tools</a><a class="l2" href="#resources-and-notifications">Resources and notifications</a><a class="l2" href="#ui-automation">UI automation</a><a class="l2" href="#capabilities-the-applications-own-functions">Capabilities: the application&#x27;s own functions</a><a class="l2" href="#permissions-and-approvals">Permissions and approvals</a><a class="l2" href="#security">Security</a><a class="l2" href="#a-typical-agent-loop">A typical agent loop</a></aside>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="../download.html">Download</a>
+            <a href="../use.html">For users</a>
+            <a href="../teams.html">For teams</a>
+            <a href="../developers.html">For developers</a>
+            <a href="../agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="../docs/getting-started.html">Getting started</a>
+            <a href="../docs/configuration.html">Configuration</a>
+            <a href="../docs/cli.html">CLI</a>
+            <a href="../docs/platforms.html">Platforms</a>
+            <a href="../docs/remote-access.html">Remote access</a>
+            <a href="../docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="../docs/changelog.html">Changelog</a>
+            <a href="../docs/roadmap.html">Roadmap</a>
+            <a href="../docs/security.html">Security</a>
+            <a href="../docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="../assets/search-index.js"></script>
+    <script src="../assets/site.js"></script>
+    <script src="../assets/pages.js"></script>
+  </body>
+</html>

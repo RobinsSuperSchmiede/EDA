@@ -10,6 +10,7 @@
       content="OpenShell is an open-source shell built on Rust and Tauri 2. Bring a web frontend, any backend, a database or just functions – OpenShell runs them as a native desktop app that people and AI agents can use. The same core runs headless on servers and Android."
     />
     <meta property="og:title" content="OpenShell – the shell for agent-native apps" />
+    <meta property="og:type" content="website" />
     <meta property="og:description" content="Any web app. A native desktop app. Agents included. Free and open source." />
     <meta name="theme-color" content="#0f3624" />
     <link rel="icon" href="assets/logo.png" />
@@ -17,17 +18,30 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="assets/site.css" />
+    <link rel="stylesheet" href="assets/pages.css" />
   </head>
-  <body>
+  <body data-page="home">
     <canvas id="field" aria-hidden="true"></canvas>
 
+    <!-- chrome:header -->
     <div class="top-fade" aria-hidden="true"></div>
     <header class="top" id="top-bar">
       <div class="top-inner">
-      <a class="brand" href="#hero"><img src="assets/logo.png" alt="" />OpenShell</a>
-      <a class="cta cta--sm" href="#start"><span>Get started</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        <a class="brand" href="index.html"><img src="assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="use.html">Users</a>
+          <a href="teams.html">Teams</a>
+          <a href="developers.html">Developers</a>
+          <a href="agents.html">AI agents</a>
+          <a href="docs/index.html">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
       </div>
     </header>
+    <!-- /chrome:header -->
 
     <main>
       <!-- ============================================================ hero -->
@@ -40,15 +54,69 @@
               packaged and open to the AI agents you choose. The same core runs headless on servers and Android.
             </p>
             <div class="actions rise">
-              <a class="cta" href="https://github.com/RobinsSuperSchmiede/EDA/releases/latest"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
-              <a class="btn btn--lg" href="#how">How it works</a>
+              <a class="cta" href="download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+              <a class="btn btn--lg" href="#who">Find your way</a>
             </div>
-            <p class="note rise">Free and open source · MIT · Windows, macOS, Linux · Android in progress</p>
+            <p class="note rise">Free and open source · MIT · Windows, macOS, Linux · Android app in progress</p>
           </div>
           <div class="stage-slot rise"></div>
         </div>
         <div class="wordmark" aria-hidden="true">openshell</div>
         <div class="scroll-hint" aria-hidden="true">scroll ↓</div>
+      </section>
+
+
+      <!-- ============================================================ audiences -->
+      <section id="who">
+        <div class="wrap">
+          <div class="kicker reveal">Find your way</div>
+          <h2 class="reveal">One shell<br /><span class="soft">Four ways in</span></h2>
+          <p class="lead reveal">Whether you install an app, roll tools out to a team, build apps or connect an AI agent – start where you are.</p>
+          <div class="aud">
+            <a class="aud-card reveal" href="use.html">
+<span class="ascii">┌────────┐
+│ ▤▤▤▤▤▤ │
+└──┬──┬──┘</span>
+              <h3>I use apps</h3>
+              <p>Install an app on your computer or phone. Your data stays with you, and an assistant can help if you want it to.</p>
+              <ul><li>Install on every system</li><li>Where your data lives</li><li>Use it with an assistant</li></ul>
+              <span class="go">For users →</span>
+            </a>
+            <a class="aud-card reveal" href="teams.html">
+<span class="ascii">┌─┐ ┌─┐ ┌─┐
+└┬┘ └┬┘ └┬┘
+ └───┴───┘</span>
+              <h3>I run tools for a team</h3>
+              <p>Ship internal web apps as managed desktop apps with one download link, signing, updates and an audit trail.</p>
+              <ul><li>Rollout in five steps</li><li>Security and governance</li><li>Licence and support</li></ul>
+              <span class="go">For teams →</span>
+            </a>
+            <a class="aud-card reveal" href="developers.html">
+<span class="ascii">$ openshell dev
+  backend ready
+  window open ▌</span>
+              <h3>I build apps</h3>
+              <p>Keep your frontend and your backend in any language. Describe them in one file and get a native app.</p>
+              <ul><li>Five-minute quick start</li><li>Config, CLI and SDK</li><li>Packaging and releases</li></ul>
+              <span class="go">For developers →</span>
+            </a>
+            <a class="aud-card reveal" href="agents.html">
+<span class="ascii"> { } → mcp
+ ◇ scope: actions
+ ✓ approved</span>
+              <h3>I connect AI agents</h3>
+              <p>Give assistants the app's own functions, or give coding agents the tools to build and test it.</p>
+              <ul><li>App and developer profile</li><li>32 tools by scope</li><li>Setup for common clients</li></ul>
+              <span class="go">For AI agents →</span>
+            </a>
+          </div>
+          <div class="stats reveal">
+            <div class="stat"><b>32</b><span>tools for agents, each behind one scope</span></div>
+            <div class="stat"><b>7</b><span>backend languages: Python, Node.js, Java, C++, Go, Rust, .NET</span></div>
+            <div class="stat"><b>8</b><span>project templates, plus any web app via <span class="mono">init</span></span></div>
+            <div class="stat"><b>MIT</b><span>licence – free for personal and commercial use</span></div>
+          </div>
+        </div>
       </section>
 
       <!-- ============================================================ how it works -->
@@ -402,16 +470,48 @@ openshell mcp --app --start</div>
             </div>
             <div class="fact reveal">
               <h3>Remote gateway</h3>
-              <p>Other devices use the app's functions over MCP with a pairing token. Developer tools and the admin token never leave the device, and browser requests are refused.</p>
-              <code>openshell remote</code>
+              <p>Other devices use the app's functions over MCP with their own token. Pair by QR code, limit access to an IP range, encrypt with TLS. Developer tools and the admin token never leave the device.</p>
+              <code>openshell remote pair laptop</code>
             </div>
           </div>
 
           <p class="planned reveal">
             <b>Status</b> The core and the CLI build for Android and run headless today, for example in Termux. The native
-            Android app with its foreground service is in progress. <b>Planned</b> A device mesh: pair desktop, phone and
-            server with a QR code and deploy from one to the other.
+            Android app, a Kotlin host with a foreground service, builds in CI and has not yet run on a real phone.
+            Remote access with per-device tokens, allowlist and TLS is in the main branch. <b>Planned</b> Discovering
+            devices on the network and deploying from one device to another. Details in the
+            <a href="docs/platform-milestones.html">platform milestones</a>.
           </p>
+        </div>
+      </section>
+
+
+      <!-- ============================================================ shipping -->
+      <section id="ship">
+        <div class="wrap">
+          <div class="kicker reveal">Shipping</div>
+          <h2 class="reveal">Build once<br /><span class="soft">One link per system</span></h2>
+          <p class="lead reveal">
+            Tag a version and a workflow builds the installers for Windows, macOS and Linux and the bundle for phones
+            and servers. Visitors get a download page that offers their own system first.
+          </p>
+          <div class="cols cols--wide mt-m">
+            <div class="term reveal"><span class="c">$</span> openshell release workflow
+  wrote .github/workflows/openshell-release.yml
+
+<span class="c">$</span> git tag v1.2.0 &amp;&amp; git push origin v1.2.0
+  <span class="g">✓</span> Windows   My App_1.2.0_x64-setup.exe
+  <span class="g">✓</span> macOS     My App_1.2.0_aarch64.dmg · _x64.dmg
+  <span class="g">✓</span> Linux     my-app_1.2.0_amd64.AppImage · .deb
+  <span class="g">✓</span> Bundle    my-app-1.2.0.osapp
+  <span class="g">✓</span> downloads.json · index.html</div>
+            <div class="tiles tiles--2 mt-0">
+              <div class="tile reveal"><span class="tag">installers</span><h3>Native and branded</h3><p>NSIS, MSI, DMG, DEB, RPM and AppImage with your name and icon. Windows installs per user, no admin rights.</p></div>
+              <div class="tile reveal"><span class="tag">bundles</span><h3>Portable .osapp</h3><p>One file that runs on every OpenShell host: desktop CLI, server, Termux and the Android app. Data survives updates.</p></div>
+              <div class="tile reveal"><span class="tag">signing</span><h3>No scary warnings</h3><p>Settings for Windows certificates and macOS notarisation. Secrets stay in the environment.</p></div>
+              <div class="tile reveal"><span class="tag">updates</span><h3>Know when there is more</h3><p><span class="mono">openshell update</span> checks your release feed and returns the right download. Automatic install is planned.</p></div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -429,7 +529,7 @@ openshell mcp --app --start</div>
         <div class="wrap">
           <div class="kicker reveal">Security</div>
           <h2 class="reveal">Agents get exactly<br /><span class="soft">what you allow</span></h2>
-          <div class="two">
+          <div class="two three">
             <div class="list reveal">
               <h3>Scopes you grant</h3>
               <ul>
@@ -448,10 +548,38 @@ openshell mcp --app --start</div>
                 <li><b>files</b>only inside the project</li>
                 <li><b>shell</b>no arbitrary commands, ever</li>
                 <li><b>api</b>loopback only, tokens, origin checks</li>
-                <li><b>remote</b>off by default, app profile only, pairing token</li>
+                <li><b>remote</b>off by default, app profile only</li>
+              </ul>
+            </div>
+            <div class="list reveal">
+              <h3>For other devices</h3>
+              <ul>
+                <li><b>tokens</b>one per device, revocable</li>
+                <li><b>allow</b>IP and CIDR allowlist</li>
+                <li><b>tls</b>pinned fingerprint or your certificate</li>
+                <li><b>limits</b>rate limit and lockout</li>
+                <li><b>expose</b>a service is reachable only if listed</li>
               </ul>
             </div>
           </div>
+        </div>
+      </section>
+
+
+      <!-- ============================================================ documentation -->
+      <section id="docs">
+        <div class="wrap">
+          <div class="kicker reveal">Documentation</div>
+          <h2 class="reveal">Read on<br /><span class="soft">Everything is written down</span></h2>
+          <div class="doc-cards mt-m">
+            <a class="doc-card reveal" href="docs/getting-started.html"><h3>Getting started</h3><p>Install, create a first app or bring an existing project.</p></a>
+            <a class="doc-card reveal" href="docs/tutorial.html"><h3>Tutorial</h3><p>A complete app with agent functions and an installer, step by step.</p></a>
+            <a class="doc-card reveal" href="docs/configuration.html"><h3>Configuration</h3><p>Every field of <span class="mono">openshell.json</span>.</p></a>
+            <a class="doc-card reveal" href="docs/platforms.html"><h3>Platforms</h3><p>Desktop, server, Android and Termux.</p></a>
+            <a class="doc-card reveal" href="docs/remote-access.html"><h3>Remote access</h3><p>Use an app from your other devices, safely.</p></a>
+            <a class="doc-card reveal" href="docs/agents.html"><h3>AI agents</h3><p>MCP profiles, tools, permissions and approvals.</p></a>
+          </div>
+          <div class="actions reveal"><a class="btn btn--lg" href="docs/index.html">Browse all documentation</a><a class="btn btn--lg" href="docs/roadmap.html">Roadmap</a><a class="btn btn--lg" href="docs/changelog.html">Changelog</a></div>
         </div>
       </section>
 
@@ -487,7 +615,9 @@ curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/script
             <details class="reveal"><summary>Do I have to rewrite my app?</summary><p>No. Your frontend and backend stay normal projects. OpenShell reads an <span class="mono">openshell.json</span> and runs them – the shell is never compiled into your app, so improving the shell improves every app.</p></details>
             <details class="reveal"><summary>How is it different from Tauri or Electron?</summary><p>OpenShell is built on Tauri 2 and adds what you would otherwise write yourself: process supervision, health checks, logs, a database, hot reload, installers and a standard interface for AI agents. You configure instead of coding a desktop shell.</p></details>
             <details class="reveal"><summary>Do I need a backend?</summary><p>Only if you want one. A frontend can keep its data in the built-in SQLite database, and AI functions can be plain scripts.</p></details>
-            <details class="reveal"><summary>Does it run on Android?</summary><p>The runtime and the CLI do: they build for Android and run headless, for example in Termux, with static frontends, the built-in database, functions and the remote gateway. The native Android app with a foreground service is in progress.</p></details>
+            <details class="reveal"><summary>Does it run on Android?</summary><p>The runtime and the CLI do: they run headless in Termux with static frontends, the built-in database, functions and the remote gateway. A native Android app that runs <span class="mono">.osapp</span> bundles in the foreground is written and builds in CI; it has not been verified on a real device yet and is not in the Play Store.</p></details>
+            <details class="reveal"><summary>Is it ready for production?</summary><p>OpenShell is alpha. It is tested end to end on Windows 11; macOS and Linux build in CI and have seen less manual testing. Pin a version and expect the config format to change before 1.0. The <a href="docs/roadmap.html">roadmap</a> says what is done and what is not.</p></details>
+            <details class="reveal"><summary>How do I give an app to other people?</summary><p>Run <span class="mono">openshell package</span> for an installer, or <span class="mono">openshell release workflow</span> to publish installers for every system from a tag, with a download page. See <a href="teams.html">for teams</a> and <a href="docs/installers.html">installers</a>.</p></details>
             <details class="reveal"><summary>Which agents and models work with it?</summary><p>Any MCP client – Claude Code, Codex, Cursor, Copilot – and anything that speaks HTTP/JSON. OpenShell never ships a model; it can detect local providers like Ollama and LM Studio.</p></details>
             <details class="reveal"><summary>Can an agent damage my computer?</summary><p>Agents only get the scopes you grant per mode, critical actions need your approval, file access stays inside the project, arbitrary commands are impossible and every call is audited.</p></details>
             <details class="reveal"><summary>What does it cost?</summary><p>Nothing. OpenShell is open source under the MIT license.</p></details>
@@ -501,7 +631,7 @@ curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/script
           <h2 class="reveal">Build the shell once</h2>
           <p class="lead reveal">Build applications on top of it. Let agents use and evolve them – on every device you own.</p>
           <div class="actions reveal">
-            <a class="cta" href="https://github.com/RobinsSuperSchmiede/EDA/releases/latest"><span>Download OpenShell</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+            <a class="cta" href="download.html"><span>Download OpenShell</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
             <a class="btn btn--lg" href="https://github.com/RobinsSuperSchmiede/EDA">View on GitHub</a>
           </div>
         </div>
@@ -509,18 +639,50 @@ curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/script
       </section>
     </main>
 
-    <footer>
+    <!-- chrome:footer -->
+    <footer class="site-footer">
       <div class="wrap">
-        <span>© OpenShell contributors · MIT</span>
-        <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/README.md">Docs</a>
-        <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/platforms.md">Platforms</a>
-        <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/CHANGELOG.md">Changelog</a>
-        <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/ROADMAP.md">Roadmap</a>
-        <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
-        <a class="right" href="#hero">Back to top ↑</a>
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="index.html"><img src="assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="download.html">Download</a>
+            <a href="use.html">For users</a>
+            <a href="teams.html">For teams</a>
+            <a href="developers.html">For developers</a>
+            <a href="agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="docs/getting-started.html">Getting started</a>
+            <a href="docs/configuration.html">Configuration</a>
+            <a href="docs/cli.html">CLI</a>
+            <a href="docs/platforms.html">Platforms</a>
+            <a href="docs/remote-access.html">Remote access</a>
+            <a href="docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="docs/changelog.html">Changelog</a>
+            <a href="docs/roadmap.html">Roadmap</a>
+            <a href="docs/security.html">Security</a>
+            <a href="docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
       </div>
     </footer>
+    <!-- /chrome:footer -->
 
     <script src="assets/site.js"></script>
+    <script src="assets/pages.js"></script>
   </body>
 </html>

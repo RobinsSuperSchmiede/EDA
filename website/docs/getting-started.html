@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en" data-theme="green" data-surface="tinted" data-header="fade" data-field="off" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Getting started – OpenShell docs</title>
+    <meta name="description" content="Install OpenShell, create a first app or bring an existing project." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="../assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/site.css" />
+    <link rel="stylesheet" href="../assets/pages.css" />
+  </head>
+  <body data-page="docs" class="page docs-page">
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="../use.html">Users</a>
+          <a href="../teams.html">Teams</a>
+          <a href="../developers.html">Developers</a>
+          <a href="../agents.html">AI agents</a>
+          <a href="../docs/index.html" aria-current="page">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="../download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main class="docs">
+      <aside class="docs-nav" id="docs-nav"><div class="docs-search"><input type="search" id="doc-search" placeholder="Search the docs" autocomplete="off" aria-label="Search the docs" /><div class="search-results" id="search-results" hidden></div></div><nav aria-label="Documentation"><a class="docs-home" href="index.html">Overview</a><h4>Learn</h4><a href="getting-started.html" aria-current="page">Getting started</a><a href="tutorial.html">Tutorial</a><a href="building-blocks.html">Building blocks</a><a href="languages.html">Languages</a><h4>Reference</h4><a href="configuration.html">Configuration</a><a href="cli.html">CLI</a><a href="sdk.html">Frontend SDK</a><a href="control-api.html">Control API</a><h4>Ship and run</h4><a href="installers.html">Installers and releases</a><a href="platforms.html">Platforms</a><a href="remote-access.html">Remote access</a><a href="android-app.html">Android app</a><h4>AI agents</h4><a href="agents.html">Agent Interaction Layer</a><a href="ai.html">AI material</a><a href="ai-app-development.html">Building apps with AI</a><h4>Project</h4><a href="architecture.html">Architecture</a><a href="platform-milestones.html">Platform milestones</a><a href="roadmap.html">Roadmap</a><a href="changelog.html">Changelog</a><a href="security.html">Security policy</a><a href="contributing.html">Contributing</a></nav></aside>
+      <article class="prose" data-source="docs/getting-started.md">
+        <div class="crumbs"><a href="index.html">Docs</a><span>/</span><span>Learn</span></div>
+        <h1 id="getting-started">Getting started</h1>
+<h2 id="1-install">1. Install<a class="anchor" href="#1-install" aria-label="Link to this section">#</a></h2>
+<p>OpenShell consists of two binaries:</p>
+<ul><li><code>openshell</code> – the CLI (also runs the headless runtime and the MCP server)</li><li><code>openshell-desktop</code> – the desktop shell (Tauri 2)</li></ul>
+<p><strong>Prebuilt binaries</strong> (from the <a href="https://github.com/RobinsSuperSchmiede/EDA/releases" rel="noopener">releases page</a>):</p>
+<div class="codeblock" data-lang="bash"><pre><code>curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/scripts/install.sh | sh     <span class="tc"># macOS / Linux</span>
+irm https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/scripts/install.ps1 | iex         <span class="tc"># Windows (PowerShell)</span></code></pre></div>
+<p><strong>From source</strong> (needed until the first release is published, and for development):</p>
+<div class="codeblock" data-lang="bash"><pre><code>git clone https://github.com/RobinsSuperSchmiede/EDA.git
+cd EDA
+cargo build --release</code></pre></div>
+<p>Put <code>target/release</code> on your <code>PATH</code> (both binaries must be in the same directory, or set <code>OPENSHELL_DESKTOP</code> to the
+desktop binary). Check your environment:</p>
+<div class="codeblock" data-lang="bash"><pre><code>openshell doctor</code></pre></div>
+<h2 id="2a-new-project">2a. New project<a class="anchor" href="#2a-new-project" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="bash"><pre><code>openshell create my-app                         <span class="tc"># HTML/JS + Python stdlib, no installs</span>
+openshell create my-app --template react-python <span class="tc"># React (Vite) + Python</span>
+openshell create --list                         <span class="tc"># show all templates</span>
+cd my-app
+openshell dev</code></pre></div>
+<h2 id="2b-existing-project">2b. Existing project<a class="anchor" href="#2b-existing-project" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="bash"><pre><code>cd my-existing-project
+openshell init        <span class="tc"># detects frontend (Vite, Next, CRA, Angular, Vue CLI, static) and backend (Python, Node, Go, Rust)</span>
+openshell doctor      <span class="tc"># verifies commands, directories, ports</span>
+openshell dev</code></pre></div>
+<p><code>init</code> writes a starting point – review the generated <code>openshell.json</code>, especially ports and health checks.
+A typical configuration:</p>
+<div class="codeblock" data-lang="json"><pre><code>{
+  <span class="tk">"version"</span>: <span class="tn">1</span>,
+  <span class="tk">"app"</span>: { <span class="tk">"name"</span>: <span class="ts">"My App"</span> },
+  <span class="tk">"frontend"</span>: {
+    <span class="tk">"command"</span>: <span class="ts">"npm run dev -- --port ${port} --strictPort"</span>,
+    <span class="tk">"cwd"</span>: <span class="ts">"frontend"</span>,
+    <span class="tk">"port"</span>: <span class="ts">"auto"</span>,
+    <span class="tk">"url"</span>: <span class="ts">"http://127.0.0.1:${port}"</span>,
+    <span class="tk">"setup"</span>: { <span class="tk">"command"</span>: <span class="ts">"npm install"</span>, <span class="tk">"creates"</span>: <span class="ts">"frontend/node_modules"</span> },
+    <span class="tk">"build"</span>: <span class="ts">"npm run build"</span>,
+    <span class="tk">"dist"</span>: <span class="ts">"frontend/dist"</span>,
+    <span class="tk">"proxy"</span>: { <span class="tk">"/api"</span>: <span class="ts">"${services.backend.url}"</span> },
+    <span class="tk">"env"</span>: { <span class="tk">"BACKEND_URL"</span>: <span class="ts">"${services.backend.url}"</span> },
+    <span class="tk">"depends_on"</span>: [<span class="ts">"backend"</span>]
+  },
+  <span class="tk">"services"</span>: [
+    {
+      <span class="tk">"name"</span>: <span class="ts">"backend"</span>,
+      <span class="tk">"command"</span>: [<span class="ts">"python"</span>, <span class="ts">"main.py"</span>],
+      <span class="tk">"cwd"</span>: <span class="ts">"backend"</span>,
+      <span class="tk">"port"</span>: <span class="ts">"auto"</span>,
+      <span class="tk">"healthcheck"</span>: <span class="ts">"http://127.0.0.1:${port}/health"</span>,
+      <span class="tk">"restart"</span>: <span class="tn">true</span>,
+      <span class="tk">"watch"</span>: [<span class="ts">"backend"</span>]
+    }
+  ]
+}</code></pre></div>
+<p>Your backend reads its port from the <code>PORT</code> environment variable. The frontend dev server proxies <code>/api</code> to
+<code>BACKEND_URL</code>; in production OpenShell serves <code>frontend/dist</code> itself and proxies <code>/api</code>.</p>
+<h2 id="3-run">3. Run<a class="anchor" href="#3-run" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Command</th><th>What happens</th></tr></thead><tbody><tr><td><code>openshell dev</code></td><td>Development mode: window, file watching, broad agent permissions, logs in the terminal.</td></tr><tr><td><code>openshell dev --headless</code></td><td>Same without a window – open the printed URL in your browser (browser mode).</td></tr><tr><td><code>openshell start</code></td><td>Production mode (uses <code>frontend.dist</code> when configured).</td></tr><tr><td><code>openshell start --headless --detach</code></td><td>Background runtime without window.</td></tr><tr><td><code>openshell status</code> / <code>logs -f</code> / <code>restart backend</code> / <code>stop</code></td><td>Manage the running app from another terminal.</td></tr></tbody></table></div>
+<p>While <code>openshell dev</code> runs:</p>
+<ul><li>edit backend files → the backend restarts (<code>watch</code>),</li><li>edit frontend files → the dev server hot-reloads, or OpenShell reloads the window for static frontends,</li><li>a crashing service is restarted with backoff; after 5 crashes per minute it is marked <code>failed</code>,</li><li><code>openshell build</code> + <code>openshell start</code> runs the production build.</li></ul>
+<h2 id="4-connect-an-ai-agent">4. Connect an AI agent<a class="anchor" href="#4-connect-an-ai-agent" aria-label="Link to this section">#</a></h2>
+<p>Coding agents: every project created with <code>openshell create</code> / <code>openshell init</code> contains an <code>AGENTS.md</code>, and
+<code>openshell guide</code> prints the complete guide for building OpenShell apps. To connect an agent to the running app:</p>
+<div class="codeblock" data-lang="bash"><pre><code>claude mcp add my-app-dev -- openshell mcp --project /path/to/my-app              <span class="tc"># develop the app</span>
+claude mcp add my-app     -- openshell mcp --app --start --project /path/to/my-app  <span class="tc"># use the app</span></code></pre></div>
+<p>See <a href="agents.html">Agent Interaction Layer</a> for other agents, the tool list and permissions.</p>
+        <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/getting-started.md" rel="noopener">View this page on GitHub</a></div>
+      </article>
+      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#1-install">1. Install</a><a class="l2" href="#2a-new-project">2a. New project</a><a class="l2" href="#2b-existing-project">2b. Existing project</a><a class="l2" href="#3-run">3. Run</a><a class="l2" href="#4-connect-an-ai-agent">4. Connect an AI agent</a></aside>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="../download.html">Download</a>
+            <a href="../use.html">For users</a>
+            <a href="../teams.html">For teams</a>
+            <a href="../developers.html">For developers</a>
+            <a href="../agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="../docs/getting-started.html">Getting started</a>
+            <a href="../docs/configuration.html">Configuration</a>
+            <a href="../docs/cli.html">CLI</a>
+            <a href="../docs/platforms.html">Platforms</a>
+            <a href="../docs/remote-access.html">Remote access</a>
+            <a href="../docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="../docs/changelog.html">Changelog</a>
+            <a href="../docs/roadmap.html">Roadmap</a>
+            <a href="../docs/security.html">Security</a>
+            <a href="../docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="../assets/search-index.js"></script>
+    <script src="../assets/site.js"></script>
+    <script src="../assets/pages.js"></script>
+  </body>
+</html>

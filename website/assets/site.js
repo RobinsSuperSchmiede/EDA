@@ -17,7 +17,7 @@
       const y = window.scrollY;
       bar.classList.toggle("scrolled", y > 20);
       topFade.classList.toggle("on", y > 8);
-      if (y > 120 && y > lastY + 4) bar.classList.add("hidden");
+      if (y > 120 && y > lastY + 4 && !bar.classList.contains("open")) bar.classList.add("hidden");
       else if (y < lastY - 4 || y < 120) bar.classList.remove("hidden");
       lastY = y;
     },
@@ -28,21 +28,23 @@
   const stage = document.getElementById("stage");
   function placeStage() {
     const slot = document.querySelector(setting("hero", "wordmark") === "stage" ? "#hero .stage-slot" : "#how .stage-slot");
-    if (slot && stage.parentElement !== slot) slot.append(stage);
+    if (stage && slot && stage.parentElement !== slot) slot.append(stage);
   }
 
   // ------------------------------------------------------------------ features as a spec sheet
   const FEATURES = [
     ["Runtime", ["Start order and health checks", "Restarts with backoff", "Logs from every service", "CPU and memory per service", "Builds for C++, Java, Go, Rust", "Hot reload on save"]],
     ["Desktop", ["Native Tauri 2 window", "Service menu in the title bar", "Tray and background mode", "Your own title bar", "Notifications", "Launch at login"]],
-    ["Platforms", ["Windows, macOS, Linux", "Headless servers", "Android runtime and CLI", "services.platforms", "Pause in the background", "Remote gateway with pairing", "Android app|in progress", "Device mesh|planned"]],
+    ["Platforms", ["Windows, macOS, Linux", "Headless servers", "Android runtime, CLI and Termux", "services.platforms", "Pause in the background", "Android app|in progress", "Device mesh|partly"]],
+    ["Remote access", ["Gateway for the app profile", "QR pairing, revocable device tokens", "IP and CIDR allowlist", "TLS with pinned fingerprint", "Exposed HTTP and TCP services", "Rate limit and lockout", "Per-device permissions|planned", "mDNS discovery|planned"]],
     ["Building blocks", ["Frontend in any framework", "Backend in any language", "Built-in SQLite", "Script functions", "Console for apps without UI", "openshell add / create --with"]],
     ["Agents", ["MCP over stdio and HTTP", "App and developer profiles", "OpenAPI import", "Semantic UI automation", "MCP resources and live updates", "Screenshot fallback|planned"]],
-    ["Security", ["Permission scopes per mode", "Human approvals", "Audit log", "Project-scoped files", "Per-database agent access", "Agent sessions with own tokens|planned"]],
-    ["Shipping", ["NSIS, MSI, DMG, DEB, AppImage", "Your name and icon", "Per-user data", "Installed apps speak MCP", "Code signing|planned", "Auto-updates|planned"]],
+    ["Security", ["Permission scopes per mode", "Human approvals", "Audit log", "Project-scoped files", "Per-database agent access", "No arbitrary shell commands", "Agent sessions with own tokens|planned"]],
+    ["Shipping", ["NSIS, MSI, DMG, DEB, AppImage", "Portable .osapp bundles", "One download link per system", "Code signing settings", "Update check", "Your name and icon", "Per-user data", "Auto-install updates|planned", "Bundled runtimes|planned"]],
   ];
+
   const spec = document.getElementById("feature-grid");
-  for (const [title, items] of FEATURES) {
+  for (const [title, items] of spec ? FEATURES : []) {
     const row = document.createElement("div");
     row.className = "spec-row reveal";
     const h = document.createElement("h3");
@@ -82,6 +84,7 @@
   };
   const picker = document.getElementById("picker");
   function compose() {
+    if (!picker) return;
     const on = [...picker.querySelectorAll('[aria-pressed="true"]')].map((b) => b.dataset.block);
     const key = on.join(",");
     document.getElementById("cmd").textContent = on.length ? `openshell create my-app --with ${key}` : "openshell create my-app --with …";
@@ -89,7 +92,7 @@
       ? "Pick at least one block"
       : NOTES[key] || (on.length === 4 ? "Everything: UI, API, data and agent tools" : "Any combination works – blocks connect themselves");
   }
-  picker.addEventListener("click", (e) => {
+  picker?.addEventListener("click", (e) => {
     const b = e.target.closest(".block");
     if (!b) return;
     b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") === "true" ? "false" : "true");
@@ -98,15 +101,15 @@
   compose();
 
   // ------------------------------------------------------------------ gallery tabs
-  document.querySelectorAll(".tab").forEach((tab) =>
+  document.querySelectorAll("#look .tab").forEach((tab) =>
     tab.addEventListener("click", () => {
-      document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", String(t === tab)));
-      document.querySelectorAll(".shot").forEach((s) => s.classList.toggle("on", s.dataset.shot === tab.dataset.shot));
+      document.querySelectorAll("#look .tab").forEach((t) => t.setAttribute("aria-selected", String(t === tab)));
+      document.querySelectorAll("#look .shot").forEach((s) => s.classList.toggle("on", s.dataset.shot === tab.dataset.shot));
     }),
   );
 
   // ------------------------------------------------------------------ copy quick start
-  document.getElementById("copy").addEventListener("click", async (e) => {
+  document.getElementById("copy")?.addEventListener("click", async (e) => {
     const text = document
       .getElementById("quickstart")
       .innerText.split("\n")
@@ -134,7 +137,7 @@
   // bands. Colours run from the page colour over the theme accent to white. The field lives in
   // the hero and the final section (or the whole page) and stays calm behind the headline.
   const canvas = document.getElementById("field");
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas ? canvas.getContext("2d") : null;
   const RAMP = " .:-=/<{#";
   const PERM = new Uint8Array(512);
   (() => {
@@ -184,6 +187,7 @@
   let cols = 0, rows = 0, cw = 0, ch = 0;
   let calmRects = []; // text areas (document coordinates) where the field stays quiet
   function measure() {
+    if (!canvas) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const size = window.innerWidth < 700 ? 12 : 14;
     cw = size * 0.62;
@@ -218,6 +222,7 @@
 
   const buckets = [[], [], [], [], [], [], []];
   function render(time) {
+    if (!canvas) return;
     const t = motionOn() ? time / 1000 : 0;
     const calmOn = setting("calm", "off") === "on";
     const intensity = Math.max(0.2, Math.min(1.6, parseFloat(setting("intensity", "1")) || 1));
@@ -271,7 +276,7 @@
   let last = 0;
   function frame(now) {
     requestAnimationFrame(frame);
-    if (!motionOn() || now - last < 100) return;
+    if (!canvas || !motionOn() || now - last < 100) return;
     last = now;
     render(now);
   }

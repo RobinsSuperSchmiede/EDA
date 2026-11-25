@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en" data-theme="green" data-surface="tinted" data-header="fade" data-field="off" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Configuration reference (openshell.json, version 1) – OpenShell docs</title>
+    <meta name="description" content="Every field of openshell.json." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="../assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/site.css" />
+    <link rel="stylesheet" href="../assets/pages.css" />
+  </head>
+  <body data-page="docs" class="page docs-page">
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="../use.html">Users</a>
+          <a href="../teams.html">Teams</a>
+          <a href="../developers.html">Developers</a>
+          <a href="../agents.html">AI agents</a>
+          <a href="../docs/index.html" aria-current="page">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="../download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main class="docs">
+      <aside class="docs-nav" id="docs-nav"><div class="docs-search"><input type="search" id="doc-search" placeholder="Search the docs" autocomplete="off" aria-label="Search the docs" /><div class="search-results" id="search-results" hidden></div></div><nav aria-label="Documentation"><a class="docs-home" href="index.html">Overview</a><h4>Learn</h4><a href="getting-started.html">Getting started</a><a href="tutorial.html">Tutorial</a><a href="building-blocks.html">Building blocks</a><a href="languages.html">Languages</a><h4>Reference</h4><a href="configuration.html" aria-current="page">Configuration</a><a href="cli.html">CLI</a><a href="sdk.html">Frontend SDK</a><a href="control-api.html">Control API</a><h4>Ship and run</h4><a href="installers.html">Installers and releases</a><a href="platforms.html">Platforms</a><a href="remote-access.html">Remote access</a><a href="android-app.html">Android app</a><h4>AI agents</h4><a href="agents.html">Agent Interaction Layer</a><a href="ai.html">AI material</a><a href="ai-app-development.html">Building apps with AI</a><h4>Project</h4><a href="architecture.html">Architecture</a><a href="platform-milestones.html">Platform milestones</a><a href="roadmap.html">Roadmap</a><a href="changelog.html">Changelog</a><a href="security.html">Security policy</a><a href="contributing.html">Contributing</a></nav></aside>
+      <article class="prose" data-source="docs/configuration.md">
+        <div class="crumbs"><a href="index.html">Docs</a><span>/</span><span>Reference</span></div>
+        <h1 id="configuration-reference-openshelljson-version-1">Configuration reference (<code>openshell.json</code>, version 1)</h1>
+<p>OpenShell looks for <code>openshell.json</code> or <code>openshell.toml</code> in the given directory and its parents. All relative paths
+are resolved against the directory containing the file. Unknown fields are errors (typos are caught early).
+Editor completion: add <code>"$schema": "https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/schema/openshell.schema.json"</code>.
+<code>openshell schema</code> prints the schema; <code>openshell doctor</code> validates the file and the environment.</p>
+<h2 id="top-level">Top level<a class="anchor" href="#top-level" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>version</code></td><td>number</td><td>Schema version, currently <code>1</code> (default). Newer versions are rejected with a clear message.</td></tr><tr><td><code>app</code></td><td>object</td><td><code>name</code> (required), <code>id</code>, <code>version</code> (semver, needed for installers), <code>description</code>, <code>icon</code> (PNG for window and installers).</td></tr><tr><td><code>window</code></td><td>object</td><td>Native window settings.</td></tr><tr><td><code>frontend</code></td><td>object</td><td>What the window shows.</td></tr><tr><td><code>services</code></td><td>array</td><td>Backends, databases, workers, AI servers, …</td></tr><tr><td><code>databases</code></td><td>array</td><td>Built-in SQLite databases managed by OpenShell.</td></tr><tr><td><code>runtime</code></td><td>object</td><td>Runtime manager behaviour.</td></tr><tr><td><code>agents</code></td><td>object</td><td>Agent Interaction Layer: permissions, approvals, providers.</td></tr><tr><td><code>capabilities</code></td><td>array</td><td>Functions the app exposes to agents (HTTP endpoint, script, task).</td></tr><tr><td><code>tasks</code></td><td>object</td><td>Named commands (<code>"test": "pytest"</code>), runnable by agents with the <code>system</code> scope.</td></tr><tr><td><code>package</code></td><td>object</td><td>Installer settings – see <a href="installers.html">Installers and releases</a>.</td></tr></tbody></table></div>
+<h2 id="window"><code>window</code><a class="anchor" href="#window" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>title</code></td><td><code>app.name</code></td><td>Window title</td></tr><tr><td><code>width</code>, <code>height</code></td><td>1280, 800</td><td>Initial size</td></tr><tr><td><code>min_width</code>, <code>min_height</code></td><td>–</td><td>Minimum size (both required to take effect)</td></tr><tr><td><code>resizable</code></td><td><code>true</code></td><td></td></tr><tr><td><code>maximized</code></td><td><code>false</code></td><td></td></tr><tr><td><code>close_to_tray</code></td><td><code>false</code></td><td>Closing hides the window; services keep running</td></tr><tr><td><code>title_bar</code></td><td><code>"native"</code></td><td><code>"overlay"</code>: the frontend draws the title bar (see <a href="sdk.html#own-title-bar">Frontend SDK</a>). No system title bar on Windows/Linux; window buttons over the content on macOS</td></tr><tr><td><code>tray</code></td><td><code>true</code></td><td>Show a tray icon (show, reload, runtime panel, restart services, quit)</td></tr><tr><td><code>devtools</code></td><td>dev mode only</td><td>Allow WebView devtools</td></tr><tr><td><code>enabled</code></td><td><code>true</code></td><td><code>false</code>: no window – the app runs in the tray / background (services, databases, agent functions). Apps without a frontend show OpenShell's console in the window</td></tr></tbody></table></div>
+<h2 id="frontend"><code>frontend</code><a class="anchor" href="#frontend" aria-label="Link to this section">#</a></h2>
+<p>OpenShell does not care which framework you use. It needs one of:</p>
+<ul><li><code>command</code> + <code>url</code> (or <code>port</code>): a process that serves the frontend (dev server, local web server),</li><li><code>url</code> alone: an already running or remote frontend,</li><li><code>dist</code>: a directory of built files that OpenShell serves itself.</li></ul>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Description</th></tr></thead><tbody><tr><td><code>command</code></td><td>Shell string (<code>"npm run dev"</code>) or argv array</td></tr><tr><td><code>cwd</code></td><td>Working directory</td></tr><tr><td><code>env</code></td><td>Extra environment variables (values support <code>${...}</code>)</td></tr><tr><td><code>port</code></td><td>Number or <code>"auto"</code>; available as <code>${port}</code> and <code>$PORT</code></td></tr><tr><td><code>url</code></td><td>URL loaded into the window</td></tr><tr><td><code>dist</code></td><td>Built frontend directory (production)</td></tr><tr><td><code>build</code></td><td>Build command for <code>openshell build</code></td></tr><tr><td><code>setup</code></td><td>One-time step, e.g. <code>{ "command": "npm install", "creates": "frontend/node_modules" }</code></td></tr><tr><td><code>proxy</code></td><td>Static server reverse proxy, e.g. <code>{ "/api": "${services.backend.url}" }</code></td></tr><tr><td><code>watch</code></td><td>Paths that reload the window when changed (dev mode; useful for static frontends)</td></tr><tr><td><code>healthcheck</code></td><td>Override readiness check (default: the URL answers)</td></tr><tr><td><code>depends_on</code></td><td>Services that must be healthy first</td></tr><tr><td><code>production</code></td><td>Overrides for production mode: <code>{ "command", "url", "dist" }</code></td></tr></tbody></table></div>
+<p>Mode selection: <strong>development</strong> uses <code>command</code>/<code>url</code>, falling back to <code>dist</code>. <strong>Production</strong> uses <code>production</code>
+overrides, then <code>dist</code>, then the development settings.</p>
+<h2 id="services"><code>services[]</code><a class="anchor" href="#services" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>name</code></td><td>–</td><td>Unique, <code>[a-z0-9_-]</code> (<code>frontend</code> is reserved)</td></tr><tr><td><code>description</code>, <code>kind</code></td><td>–</td><td>Informational (<code>backend</code>, <code>database</code>, <code>worker</code>, <code>ai</code>, …)</td></tr><tr><td><code>command</code></td><td>–</td><td>Shell string or argv. In argv form <code>python</code> falls back to <code>python3</code> (and vice versa)</td></tr><tr><td><code>args</code></td><td><code>[]</code></td><td>Appended arguments</td></tr><tr><td><code>cwd</code></td><td>project root</td><td></td></tr><tr><td><code>env</code></td><td><code>{}</code></td><td>Values support <code>${...}</code></td></tr><tr><td><code>port</code></td><td>–</td><td>Number or <code>"auto"</code>; exported as <code>PORT</code></td></tr><tr><td><code>url</code></td><td><code>http://127.0.0.1:&lt;port&gt;</code></td><td>Base URL (used by <code>${services.&lt;name&gt;.url}</code> and HTTP capabilities)</td></tr><tr><td><code>external</code></td><td><code>false</code></td><td>Do not start; only monitor (<code>url</code> / <code>healthcheck</code> required)</td></tr><tr><td><code>healthcheck</code></td><td>TCP on <code>port</code></td><td>URL string (HTTP 2xx/3xx) or <code>{ "http" | "tcp", "interval_ms", "timeout_ms", "failure_threshold", "ready_timeout_ms" }</code></td></tr><tr><td><code>restart</code></td><td><code>true</code> (on-failure)</td><td><code>true</code>, <code>false</code>, <code>"never"</code>, <code>"on-failure"</code>, <code>"always"</code></td></tr><tr><td><code>max_restarts</code></td><td>5</td><td>Crashes per minute before the service is marked <code>failed</code></td></tr><tr><td><code>depends_on</code></td><td><code>[]</code></td><td>Started after these are healthy; stopped before them</td></tr><tr><td><code>autostart</code></td><td><code>true</code></td><td>Start with the runtime</td></tr><tr><td><code>setup</code></td><td>–</td><td>One-time step (<code>command</code>, <code>creates</code>, <code>cwd</code>)</td></tr><tr><td><code>build</code></td><td>–</td><td>Build step for compiled services: command, or <code>{ "command", "cwd", "on_start": "development" | "always" | "never" }</code>. Runs before every start in dev mode and in <code>openshell build</code> / <code>package</code>. See <a href="languages.html">Languages</a></td></tr><tr><td><code>openapi</code></td><td>–</td><td>Import the service's OpenAPI 3 (JSON) document as agent tools: <code>"/openapi.json"</code>, URL, project file, or <code>{ "location", "include", "exclude", "prefix" }</code></td></tr><tr><td><code>watch</code></td><td><code>[]</code></td><td>Paths whose changes restart the service (dev mode). <code>node_modules</code>, <code>.git</code>, <code>__pycache__</code>, <code>target</code>, <code>.venv</code>, <code>*.log</code> are ignored</td></tr><tr><td><code>modes</code></td><td>all</td><td>Only run in <code>["development"]</code> or <code>["production"]</code></td></tr><tr><td><code>platforms</code></td><td>all</td><td>Only run on <code>desktop</code>, <code>android</code> and/or <code>server</code>, e.g. <code>["desktop", "server"]</code> for a service that needs a toolchain. See <a href="platforms.html">Platforms</a></td></tr><tr><td><code>background</code></td><td><code>keep</code></td><td>Mobile platforms: <code>pause</code> stops the service while the app is in the background and starts it again afterwards</td></tr><tr><td><code>stop_timeout_ms</code></td><td><code>runtime.shutdown_timeout_ms</code></td><td>Grace period before a forced kill (Unix; Windows terminates the tree immediately)</td></tr></tbody></table></div>
+<p>Every process also receives <code>OPENSHELL=1</code>, <code>OPENSHELL_MODE</code>, <code>OPENSHELL_SERVICE</code>, <code>OPENSHELL_PROJECT_ROOT</code>,
+<code>OPENSHELL_CONTROL_URL</code>, <code>OPENSHELL_DATA_DIR</code> (writable per-app data directory – per user for installed apps; store
+databases and files there) and <code>PYTHONUNBUFFERED=1</code> (unless set).</p>
+<h2 id="variables">Variables<a class="anchor" href="#variables" aria-label="Link to this section">#</a></h2>
+<p>Usable in commands, args, env values, URLs, health checks and proxy targets:</p>
+<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Value</th></tr></thead><tbody><tr><td><code>${port}</code></td><td>Port of the current service / frontend</td></tr><tr><td><code>${services.&lt;name&gt;.port}</code> / <code>${services.&lt;name&gt;.url}</code></td><td>Another service</td></tr><tr><td><code>${frontend.url}</code></td><td>Frontend URL</td></tr><tr><td><code>${project.root}</code></td><td>Absolute project directory</td></tr><tr><td><code>${mode}</code></td><td><code>development</code> / <code>production</code></td></tr><tr><td><code>${env.NAME}</code></td><td>Environment variable of the shell</td></tr><tr><td><code>$$</code></td><td>Literal <code>$</code></td></tr></tbody></table></div>
+<h2 id="runtime"><code>runtime</code><a class="anchor" href="#runtime" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>autostart</code></td><td><code>true</code></td><td>Start services when the shell starts</td></tr><tr><td><code>background_mode</code></td><td><code>false</code></td><td>Keep running in the tray when the window is closed</td></tr><tr><td><code>control_port</code></td><td>random</td><td>Fixed port for the control API</td></tr><tr><td><code>log_buffer_lines</code></td><td>10000</td><td>Lines kept in memory (files in <code>.openshell/logs/</code>)</td></tr><tr><td><code>shutdown_timeout_ms</code></td><td>5000</td><td>Default grace period when stopping</td></tr><tr><td><code>launch_at_login</code></td><td><code>false</code></td><td>Start the installed app when the user logs in (installed apps only)</td></tr><tr><td><code>remote</code></td><td>off</td><td>Remote access for other devices – see <a href="#runtimeremote"><code>runtime.remote</code></a></td></tr></tbody></table></div>
+<h3 id="runtimeremote"><code>runtime.remote</code><a class="anchor" href="#runtimeremote" aria-label="Link to this section">#</a></h3>
+<p>Makes the app usable from other devices (a laptop using an app hosted on a phone, an agent on another machine).
+Everything except <code>enabled</code> is optional. Full guide: <a href="remote-access.html">Remote access</a>.</p>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>enabled</code></td><td><code>false</code></td><td>Start the gateway (app profile over MCP) and the exposed ports</td></tr><tr><td><code>bind</code></td><td><code>0.0.0.0</code></td><td>Address to listen on; a VPN address (Tailscale <code>100.x.y.z</code>) limits access to your devices</td></tr><tr><td><code>port</code></td><td>7420</td><td>Gateway port</td></tr><tr><td><code>allow</code></td><td>everyone</td><td>IP addresses / CIDR ranges that may connect, e.g. <code>["192.168.1.0/24", "100.64.0.0/10"]</code>. Loopback is always allowed</td></tr><tr><td><code>shared_token</code></td><td><code>true</code></td><td>Accept the shared pairing token; <code>false</code> = only per-device tokens (<code>openshell remote pair &lt;device&gt;</code>)</td></tr><tr><td><code>rate_limit</code></td><td>120 / 10 / 5</td><td><code>{ "requests_per_minute": 120, "max_failed_auth": 10, "block_minutes": 5 }</code> per address; <code>0</code> switches a limit off</td></tr><tr><td><code>tls</code></td><td>off</td><td><code>{ "enabled": true }</code> with a self-signed certificate (clients pin its SHA-256 fingerprint), or <code>{ "enabled": true, "cert": "certs/fullchain.pem", "key": "certs/key.pem" }</code></td></tr><tr><td><code>expose</code></td><td>none</td><td>Services reachable on their own port: <code>[{ "service": "api", "port": 8080 }]</code> – see below</td></tr></tbody></table></div>
+<p><code>expose[]</code> entries:</p>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>service</code></td><td>–</td><td>Service name, or <code>frontend</code></td></tr><tr><td><code>port</code></td><td>–</td><td>Port other devices connect to (must differ from the gateway and control ports)</td></tr><tr><td><code>protocol</code></td><td><code>http</code></td><td><code>http</code> (websites, APIs; token login, TLS) or <code>tcp</code> (any protocol, e.g. PostgreSQL, Redis, MQTT)</td></tr><tr><td><code>auth</code></td><td><code>token</code> for <code>http</code></td><td><code>token</code>: pairing/device token as <code>Authorization: Bearer</code>, cookie, or once <code>?openshell_token=…</code> in the browser; <code>none</code>: no login (use <code>allow</code>). <code>tcp</code> is always <code>none</code></td></tr><tr><td><code>allow</code></td><td><code>runtime.remote.allow</code></td><td>Addresses / CIDR ranges for this port only</td></tr></tbody></table></div>
+<h2 id="agents"><code>agents</code><a class="anchor" href="#agents" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>enabled</code></td><td><code>true</code></td><td>Disable to deny all agent tools</td></tr><tr><td><code>permissions</code></td><td>dev: <code>read, ui, actions, services, files, code</code> · prod: <code>read, ui, actions</code></td><td>A list for all modes or <code>{ "development": [...], "production": [...] }</code></td></tr><tr><td><code>approval_required</code></td><td><code>["system"]</code></td><td>Scopes that need a human decision</td></tr><tr><td><code>approval_timeout_ms</code></td><td>120000</td><td>Unanswered requests are denied</td></tr><tr><td><code>sdk_permissions</code></td><td><code>["read", "ui"]</code></td><td>Scopes for the frontend SDK (app token)</td></tr><tr><td><code>providers</code></td><td><code>[]</code></td><td><code>{ "name", "kind": "ollama" | "lm-studio" | "openai-compatible" | "openai" | "anthropic" | "mcp" | "custom", "url", "api_key_env", "models" }</code></td></tr><tr><td><code>detect_local_providers</code></td><td><code>true</code></td><td>Probe Ollama (11434) and LM Studio (1234)</td></tr></tbody></table></div>
+<p>Permission scopes: <code>read</code>, <code>ui</code>, <code>actions</code> (alias <code>write</code>), <code>services</code>, <code>files</code>, <code>code</code>, <code>system</code>.</p>
+<h2 id="capabilities"><code>capabilities[]</code><a class="anchor" href="#capabilities" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="json"><pre><code>{
+  <span class="tk">"name"</span>: <span class="ts">"add_todo"</span>,
+  <span class="tk">"description"</span>: <span class="ts">"Create a todo"</span>,
+  <span class="tk">"permission"</span>: <span class="ts">"actions"</span>,
+  <span class="tk">"input_schema"</span>: { <span class="tk">"type"</span>: <span class="ts">"object"</span>, <span class="tk">"properties"</span>: { <span class="tk">"title"</span>: { <span class="tk">"type"</span>: <span class="ts">"string"</span> } }, <span class="tk">"required"</span>: [<span class="ts">"title"</span>] },
+  <span class="tk">"http"</span>: { <span class="tk">"service"</span>: <span class="ts">"backend"</span>, <span class="tk">"method"</span>: <span class="ts">"POST"</span>, <span class="tk">"path"</span>: <span class="ts">"/api/todos"</span> }
+}</code></pre></div>
+<p>Exactly one target:</p>
+<ul><li><code>http</code> – <code>service</code> + <code>path</code>, or <code>url</code>; GET/DELETE send the input as query parameters, other methods as JSON body.</li><li><code>run</code> – a script/program: <code>["python", "tools/x.py"]</code> or <code>{ "command", "cwd", "env", "timeout_ms" }</code>. It receives the
+input as JSON on stdin (and in <code>OPENSHELL_INPUT</code>) and prints its result (JSON or text) on stdout; a non-zero exit
+code is an error (message from stderr). No server needed – see <a href="building-blocks.html#functions">Building blocks</a>.</li><li><code>task</code> – name of a task (input is ignored).</li></ul>
+<p>Agents see each capability as a tool <code>cap_&lt;name&gt;</code> (developer profile), under its plain name (app profile) and via
+<code>app_invoke</code>. The frontend calls them with <code>OpenShell.invoke(name, input)</code>.</p>
+<h2 id="databases"><code>databases[]</code><a class="anchor" href="#databases" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="json"><pre><code>{ <span class="tk">"name"</span>: <span class="ts">"main"</span>, <span class="tk">"migrations"</span>: <span class="ts">"db/migrations"</span>, <span class="tk">"agent_access"</span>: <span class="ts">"write"</span> }</code></pre></div>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>name</code></td><td>–</td><td><code>[a-z0-9_]</code>; services get the path as <code>OPENSHELL_DB_&lt;NAME&gt;</code></td></tr><tr><td><code>type</code></td><td><code>"sqlite"</code></td><td>Engine (SQLite is built in)</td></tr><tr><td><code>path</code></td><td><code>&lt;name&gt;.db</code></td><td>File, relative to the app's data directory (<code>OPENSHELL_DATA_DIR</code>) or absolute</td></tr><tr><td><code>migrations</code></td><td>–</td><td>Folder of <code>*.sql</code> files, applied once each in file-name order</td></tr><tr><td><code>agent_access</code></td><td><code>"read"</code></td><td><code>none</code>, <code>read</code> (<code>db_list</code>, <code>db_schema</code>, <code>db_query</code>) or <code>write</code> (also <code>db_execute</code>)</td></tr><tr><td><code>description</code></td><td>–</td><td>Shown to agents</td></tr></tbody></table></div>
+<p>The main (or only) database is also exported as <code>DATABASE_URL=sqlite:///…</code>. Details:
+<a href="building-blocks.html#database">Building blocks</a>.</p>
+<h2 id="toml">TOML<a class="anchor" href="#toml" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="toml"><pre><code>version = 1
+
+[app]
+name = "My App"
+
+[frontend]
+command = "npm run dev"
+cwd = "frontend"
+url = "http://localhost:5173"
+
+[[services]]
+name = "api"
+command = ["node", "server.js"]
+port = 3001
+restart = "always"</code></pre></div>
+        <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/configuration.md" rel="noopener">View this page on GitHub</a></div>
+      </article>
+      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#top-level">Top level</a><a class="l2" href="#window">window</a><a class="l2" href="#frontend">frontend</a><a class="l2" href="#services">services[]</a><a class="l2" href="#variables">Variables</a><a class="l2" href="#runtime">runtime</a><a class="l3" href="#runtimeremote">runtime.remote</a><a class="l2" href="#agents">agents</a><a class="l2" href="#capabilities">capabilities[]</a><a class="l2" href="#databases">databases[]</a><a class="l2" href="#toml">TOML</a></aside>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="../download.html">Download</a>
+            <a href="../use.html">For users</a>
+            <a href="../teams.html">For teams</a>
+            <a href="../developers.html">For developers</a>
+            <a href="../agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="../docs/getting-started.html">Getting started</a>
+            <a href="../docs/configuration.html">Configuration</a>
+            <a href="../docs/cli.html">CLI</a>
+            <a href="../docs/platforms.html">Platforms</a>
+            <a href="../docs/remote-access.html">Remote access</a>
+            <a href="../docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="../docs/changelog.html">Changelog</a>
+            <a href="../docs/roadmap.html">Roadmap</a>
+            <a href="../docs/security.html">Security</a>
+            <a href="../docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="../assets/search-index.js"></script>
+    <script src="../assets/site.js"></script>
+    <script src="../assets/pages.js"></script>
+  </body>
+</html>

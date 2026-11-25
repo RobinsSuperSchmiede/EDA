@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en" data-theme="green" data-surface="tinted" data-header="fade" data-field="off" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CLI reference – OpenShell docs</title>
+    <meta name="description" content="All commands of the openshell binary." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="../assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/site.css" />
+    <link rel="stylesheet" href="../assets/pages.css" />
+  </head>
+  <body data-page="docs" class="page docs-page">
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="../use.html">Users</a>
+          <a href="../teams.html">Teams</a>
+          <a href="../developers.html">Developers</a>
+          <a href="../agents.html">AI agents</a>
+          <a href="../docs/index.html" aria-current="page">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="../download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main class="docs">
+      <aside class="docs-nav" id="docs-nav"><div class="docs-search"><input type="search" id="doc-search" placeholder="Search the docs" autocomplete="off" aria-label="Search the docs" /><div class="search-results" id="search-results" hidden></div></div><nav aria-label="Documentation"><a class="docs-home" href="index.html">Overview</a><h4>Learn</h4><a href="getting-started.html">Getting started</a><a href="tutorial.html">Tutorial</a><a href="building-blocks.html">Building blocks</a><a href="languages.html">Languages</a><h4>Reference</h4><a href="configuration.html">Configuration</a><a href="cli.html" aria-current="page">CLI</a><a href="sdk.html">Frontend SDK</a><a href="control-api.html">Control API</a><h4>Ship and run</h4><a href="installers.html">Installers and releases</a><a href="platforms.html">Platforms</a><a href="remote-access.html">Remote access</a><a href="android-app.html">Android app</a><h4>AI agents</h4><a href="agents.html">Agent Interaction Layer</a><a href="ai.html">AI material</a><a href="ai-app-development.html">Building apps with AI</a><h4>Project</h4><a href="architecture.html">Architecture</a><a href="platform-milestones.html">Platform milestones</a><a href="roadmap.html">Roadmap</a><a href="changelog.html">Changelog</a><a href="security.html">Security policy</a><a href="contributing.html">Contributing</a></nav></aside>
+      <article class="prose" data-source="docs/cli.md">
+        <div class="crumbs"><a href="index.html">Docs</a><span>/</span><span>Reference</span></div>
+        <h1 id="cli-reference">CLI reference</h1>
+<p>Global option: <code>-p, --project &lt;dir&gt;</code> – project directory (default: current directory or the nearest parent with an
+<code>openshell.json</code>). Environment: <code>OPENSHELL_LOG</code> (log filter, e.g. <code>debug</code>), <code>OPENSHELL_DESKTOP</code> (path of the desktop
+binary), <code>NO_COLOR</code>, <code>OPENSHELL_APPS_DIR</code> (installed bundles), <code>OPENSHELL_ANDROID_MODE</code> (<code>termux</code> / <code>app</code>, see
+<a href="platforms.html#termux-apps-on-the-phone">Platforms</a>).</p>
+<h2 id="project-setup">Project setup<a class="anchor" href="#project-setup" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Command</th><th>Description</th></tr></thead><tbody><tr><td><code>openshell create &lt;name&gt; [-t &lt;template&gt;]</code></td><td>New project from a template (<code>vanilla-python</code> default, <code>react-python</code>, <code>react-node</code>, <code>vue-python</code>, <code>svelte-go</code>, <code>vanilla-java</code>, <code>vanilla-cpp</code>, <code>custom</code>). <code>--list</code> shows all.</td></tr><tr><td><code>openshell create &lt;name&gt; --with frontend,backend,database,functions [--lang python|node]</code></td><td>New project composed of <a href="building-blocks.html">building blocks</a>. Without <code>--template</code>/<code>--with</code> the terminal asks.</td></tr><tr><td><code>openshell add frontend | backend [--lang …] | database [name] | function &lt;name&gt; [--lang …]</code></td><td>Add a building block to the current app (files + <code>openshell.json</code>).</td></tr><tr><td><code>openshell init [--name &lt;n&gt;] [--toml] [--force]</code></td><td>Generate a config for an existing project (auto-detection) and an <code>AGENTS.md</code> for coding agents if none exists.</td></tr><tr><td><code>openshell doctor</code></td><td>Validate config, commands, directories, ports, desktop binary, WebView2, toolchain. Exit code 1 on errors.</td></tr><tr><td><code>openshell schema</code></td><td>Print the JSON Schema of the configuration.</td></tr><tr><td><code>openshell guide</code></td><td>Print the guide for AI coding agents that build apps on OpenShell (docs/ai/app-development.md).</td></tr><tr><td><code>openshell build</code></td><td>Production build: <code>services[].build</code> (C++, Java, …) and <code>frontend.build</code> (with <code>frontend.setup</code> if needed).</td></tr><tr><td><code>openshell package [-t nsis|msi|dmg|deb|…|bundle] [-o dir] [--skip-build]</code></td><td>Build a native installer, or with <code>-t bundle</code> the portable app bundle (<code>.osapp</code>, also on Android/Termux) – see <a href="installers.html">Installers and releases</a>.</td></tr><tr><td><code>openshell release workflow [--force]</code></td><td>Write <code>.github/workflows/openshell-release.yml</code>: a tag push builds Windows, macOS, Linux installers and the <code>.osapp</code> bundle and publishes them with a download page.</td></tr><tr><td><code>openshell release manifest [dir] [--base-url &lt;url&gt;]</code></td><td>Write <code>downloads.json</code> (platform, file, size, SHA-256) and a download page (<code>index.html</code>) for the files in <code>dir</code> (default <code>dist</code>).</td></tr><tr><td><code>openshell install &lt;file.osapp&gt; [--start]</code></td><td>Install an app bundle into <code>~/.openshell/apps/&lt;identifier&gt;</code> (<code>OPENSHELL_APPS_DIR</code>); app data survives updates.</td></tr><tr><td><code>openshell apps</code></td><td>List installed app bundles.</td></tr><tr><td><code>openshell update</code></td><td>Check <code>package.update_url</code> for a newer release and print the download for this system.</td></tr></tbody></table></div>
+<h2 id="running">Running<a class="anchor" href="#running" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Command</th><th>Description</th></tr></thead><tbody><tr><td><code>openshell dev [--headless]</code></td><td>Development mode. Opens the desktop window (or runs headless for the browser) and streams logs. Ctrl+C stops everything.</td></tr><tr><td><code>openshell start [--headless] [--detach]</code></td><td>Production mode. <code>--detach</code> returns immediately and keeps the app running in the background.</td></tr><tr><td><code>openshell stop</code></td><td>Stop the whole shell (all services, window).</td></tr><tr><td><code>openshell stop &lt;service&gt;</code></td><td>Stop one service.</td></tr><tr><td><code>openshell run &lt;service&gt;</code></td><td>Start a stopped service (and its dependencies).</td></tr><tr><td><code>openshell restart &lt;service&gt;</code></td><td>Restart a service and wait until it is healthy.</td></tr></tbody></table></div>
+<h2 id="inspecting">Inspecting<a class="anchor" href="#inspecting" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Command</th><th>Description</th></tr></thead><tbody><tr><td><code>openshell status [--json]</code></td><td>Mode, URLs, services (state, pid, port, CPU, memory, restarts, errors), bridged pages, pending approvals.</td></tr><tr><td><code>openshell logs [service] [-f] [-n 100] [--errors] [--grep &lt;text&gt;]</code></td><td>Logs of all or one service.</td></tr><tr><td><code>openshell audit [-n 30]</code></td><td>Recent agent actions.</td></tr><tr><td><code>openshell remote</code></td><td>Remote gateway: URLs, MCP endpoint, TLS fingerprint, allowlist, exposed services, paired devices, blocked addresses, shared token and an MCP client configuration (<code>runtime.remote</code>).</td></tr><tr><td><code>openshell remote pair &lt;device&gt; [--no-qr]</code></td><td>Create a token for one device (shown once) with a QR code / pairing URI and links to exposed services.</td></tr><tr><td><code>openshell remote devices</code></td><td>Paired devices with last use.</td></tr><tr><td><code>openshell remote revoke &lt;device&gt;</code></td><td>Revoke one device's token.</td></tr><tr><td><code>openshell remote unblock &lt;address&gt;</code></td><td>Lift the block of an address after too many failed logins.</td></tr><tr><td><code>openshell lifecycle &lt;foreground|background|low-memory&gt;</code></td><td>Simulate a mobile lifecycle event, e.g. to test <code>"background": "pause"</code>.</td></tr></tbody></table></div>
+<h2 id="agents">Agents<a class="anchor" href="#agents" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Command</th><th>Description</th></tr></thead><tbody><tr><td><code>openshell mcp [--app] [--start]</code></td><td>MCP server over stdio. <code>--app</code>: only the application's own functions (agents that <em>use</em> the app). <code>--start</code>: start the app headless if it is not running.</td></tr><tr><td><code>openshell tools [--json]</code></td><td>Tools with scope and current access (allowed / approval / denied).</td></tr><tr><td><code>openshell call &lt;tool&gt; ['&lt;json args&gt;']</code></td><td>Call a tool as agent <code>cli</code>, e.g. <code>openshell call ui_click '{"text":"Save"}'</code>.</td></tr><tr><td><code>openshell approvals</code></td><td>Pending approval requests.</td></tr><tr><td><code>openshell approve &lt;id&gt;</code> / <code>openshell deny &lt;id&gt;</code></td><td>Answer an approval request.</td></tr></tbody></table></div>
+        <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/cli.md" rel="noopener">View this page on GitHub</a></div>
+      </article>
+      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#project-setup">Project setup</a><a class="l2" href="#running">Running</a><a class="l2" href="#inspecting">Inspecting</a><a class="l2" href="#agents">Agents</a></aside>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="../download.html">Download</a>
+            <a href="../use.html">For users</a>
+            <a href="../teams.html">For teams</a>
+            <a href="../developers.html">For developers</a>
+            <a href="../agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="../docs/getting-started.html">Getting started</a>
+            <a href="../docs/configuration.html">Configuration</a>
+            <a href="../docs/cli.html">CLI</a>
+            <a href="../docs/platforms.html">Platforms</a>
+            <a href="../docs/remote-access.html">Remote access</a>
+            <a href="../docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="../docs/changelog.html">Changelog</a>
+            <a href="../docs/roadmap.html">Roadmap</a>
+            <a href="../docs/security.html">Security</a>
+            <a href="../docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="../assets/search-index.js"></script>
+    <script src="../assets/site.js"></script>
+    <script src="../assets/pages.js"></script>
+  </body>
+</html>

@@ -14,7 +14,7 @@ on Android today and where the Android work is going.
 - **AI builds, the user does not edit code.** Agents create, extend, test and manage apps through
   the same MCP tools as on the desktop; the platform tells them which building blocks exist there.
 - **Connected devices.** Desktop, phone and server are meant to manage and develop projects
-  together (see [device mesh](#device-mesh-planned)).
+  together (see [device mesh](#device-mesh-in-progress)).
 
 ## Layers
 

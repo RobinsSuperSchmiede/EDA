@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en" data-theme="green" data-surface="tinted" data-header="fade" data-field="off" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Building blocks: build only what you need – OpenShell docs</title>
+    <meta name="description" content="Frontend, backend, database, functions: use only what you need." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="../assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/site.css" />
+    <link rel="stylesheet" href="../assets/pages.css" />
+  </head>
+  <body data-page="docs" class="page docs-page">
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="../use.html">Users</a>
+          <a href="../teams.html">Teams</a>
+          <a href="../developers.html">Developers</a>
+          <a href="../agents.html">AI agents</a>
+          <a href="../docs/index.html" aria-current="page">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="../download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main class="docs">
+      <aside class="docs-nav" id="docs-nav"><div class="docs-search"><input type="search" id="doc-search" placeholder="Search the docs" autocomplete="off" aria-label="Search the docs" /><div class="search-results" id="search-results" hidden></div></div><nav aria-label="Documentation"><a class="docs-home" href="index.html">Overview</a><h4>Learn</h4><a href="getting-started.html">Getting started</a><a href="tutorial.html">Tutorial</a><a href="building-blocks.html" aria-current="page">Building blocks</a><a href="languages.html">Languages</a><h4>Reference</h4><a href="configuration.html">Configuration</a><a href="cli.html">CLI</a><a href="sdk.html">Frontend SDK</a><a href="control-api.html">Control API</a><h4>Ship and run</h4><a href="installers.html">Installers and releases</a><a href="platforms.html">Platforms</a><a href="remote-access.html">Remote access</a><a href="android-app.html">Android app</a><h4>AI agents</h4><a href="agents.html">Agent Interaction Layer</a><a href="ai.html">AI material</a><a href="ai-app-development.html">Building apps with AI</a><h4>Project</h4><a href="architecture.html">Architecture</a><a href="platform-milestones.html">Platform milestones</a><a href="roadmap.html">Roadmap</a><a href="changelog.html">Changelog</a><a href="security.html">Security policy</a><a href="contributing.html">Contributing</a></nav></aside>
+      <article class="prose" data-source="docs/building-blocks.md">
+        <div class="crumbs"><a href="index.html">Docs</a><span>/</span><span>Learn</span></div>
+        <h1 id="building-blocks-build-only-what-you-need">Building blocks: build only what you need</h1>
+<p>An OpenShell app is assembled from four independent building blocks. Every block is optional – use one, several or
+all of them:</p>
+<div class="table-wrap"><table><thead><tr><th>Block</th><th>What it is</th><th>Add it</th></tr></thead><tbody><tr><td><strong>Frontend</strong></td><td>A web UI in the native window (static files, a dev server or a URL)</td><td><code>openshell add frontend</code></td></tr><tr><td><strong>Backend</strong></td><td>An HTTP service in any language, supervised by OpenShell</td><td><code>openshell add backend [--lang python|node]</code></td></tr><tr><td><strong>Database</strong></td><td>A built-in SQLite database with migrations, managed by OpenShell</td><td><code>openshell add database [name]</code></td></tr><tr><td><strong>Functions</strong></td><td>Functions for AI agents (MCP tools) implemented as scripts – no server</td><td><code>openshell add function &lt;name&gt; [--lang python|node]</code></td></tr></tbody></table></div>
+<p>Start a new app with any combination:</p>
+<div class="codeblock" data-lang="bash"><pre><code>openshell create my-app --with frontend,database          <span class="tc"># UI that stores data – no backend</span>
+openshell create my-app --with database,functions         <span class="tc"># an AI interface over a database – no UI, no server</span>
+openshell create my-app --with backend                    <span class="tc"># a supervised API service</span>
+openshell create my-app --with frontend,backend,database,functions
+openshell create my-app                                   <span class="tc"># in a terminal: asks which blocks you want</span></code></pre></div>
+<p>Blocks can be added later in any order; they connect themselves (a frontend added to an app with a backend proxies
+<code>/api</code> to it, the backend receives the database path, the frontend gets write access to the database, …).</p>
+<h2 id="typical-combinations">Typical combinations<a class="anchor" href="#typical-combinations" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>You want</th><th>Blocks</th><th>How it works</th></tr></thead><tbody><tr><td>A desktop UI with local storage</td><td>frontend + database</td><td>The page uses <code>OpenShell.db.query/execute</code> from the <a href="sdk.html">SDK</a>.</td></tr><tr><td>An AI interface to your data</td><td>database + functions</td><td>Agents get your functions plus <code>db_query</code> / <code>db_execute</code> (as allowed by <code>agent_access</code>).</td></tr><tr><td>Tools for AI agents only</td><td>functions</td><td>Each function is a script: JSON in, JSON out. The app has no UI and no server.</td></tr><tr><td>A background service</td><td>backend</td><td>Runs headless or in the tray (<code>"window": {"enabled": false}</code>).</td></tr><tr><td>A classic web app as desktop app</td><td>frontend + backend (+ database)</td><td>As before; the backend can use <code>OPENSHELL_DB_MAIN</code>.</td></tr></tbody></table></div>
+<p>Apps <strong>without a frontend</strong> show OpenShell's console in the window: services, databases (with a data browser),
+functions (with a "Run" button), logs and the commands to connect AI agents. Set <code>"window": {"enabled": false}</code> to
+run only in the tray instead.</p>
+<h2 id="frontend">Frontend<a class="anchor" href="#frontend" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="json"><pre><code><span class="tk">"frontend"</span>: { <span class="tk">"dist"</span>: <span class="ts">"web"</span>, <span class="tk">"watch"</span>: [<span class="ts">"web"</span>] }</code></pre></div>
+<p>Any frontend works – static files, a Vite/Next dev server (<code>command</code> + <code>url</code>) or an external URL; see
+<a href="configuration.html#frontend">Configuration</a>. The starter page from <code>openshell add frontend</code> adapts to the other
+blocks: it shows a backend call, a notes list from the database and the app's functions.</p>
+<h2 id="backend">Backend<a class="anchor" href="#backend" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="json"><pre><code>{
+  <span class="tk">"name"</span>: <span class="ts">"backend"</span>,
+  <span class="tk">"command"</span>: [<span class="ts">"python"</span>, <span class="ts">"main.py"</span>],
+  <span class="tk">"cwd"</span>: <span class="ts">"backend"</span>,
+  <span class="tk">"port"</span>: <span class="ts">"auto"</span>,
+  <span class="tk">"healthcheck"</span>: <span class="ts">"http://127.0.0.1:${port}/health"</span>,
+  <span class="tk">"watch"</span>: [<span class="ts">"backend"</span>]
+}</code></pre></div>
+<p>Any language (<a href="languages.html">Languages</a>). Read <code>PORT</code>, bind <code>127.0.0.1</code>, answer <code>/health</code>.</p>
+<h2 id="database">Database<a class="anchor" href="#database" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="json"><pre><code><span class="tk">"databases"</span>: [
+  { <span class="tk">"name"</span>: <span class="ts">"main"</span>, <span class="tk">"migrations"</span>: <span class="ts">"db/migrations"</span>, <span class="tk">"agent_access"</span>: <span class="ts">"write"</span> }
+]</code></pre></div>
+<ul><li><strong>File</strong>: <code>&lt;name&gt;.db</code> in the app's data directory (<code>OPENSHELL_DATA_DIR</code>, per user for installed apps). Override
+with <code>"path"</code> (relative to the data directory, or absolute).</li><li><strong>Migrations</strong>: every <code>*.sql</code> file in <code>migrations</code> is applied once, in file-name order, inside a transaction.
+Add new files (<code>002_add_tags.sql</code>) – never edit applied ones.</li><li><strong>Services and functions</strong> get the path as <code>OPENSHELL_DB_&lt;NAME&gt;</code> (e.g. <code>OPENSHELL_DB_MAIN</code>) and the main database
+as <code>DATABASE_URL=sqlite:///…</code>. Any SQLite library works (Python <code>sqlite3</code>, <code>better-sqlite3</code>, JDBC, …).</li><li><strong>Frontend</strong>: <code>OpenShell.db.query(sql, params)</code> / <code>OpenShell.db.execute(sql, params)</code>. Writing needs <code>actions</code> in
+<code>agents.sdk_permissions</code> (<code>openshell add</code> sets it).</li><li><strong>Agents</strong>: <code>db_list</code>, <code>db_schema</code>, <code>db_query</code> (read-only, enforced by SQLite) and <code>db_execute</code>, controlled per
+database by <code>agent_access</code>: <code>none</code>, <code>read</code> (default) or <code>write</code>. The schema is also an MCP resource
+(<code>openshell://db/&lt;name&gt;/schema</code>).</li><li>WAL mode and a busy timeout are set, so the shell, services and functions can use the file at the same time.</li><li>The console's data browser shows every table.</li></ul>
+<p>PostgreSQL, MySQL &amp; co. run as services (<code>"external": true</code> with a TCP health check, or a container command) and are
+used from your backend.</p>
+<h2 id="functions">Functions<a class="anchor" href="#functions" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="json"><pre><code><span class="tk">"capabilities"</span>: [
+  {
+    <span class="tk">"name"</span>: <span class="ts">"summarize_notes"</span>,
+    <span class="tk">"description"</span>: <span class="ts">"Summarize all open notes"</span>,
+    <span class="tk">"permission"</span>: <span class="ts">"read"</span>,
+    <span class="tk">"input_schema"</span>: { <span class="tk">"type"</span>: <span class="ts">"object"</span>, <span class="tk">"properties"</span>: { <span class="tk">"limit"</span>: { <span class="tk">"type"</span>: <span class="ts">"integer"</span> } } },
+    <span class="tk">"run"</span>: [<span class="ts">"python"</span>, <span class="ts">"tools/summarize_notes.py"</span>]
+  }
+]</code></pre></div>
+<div class="codeblock" data-lang="python"><pre><code>import json, os, sqlite3, sys
+
+args = json.load(sys.stdin)                       # input object
+con = sqlite3.connect(os.environ["OPENSHELL_DB_MAIN"])
+rows = con.execute("SELECT title FROM notes WHERE done = 0 LIMIT ?", (args.get("limit", 20),)).fetchall()
+print(json.dumps({"open": [r[0] for r in rows]})) # result</code></pre></div>
+<ul><li>Input: JSON object on stdin (also in <code>OPENSHELL_INPUT</code>). Output: JSON or text on stdout. Errors: message on stderr
+and a non-zero exit code. <code>"run": {"command": …, "cwd": …, "env": {…}, "timeout_ms": 60000}</code> for more control.</li><li>Any language: <code>["node", "tools/x.mjs"]</code>, <code>["java", "-cp", "build", "Tool"]</code>, a compiled binary, …</li><li>Agents see functions as MCP tools in the app profile (<code>openshell mcp --app</code>) under their own names, and as
+<code>cap_&lt;name&gt;</code> in the developer profile. The frontend calls them with <code>OpenShell.invoke(name, input)</code>, the console
+has a "Run" button, the CLI <code>openshell call cap_&lt;name&gt; '&lt;json&gt;'</code>.</li><li><code>stderr</code> output is in the logs (<code>openshell logs fn:&lt;name&gt;</code>).</li></ul>
+<p>Other function sources, also listed as capabilities: HTTP endpoints of a backend (<code>"http"</code>), declared tasks
+(<code>"task"</code>), operations imported from an OpenAPI document (<code>"openapi"</code> on a service) and actions registered by the
+frontend (<code>OpenShell.agent.registerAction</code>). See <a href="agents.html#capabilities-the-applications-own-functions">Agent Interaction Layer</a>.</p>
+        <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/building-blocks.md" rel="noopener">View this page on GitHub</a></div>
+      </article>
+      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#typical-combinations">Typical combinations</a><a class="l2" href="#frontend">Frontend</a><a class="l2" href="#backend">Backend</a><a class="l2" href="#database">Database</a><a class="l2" href="#functions">Functions</a></aside>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="../download.html">Download</a>
+            <a href="../use.html">For users</a>
+            <a href="../teams.html">For teams</a>
+            <a href="../developers.html">For developers</a>
+            <a href="../agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="../docs/getting-started.html">Getting started</a>
+            <a href="../docs/configuration.html">Configuration</a>
+            <a href="../docs/cli.html">CLI</a>
+            <a href="../docs/platforms.html">Platforms</a>
+            <a href="../docs/remote-access.html">Remote access</a>
+            <a href="../docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="../docs/changelog.html">Changelog</a>
+            <a href="../docs/roadmap.html">Roadmap</a>
+            <a href="../docs/security.html">Security</a>
+            <a href="../docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="../assets/search-index.js"></script>
+    <script src="../assets/site.js"></script>
+    <script src="../assets/pages.js"></script>
+  </body>
+</html>

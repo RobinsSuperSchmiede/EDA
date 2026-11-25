@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en" data-theme="green" data-surface="tinted" data-header="fade" data-field="off" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Architecture – OpenShell docs</title>
+    <meta name="description" content="Components, data flow and design decisions." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="../assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/site.css" />
+    <link rel="stylesheet" href="../assets/pages.css" />
+  </head>
+  <body data-page="docs" class="page docs-page">
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="../use.html">Users</a>
+          <a href="../teams.html">Teams</a>
+          <a href="../developers.html">Developers</a>
+          <a href="../agents.html">AI agents</a>
+          <a href="../docs/index.html" aria-current="page">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="../download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main class="docs">
+      <aside class="docs-nav" id="docs-nav"><div class="docs-search"><input type="search" id="doc-search" placeholder="Search the docs" autocomplete="off" aria-label="Search the docs" /><div class="search-results" id="search-results" hidden></div></div><nav aria-label="Documentation"><a class="docs-home" href="index.html">Overview</a><h4>Learn</h4><a href="getting-started.html">Getting started</a><a href="tutorial.html">Tutorial</a><a href="building-blocks.html">Building blocks</a><a href="languages.html">Languages</a><h4>Reference</h4><a href="configuration.html">Configuration</a><a href="cli.html">CLI</a><a href="sdk.html">Frontend SDK</a><a href="control-api.html">Control API</a><h4>Ship and run</h4><a href="installers.html">Installers and releases</a><a href="platforms.html">Platforms</a><a href="remote-access.html">Remote access</a><a href="android-app.html">Android app</a><h4>AI agents</h4><a href="agents.html">Agent Interaction Layer</a><a href="ai.html">AI material</a><a href="ai-app-development.html">Building apps with AI</a><h4>Project</h4><a href="architecture.html" aria-current="page">Architecture</a><a href="platform-milestones.html">Platform milestones</a><a href="roadmap.html">Roadmap</a><a href="changelog.html">Changelog</a><a href="security.html">Security policy</a><a href="contributing.html">Contributing</a></nav></aside>
+      <article class="prose" data-source="ARCHITECTURE.md">
+        <div class="crumbs"><a href="index.html">Docs</a><span>/</span><span>Project</span></div>
+        <h1 id="architecture">Architecture</h1>
+<p>OpenShell separates <strong>the shell</strong> (generic, built once) from <strong>the application</strong> (frontend, backend, data – owned by
+the developer and changeable at any time by humans or agents). The shell contains no application logic; it reads a
+configuration and manages external components.</p>
+<h2 id="components">Components<a class="anchor" href="#components" aria-label="Link to this section">#</a></h2>
+<div class="codeblock"><pre><code>┌──────────────────────────── openshell-desktop (Tauri 2) ─────────────────────────────┐
+│  main window ── WebView ── initialization script (window.__OPENSHELL__ + bridge.js)   │
+│  tray menu · notifications · approval dialogs · loading screen · runtime panel       │
+│                                   │ implements `Host`                                │
+│  ┌────────────────────────────── openshell-core ───────────────────────────────────┐ │
+│  │ Shell = Runtime + UiHub + Approvals + AuditLog + Policies + control API          │ │
+│  │ control API (127.0.0.1 only): REST /v1/* · MCP /mcp · WebSocket /v1/ui/bridge    │ │
+│  │ tool execution (exec.rs) · project-scoped file access (fs.rs)                    │ │
+│  └──────────────┬───────────────────────────────────────────┬─────────────────────┘ │
+│                 │                                           │                       │
+│  ┌──── openshell-runtime ─────┐            ┌──────── openshell-agent ────────────┐  │
+│  │ plan: ports, ${vars}, probes│            │ policy · approvals · audit          │  │
+│  │ supervisor per service      │            │ UiHub (bridge sessions, actions)    │  │
+│  │ health checks · log store   │            │ tool catalogue · MCP JSON-RPC       │  │
+│  │ static server + proxy       │            │ provider discovery · bridge.js      │  │
+│  │ file watcher · job objects  │            └─────────────────────────────────────┘  │
+│  └─────────────────────────────┘                                                     │
+│                 openshell-config: schema · parsing · validation · interpolation      │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+        ▲ HTTP (token)                    ▲ MCP stdio→HTTP                ▲ WebSocket
+   openshell CLI                   openshell mcp (agents)           pages running bridge.js</code></pre></div>
+<p>The same <code>openshell-core::Shell</code> runs inside the desktop app and inside the CLI (<code>--headless</code>). All three operating
+modes therefore share one runtime implementation; they differ only in the <code>Host</code> (desktop window vs. headless) and the
+permission defaults (development vs. production).</p>
+<p>Platform differences sit below the runtime in a <code>RuntimeAdapter</code> (<code>crates/runtime/src/platform.rs</code>): the
+<code>DesktopAdapter</code> (desktop, server) starts any program, the <code>AndroidAdapter</code> only system tools and programs bundled
+with the app. Hosts forward app lifecycle events (<code>foreground</code>, <code>background</code>, <code>low_memory</code>, ...). The core and the CLI
+build for Android; see <a href="platforms.html">Platforms</a>.</p>
+<h2 id="key-decisions">Key decisions<a class="anchor" href="#key-decisions" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Decision</th><th>Rationale</th></tr></thead><tbody><tr><td><strong>Tauri 2 + Rust</strong> for the shell</td><td>Small binaries, system WebView (WebView2/WebKit), cross-platform, strong process control in Rust.</td></tr><tr><td><strong>Generic shell binary</strong> (<code>openshell-desktop</code>) instead of generating a Tauri project per app</td><td>No fork, no per-app Rust code, improvements reach every app. Per-app branding/packaging is a later phase.</td></tr><tr><td><strong>Services are external processes</strong></td><td>Any language; code changes never require rebuilding the shell; crash isolation.</td></tr><tr><td><strong>Supervisor task per service</strong> with a desired-state channel (<code>watch</code>)</td><td>Start/stop/restart are just changes of the desired state; the supervisor reconciles. Races (start while stopping) resolve naturally.</td></tr><tr><td><strong>Ports allocated up front</strong> (<code>"port": "auto"</code>), <code>${...}</code> variables</td><td>All URLs are known before anything starts, so services can reference each other and the frontend can proxy to the backend.</td></tr><tr><td><strong>Control API on 127.0.0.1 with tokens</strong></td><td>One interface for CLI, SDK and agents. <code>runtime.json</code> (in <code>.openshell/</code>) tells local tools where the shell runs.</td></tr><tr><td><strong>Two tokens</strong>: admin (CLI/agents) and app (frontend SDK)</td><td>The frontend gets only <code>/v1/sdk/*</code> and the bridge, limited by <code>agents.sdk_permissions</code>.</td></tr><tr><td><strong>Host + Origin checks, CORS allow-list</strong></td><td>Protects the loopback API against DNS rebinding and against other websites in the user's browser.</td></tr><tr><td><strong>MCP as adapter, own tool API as core</strong></td><td>MCP is the primary integration for agents (<code>openshell mcp</code>, <code>POST /mcp</code>), but every tool is also plain HTTP/JSON, so non-MCP agents and scripts work too.</td></tr><tr><td><strong>Semantic UI bridge (DOM/accessibility) over pixels</strong></td><td>Element refs, roles and names are robust and cheap for models. The bridge is injected into the WebView and the static server, so it works for any framework and in browser mode. Screenshots/vision can be added later as a fallback.</td></tr><tr><td><strong>Capabilities from config and from the frontend</strong></td><td>Backends expose functions declaratively (HTTP/task); frontends register UI-level actions at runtime via the SDK. Agents prefer them over UI automation.</td></tr><tr><td><strong>Permission scopes + approval queue + audit log</strong></td><td>Agents never get blanket OS access. Production defaults to read/ui/actions. Critical scopes require a human decision (dialog or CLI); everything is logged to <code>.openshell/audit.jsonl</code>.</td></tr><tr><td><strong>Project-scoped file tools</strong></td><td><code>fs_*</code> tools resolve paths relative to the project root, reject <code>..</code>, absolute paths, symlink escapes and <code>.openshell/</code>.</td></tr><tr><td><strong>No arbitrary shell commands for agents</strong></td><td>Only tasks declared in the config (<code>task_run</code>, scope <code>system</code>).</td></tr><tr><td><strong>Two agent profiles</strong> (<code>/mcp</code> full, <code>/mcp/app</code> app)</td><td>Agents that <em>use</em> an application should see a small, domain-specific tool list (its capabilities, OpenAPI operations, frontend actions), not 32 developer tools.</td></tr><tr><td><strong>OpenAPI import</strong></td><td>Most backend frameworks already describe their API; importing it makes apps agent-usable without extra code.</td></tr><tr><td><strong>Installers re-brand the generic binary</strong> (<code>openshell-package</code>)</td><td>Copy <code>openshell-desktop</code>, replace the exe icon (editpe), put the app into <code>app/</code>, run the Tauri bundler. No per-app compilation, so every app gets shell updates by re-packaging.</td></tr><tr><td><strong>Per-user state for installed apps</strong></td><td><code>runtime.json</code>, logs, audit and <code>OPENSHELL_DATA_DIR</code> go to the user's local data directory (bundle identifier), never into the install directory.</td></tr><tr><td><strong>Title bar menu via window subclassing (Windows)</strong></td><td>Right-clicking the caption (<code>WM_NCRBUTTONUP</code>/<code>HTCAPTION</code>) opens a Tauri popup menu with live service data instead of the system menu; Alt+Space keeps the system menu. Tray (all platforms) and menu bar (macOS) show the same menu.</td></tr><tr><td><strong>Independent building blocks</strong> (frontend, backend, database, functions)</td><td>No part is mandatory. A database is managed by the shell itself (SQLite, migrations, WAL) so a frontend or agent functions can store data without a backend; functions are scripts run per call (JSON over stdin/stdout) so an AI interface needs no server. <code>openshell add</code> edits <code>openshell.json</code> while keeping key order.</td></tr><tr><td><strong>Platform adapters instead of platform forks</strong></td><td>One core for desktop, server and Android. Only command construction, capabilities and lifecycle differ, so agents, MCP, databases and the control API behave identically everywhere. <code>services[].platforms</code> lets one project describe what runs where.</td></tr><tr><td><strong>Remote gateway exposes only the app profile</strong></td><td>Other devices get the app's functions (MCP) with a separate pairing token – never developer tools or the admin token. Browser requests are rejected; TLS and per-device pairing come with the device mesh.</td></tr><tr><td><strong>Build steps run inside the supervisor</strong></td><td>Compile → start → watch → recompile is one lifecycle; build errors become a <code>failed</code> state with compiler output in the logs, retried on the next change.</td></tr></tbody></table></div>
+<h2 id="lifecycle-of-openshell-dev">Lifecycle of <code>openshell dev</code><a class="anchor" href="#lifecycle-of-openshell-dev" aria-label="Link to this section">#</a></h2>
+<ol><li>CLI loads and validates <code>openshell.json</code>, checks that no instance runs, launches <code>openshell-desktop --project … --mode development</code> in its own process group.</li><li>Desktop: <code>Shell::launch</code> builds the plan (ports, URLs, probes), binds the control API, writes <code>.openshell/runtime.json</code>, creates the main window with the loading page and the initialization script.</li><li><code>Shell::start</code> sets all autostart services to "run". Supervisors wait for dependencies, run <code>setup</code> steps, spawn processes, pipe logs, probe health.</li><li>When the frontend is healthy the main window navigates to its URL; <code>bridge.js</code> connects back over WebSocket.</li><li>File changes → backend restart / window reload. Crashes → restart with backoff, <code>failed</code> after N crashes per minute.</li><li>The CLI follows logs and approval requests via the control API. Ctrl+C or <code>openshell stop</code> → <code>POST /v1/shutdown</code> → services stop in reverse dependency order → window closes.</li></ol>
+<h2 id="security-model-summary">Security model (summary)<a class="anchor" href="#security-model-summary" aria-label="Link to this section">#</a></h2>
+<ul><li>Threats considered: other websites in the user's browser (CSRF / DNS rebinding against the loopback API), a frontend
+page trying to escalate, agents acting outside their remit, path traversal.</li><li>Not a sandbox against local malware: any local process running as the user can read <code>runtime.json</code>. The permission
+system is a <strong>policy layer for cooperating agents</strong>, the audit log provides accountability.</li></ul>
+<p>See <a href="agents.html#security">Agent Interaction Layer</a> for details.</p>
+        <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/ARCHITECTURE.md" rel="noopener">View this page on GitHub</a></div>
+      </article>
+      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#components">Components</a><a class="l2" href="#key-decisions">Key decisions</a><a class="l2" href="#lifecycle-of-openshell-dev">Lifecycle of openshell dev</a><a class="l2" href="#security-model-summary">Security model (summary)</a></aside>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="../download.html">Download</a>
+            <a href="../use.html">For users</a>
+            <a href="../teams.html">For teams</a>
+            <a href="../developers.html">For developers</a>
+            <a href="../agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="../docs/getting-started.html">Getting started</a>
+            <a href="../docs/configuration.html">Configuration</a>
+            <a href="../docs/cli.html">CLI</a>
+            <a href="../docs/platforms.html">Platforms</a>
+            <a href="../docs/remote-access.html">Remote access</a>
+            <a href="../docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="../docs/changelog.html">Changelog</a>
+            <a href="../docs/roadmap.html">Roadmap</a>
+            <a href="../docs/security.html">Security</a>
+            <a href="../docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="../assets/search-index.js"></script>
+    <script src="../assets/site.js"></script>
+    <script src="../assets/pages.js"></script>
+  </body>
+</html>

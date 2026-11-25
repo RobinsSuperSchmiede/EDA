@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en" data-theme="green" data-surface="tinted" data-header="fade" data-field="off" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Changelog – OpenShell docs</title>
+    <meta name="description" content="What changed in every release." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="../assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/site.css" />
+    <link rel="stylesheet" href="../assets/pages.css" />
+  </head>
+  <body data-page="docs" class="page docs-page">
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="../use.html">Users</a>
+          <a href="../teams.html">Teams</a>
+          <a href="../developers.html">Developers</a>
+          <a href="../agents.html">AI agents</a>
+          <a href="../docs/index.html" aria-current="page">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="../download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main class="docs">
+      <aside class="docs-nav" id="docs-nav"><div class="docs-search"><input type="search" id="doc-search" placeholder="Search the docs" autocomplete="off" aria-label="Search the docs" /><div class="search-results" id="search-results" hidden></div></div><nav aria-label="Documentation"><a class="docs-home" href="index.html">Overview</a><h4>Learn</h4><a href="getting-started.html">Getting started</a><a href="tutorial.html">Tutorial</a><a href="building-blocks.html">Building blocks</a><a href="languages.html">Languages</a><h4>Reference</h4><a href="configuration.html">Configuration</a><a href="cli.html">CLI</a><a href="sdk.html">Frontend SDK</a><a href="control-api.html">Control API</a><h4>Ship and run</h4><a href="installers.html">Installers and releases</a><a href="platforms.html">Platforms</a><a href="remote-access.html">Remote access</a><a href="android-app.html">Android app</a><h4>AI agents</h4><a href="agents.html">Agent Interaction Layer</a><a href="ai.html">AI material</a><a href="ai-app-development.html">Building apps with AI</a><h4>Project</h4><a href="architecture.html">Architecture</a><a href="platform-milestones.html">Platform milestones</a><a href="roadmap.html">Roadmap</a><a href="changelog.html" aria-current="page">Changelog</a><a href="security.html">Security policy</a><a href="contributing.html">Contributing</a></nav></aside>
+      <article class="prose" data-source="CHANGELOG.md">
+        <div class="crumbs"><a href="index.html">Docs</a><span>/</span><span>Project</span></div>
+        <h1 id="changelog">Changelog</h1>
+<p>All notable changes to this project are documented here. The format follows
+<a href="https://keepachangelog.com/en/1.1.0/" rel="noopener">Keep a Changelog</a> and the project uses <a href="https://semver.org/" rel="noopener">Semantic Versioning</a>.</p>
+<h2 id="unreleased"><a href="https://github.com/RobinsSuperSchmiede/EDA/compare/v0.2.1...HEAD" rel="noopener">Unreleased</a><a class="anchor" href="#unreleased" aria-label="Link to this section">#</a></h2>
+<h3 id="added">Added<a class="anchor" href="#added" aria-label="Link to this section">#</a></h3>
+<ul><li><strong>Building blocks</strong>: frontend, backend, database and agent functions are independent and freely combinable.
+<code>openshell add frontend | backend [--lang] | database [name] | function &lt;name&gt;</code> adds a block to an app;
+<code>openshell create &lt;name&gt; --with frontend,database,…</code> composes a new one (interactive selection in a terminal).</li><li><strong>Built-in databases</strong> (<code>databases</code> in openshell.json): SQLite files in the app's data directory, migrations,
+<code>OPENSHELL_DB_&lt;NAME&gt;</code> / <code>DATABASE_URL</code> for services, <code>OpenShell.db.query/execute/schema/list</code> for the frontend,
+agent tools <code>db_list</code>, <code>db_schema</code>, <code>db_query</code> (read-only), <code>db_execute</code>, per-database <code>agent_access</code>.</li><li><strong>Script functions</strong>: capabilities with <code>"run"</code> execute a program per call (JSON on stdin, result on stdout) – an app
+can offer an AI interface without any server. <code>OpenShell.invoke(name, input)</code> in the SDK.</li><li>Apps without a frontend show a console in the window (services, database browser, functions with "Run", agent
+commands, logs); <code>window.enabled: false</code> runs an app in the tray only.</li><li>MCP resources (status, config, logs, capabilities, database schemas) and <code>notifications/tools/list_changed</code> from
+<code>openshell mcp</code>.</li><li><code>runtime.launch_at_login</code> for installed apps.</li><li><code>openshell status</code> and <code>openshell doctor</code> show databases and functions.</li><li><strong>Platform-neutral core</strong> for desktop, server and Android: a <code>RuntimeAdapter</code> builds every command and reports the
+platform's capabilities (<code>platform</code> in <code>/v1/status</code>, <code>/v1/health</code> and the agent tool <code>app_info</code>). The
+<code>AndroidAdapter</code> runs system tools and programs bundled with the app and explains what to use instead of anything
+else. The core and the CLI build for Android (new CI job); verified headless on an Android 16 emulator.</li><li><code>services[].platforms</code> (<code>desktop</code>, <code>android</code>, <code>server</code>) and <code>services[].background</code> (<code>keep</code> / <code>pause</code>).</li><li>App lifecycle events (<code>foreground</code>, <code>background</code>, <code>low_memory</code>, <code>power_save</code>, <code>network</code>) via <code>Shell::lifecycle</code>,
+<code>POST /v1/lifecycle</code> and <code>openshell lifecycle</code>; paused services resume in the foreground.</li><li><strong>Remote gateway</strong> (<code>runtime.remote</code>): other devices use the app's functions over MCP with a pairing token;
+<code>openshell remote</code> prints URL, token and an MCP client configuration. See <code>docs/platforms.md</code>.</li><li><strong>Remote security</strong> (all optional): per-device tokens (<code>openshell remote pair &lt;device&gt;</code> with QR code and pairing
+URI, <code>devices</code>, <code>revoke</code>), <code>runtime.remote.allow</code> (IP / CIDR allowlist), <code>rate_limit</code> with lockout after failed
+logins (<code>openshell remote unblock</code>), <code>tls</code> (self-signed with pinned SHA-256 fingerprint, or own certificate),
+<code>shared_token: false</code>, and remote access audited with the device name. See <code>docs/remote-access.md</code>.</li><li><strong>Exposed services</strong> (<code>runtime.remote.expose</code>): make a service or the frontend reachable from other devices on
+its own port – <code>http</code> with token login (header, cookie or one-time <code>?openshell_token=</code>) or raw <code>tcp</code> (databases,
+MQTT …) protected by the allowlist.</li><li><strong>Termux</strong>: the <code>TermuxAdapter</code> runs everything installed with <code>pkg install</code> (Python, Node.js, Java, Rust, Go,
+databases), holds a Termux wake lock while an app runs, and <code>openshell doctor</code> gives <code>pkg install</code> hints. Platform
+capabilities report <code>toolchains</code> and <code>wake_lock</code>. Release builds include the CLI for <code>aarch64-linux-android</code> and
+Linux arm64; <code>install.sh</code> detects Termux.</li><li><strong>Portable app bundles</strong>: <code>openshell package --target bundle</code> writes <code>&lt;app&gt;-&lt;version&gt;.osapp</code> (also on Android);
+<code>openshell install &lt;file&gt; [--start]</code> and <code>openshell apps</code> run bundles on any host, keeping app data across updates.</li><li><strong>One download link per system</strong>: <code>openshell release workflow</code> writes a GitHub Actions workflow that builds
+Windows, macOS (arm64, x64), Linux installers and the bundle on a tag push; <code>openshell release manifest</code> writes
+<code>downloads.json</code> and a download page that picks the visitor's system.</li><li><strong>Code signing</strong> (<code>package.signing.windows</code> / <code>.macos</code>) and <strong>update checks</strong> (<code>package.update_url</code>,
+<code>openshell update</code>, <code>GET /v1/update</code>).</li><li><strong>Android app</strong> (<code>apps/android</code>, Kotlin) with the JNI bridge <code>openshell-android</code> (<code>crates/android</code>): app manager
+for <code>.osapp</code> bundles, WebView, foreground service (<code>specialUse</code>) with notification and wake lock, lifecycle and
+network events, target SDK 36, 16 KB page-size aligned native library, AAB build and signing in CI
+(<code>android-app.yml</code>), Play Store listing, policy answers and privacy policy template. See <code>docs/android-app.md</code>.</li><li><strong>Website</strong> in <code>website/</code>: a landing page (ASCII field of code glyphs, architecture diagram, product gallery, platforms,
+shipping, security) with a "find your way" section, plus pages for <strong>users</strong> (<code>use.html</code>), <strong>teams and companies</strong>
+(<code>teams.html</code>), <strong>developers</strong> (<code>developers.html</code>) and <strong>AI agents</strong> (<code>agents.html</code>), a <strong>download page</strong> that detects
+the visitor's system, and the <strong>documentation</strong> (<code>website/docs/</code>, searchable, rendered from <code>docs/*.md</code>, the roadmap, the
+changelog and the project documents). <code>python scripts/build-website.py</code> renders the docs and keeps the shared header and
+footer in sync (<code>--check</code> for CI). <code>dev.html</code> adds a customize bar to try colour themes (green, light blue, red,
+purple, amber, mono), hero variants, surfaces and background settings; <code>index.html</code> is the production landing page.</li></ul>
+<h2 id="021---2026-11-19"><a href="https://github.com/RobinsSuperSchmiede/EDA/compare/v0.2.0...v0.2.1" rel="noopener">0.2.1</a> - 2026-11-19<a class="anchor" href="#021---2026-11-19" aria-label="Link to this section">#</a></h2>
+<h3 id="fixed">Fixed<a class="anchor" href="#fixed" aria-label="Link to this section">#</a></h3>
+<ul><li>HTML5 drag and drop works in the app window: Tauri's drag and drop handler is off, so <code>dragover</code> and <code>drop</code> reach
+the page (on Windows they did not). Files dropped on the window arrive as in a browser (<code>dataTransfer.files</code>).</li></ul>
+<h2 id="020---2026-11-19"><a href="https://github.com/RobinsSuperSchmiede/EDA/compare/v0.1.0...v0.2.0" rel="noopener">0.2.0</a> - 2026-11-19<a class="anchor" href="#020---2026-11-19" aria-label="Link to this section">#</a></h2>
+<h3 id="added-1">Added<a class="anchor" href="#added-1" aria-label="Link to this section">#</a></h3>
+<ul><li><code>window.title_bar: "overlay"</code>: the frontend draws its own title bar. Windows and Linux get a window without the
+system title bar (edges still resize), macOS keeps its window buttons over the content. The desktop window offers
+<code>window.__OPENSHELL__.window</code> (<code>minimize</code>, <code>toggleMaximize</code>, <code>close</code>, <code>isMaximized</code>, <code>showMenu</code>, plus <code>title_bar</code>
+and <code>os</code>); elements with <code>data-tauri-drag-region</code> move the window. The window permissions are granted at runtime to
+the app's frontend origin only. OpenShell's loading screen shows a minimal title bar in this mode.</li><li>The title bar menu (services, reload, window actions) is available on every platform via <code>showMenu()</code>.</li></ul>
+<h2 id="010---2026-11-17"><a href="https://github.com/RobinsSuperSchmiede/EDA/releases/tag/v0.1.0" rel="noopener">0.1.0</a> - 2026-11-17<a class="anchor" href="#010---2026-11-17" aria-label="Link to this section">#</a></h2>
+<p>First public alpha.</p>
+<h3 id="added-2">Added<a class="anchor" href="#added-2" aria-label="Link to this section">#</a></h3>
+<ul><li>Tauri 2 desktop shell: window, WebView, loading screen, runtime panel, tray, notifications, approval dialogs,
+single instance, title bar right-click menu with live service monitoring (Windows).</li><li>Runtime manager: services in dependency order, setup and build steps, HTTP/TCP health checks, restart policies with
+backoff, logs, dynamic ports and <code>${...}</code> variables, static frontend server with reverse proxy, file watching,
+CPU/memory metrics, process-tree cleanup.</li><li>Agent Interaction Layer: 28 tools over MCP (stdio and HTTP) and HTTP/JSON, developer and app profiles, semantic UI
+bridge, capabilities (config, OpenAPI import, frontend actions), permission scopes, approvals, audit log, AI provider
+discovery.</li><li>CLI: <code>init</code>, <code>create</code>, <code>dev</code>, <code>start</code>, <code>stop</code>, <code>run</code>, <code>restart</code>, <code>status</code>, <code>logs</code>, <code>doctor</code>, <code>build</code>, <code>package</code>,
+<code>mcp</code>, <code>tools</code>, <code>call</code>, <code>approvals</code>, <code>approve</code>, <code>deny</code>, <code>audit</code>, <code>schema</code>, <code>guide</code>.</li><li><code>openshell package</code>: NSIS/MSI, DMG, DEB/RPM/AppImage installers with app name and icon.</li><li>Templates: vanilla-python, react-python, react-node, vue-python, svelte-go, vanilla-java, vanilla-cpp, custom.</li><li>Frontend SDK <code>@openshell/sdk</code>.</li><li>AI-harness support: <code>AGENTS.md</code>, <code>CLAUDE.md</code>, <code>llms.txt</code> / <code>llms-full.txt</code>, the AI app development guide
+(<code>openshell guide</code>) and a Claude Code skill; every new project gets its own <code>AGENTS.md</code>.</li><li>Release workflow with prebuilt binaries for Windows, macOS (arm64, x86_64) and Linux, plus install scripts.</li></ul>
+        <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/CHANGELOG.md" rel="noopener">View this page on GitHub</a></div>
+      </article>
+      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#unreleased">[Unreleased]</a><a class="l3" href="#added">Added</a><a class="l2" href="#021---2026-11-19">[0.2.1] - 2026-11-19</a><a class="l3" href="#fixed">Fixed</a><a class="l2" href="#020---2026-11-19">[0.2.0] - 2026-11-19</a><a class="l3" href="#added-1">Added</a><a class="l2" href="#010---2026-11-17">[0.1.0] - 2026-11-17</a><a class="l3" href="#added-2">Added</a></aside>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="../download.html">Download</a>
+            <a href="../use.html">For users</a>
+            <a href="../teams.html">For teams</a>
+            <a href="../developers.html">For developers</a>
+            <a href="../agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="../docs/getting-started.html">Getting started</a>
+            <a href="../docs/configuration.html">Configuration</a>
+            <a href="../docs/cli.html">CLI</a>
+            <a href="../docs/platforms.html">Platforms</a>
+            <a href="../docs/remote-access.html">Remote access</a>
+            <a href="../docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="../docs/changelog.html">Changelog</a>
+            <a href="../docs/roadmap.html">Roadmap</a>
+            <a href="../docs/security.html">Security</a>
+            <a href="../docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="../assets/search-index.js"></script>
+    <script src="../assets/site.js"></script>
+    <script src="../assets/pages.js"></script>
+  </body>
+</html>

@@ -69,4 +69,6 @@ Legend: ✅ done · 🚧 partial · ⏳ planned
 - 🚧 SDK (`@openshell/sdk`) – runtime, window, notifications, agent actions; publish to npm
 - ⏳ Extension system (shell plugins)
 - ⏳ More templates (Next.js, FastAPI with venv, Django, Rails, .NET)
-- ⏳ Documentation website, demo video ("an agent adds a feature to a running desktop app")
+- ✅ Website: landing page, pages for users, teams, developers and AI agents, download page, searchable documentation
+  (`website/`, `scripts/build-website.py`); ⏳ publish it (GitHub Pages or similar)
+- ⏳ Demo video ("an agent adds a feature to a running desktop app")

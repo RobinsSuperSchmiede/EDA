@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en" data-theme="green" data-surface="tinted" data-header="fade" data-field="off" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenShell for AI agents – OpenShell docs</title>
+    <meta name="description" content="Setup recipes for Claude Code, Codex, Cursor, Copilot and more." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="../assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/site.css" />
+    <link rel="stylesheet" href="../assets/pages.css" />
+  </head>
+  <body data-page="docs" class="page docs-page">
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="../use.html">Users</a>
+          <a href="../teams.html">Teams</a>
+          <a href="../developers.html">Developers</a>
+          <a href="../agents.html">AI agents</a>
+          <a href="../docs/index.html" aria-current="page">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="../download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main class="docs">
+      <aside class="docs-nav" id="docs-nav"><div class="docs-search"><input type="search" id="doc-search" placeholder="Search the docs" autocomplete="off" aria-label="Search the docs" /><div class="search-results" id="search-results" hidden></div></div><nav aria-label="Documentation"><a class="docs-home" href="index.html">Overview</a><h4>Learn</h4><a href="getting-started.html">Getting started</a><a href="tutorial.html">Tutorial</a><a href="building-blocks.html">Building blocks</a><a href="languages.html">Languages</a><h4>Reference</h4><a href="configuration.html">Configuration</a><a href="cli.html">CLI</a><a href="sdk.html">Frontend SDK</a><a href="control-api.html">Control API</a><h4>Ship and run</h4><a href="installers.html">Installers and releases</a><a href="platforms.html">Platforms</a><a href="remote-access.html">Remote access</a><a href="android-app.html">Android app</a><h4>AI agents</h4><a href="agents.html">Agent Interaction Layer</a><a href="ai.html" aria-current="page">AI material</a><a href="ai-app-development.html">Building apps with AI</a><h4>Project</h4><a href="architecture.html">Architecture</a><a href="platform-milestones.html">Platform milestones</a><a href="roadmap.html">Roadmap</a><a href="changelog.html">Changelog</a><a href="security.html">Security policy</a><a href="contributing.html">Contributing</a></nav></aside>
+      <article class="prose" data-source="docs/ai/README.md">
+        <div class="crumbs"><a href="index.html">Docs</a><span>/</span><span>AI agents</span></div>
+        <h1 id="openshell-for-ai-agents">OpenShell for AI agents</h1>
+<p>OpenShell is designed to be worked on by AI agents in three ways. This folder contains the material that makes AI
+harnesses productive with it.</p>
+<div class="table-wrap"><table><thead><tr><th>Role of the agent</th><th>What it gets</th><th>Start here</th></tr></thead><tbody><tr><td><strong>Builds</strong> a new app on OpenShell (coding agent)</td><td>app contract, workflow, verification commands, config cheat sheet</td><td><a href="ai-app-development.html">Building apps with AI</a> · <code>openshell guide</code></td></tr><tr><td><strong>Develops</strong> a running app (coding agent connected to it)</td><td>32 MCP tools: status, logs, services, databases, files, UI automation</td><td><a href="agents.html">Agent Interaction Layer</a> · <code>openshell mcp</code></td></tr><tr><td><strong>Uses</strong> an app (assistant)</td><td>only the app's own functions</td><td><a href="agents.html#connecting">Agent Interaction Layer</a> · <code>openshell mcp --app</code> / <code>my-app.exe --mcp</code></td></tr></tbody></table></div>
+<h2 id="how-the-repository-supports-ai-harnesses">How the repository supports AI harnesses<a class="anchor" href="#how-the-repository-supports-ai-harnesses" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>File</th><th>Read by</th><th>Purpose</th></tr></thead><tbody><tr><td><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/AGENTS.md" rel="noopener"><code>/AGENTS.md</code></a></td><td>Codex, Cursor, Aider, Jules, Zed, …</td><td>Entry point: building an app vs. working on OpenShell; project map, commands, conventions</td></tr><tr><td><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/CLAUDE.md" rel="noopener"><code>/CLAUDE.md</code></a></td><td>Claude Code</td><td>Imports <code>AGENTS.md</code></td></tr><tr><td><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/.github/copilot-instructions.md" rel="noopener"><code>/.github/copilot-instructions.md</code></a></td><td>GitHub Copilot</td><td>Pointer to the same material</td></tr><tr><td><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt" rel="noopener"><code>/llms.txt</code></a></td><td>LLMs / tools following llmstxt.org</td><td>Index of the documentation</td></tr><tr><td><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms-full.txt" rel="noopener"><code>/llms-full.txt</code></a></td><td>LLMs with large context</td><td>All relevant docs in one file (generated by <code>scripts/gen-llms-full.py</code>)</td></tr><tr><td><a href="ai-app-development.html"><code>app-development.md</code></a></td><td>coding agents</td><td>The complete guide for building apps (embedded in the CLI as <code>openshell guide</code>)</td></tr><tr><td><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/ai/skills/openshell/SKILL.md" rel="noopener"><code>skills/openshell/SKILL.md</code></a></td><td>Claude Code / Agent SDK skills</td><td>Installable skill</td></tr><tr><td><code>AGENTS.md</code> + <code>CLAUDE.md</code> in every new project</td><td>coding agents in the app folder</td><td>Created by <code>openshell create</code> and <code>openshell init</code></td></tr></tbody></table></div>
+<h2 id="setup-recipes">Setup recipes<a class="anchor" href="#setup-recipes" aria-label="Link to this section">#</a></h2>
+<h3 id="claude-code">Claude Code<a class="anchor" href="#claude-code" aria-label="Link to this section">#</a></h3>
+<div class="codeblock" data-lang="bash"><pre><code><span class="tc"># make the skill available in all projects</span>
+mkdir -p ~/.claude/skills/openshell
+cp docs/ai/skills/openshell/SKILL.md ~/.claude/skills/openshell/
+
+<span class="tc"># connect a running app (develop) or an app to use</span>
+claude mcp add my-app-dev -- openshell mcp --project /path/to/my-app
+claude mcp add my-app     -- openshell mcp --app --start --project /path/to/my-app</code></pre></div>
+<h3 id="codex--cursor--other-agents">Codex / Cursor / other agents<a class="anchor" href="#codex--cursor--other-agents" aria-label="Link to this section">#</a></h3>
+<p>Open the app folder – the generated <code>AGENTS.md</code> is picked up automatically. For an MCP connection use
+<code>{"command": "openshell", "args": ["mcp", "--project", "/path/to/my-app"]}</code>.</p>
+<h3 id="agents-without-file-access-to-this-repository">Agents without file access to this repository<a class="anchor" href="#agents-without-file-access-to-this-repository" aria-label="Link to this section">#</a></h3>
+<p>Point them to <code>llms-full.txt</code>, or let them run <code>openshell guide</code> – the guide ships inside the CLI, so it always matches
+the installed version.</p>
+<h2 id="example-prompts">Example prompts<a class="anchor" href="#example-prompts" aria-label="Link to this section">#</a></h2>
+<blockquote><p><em>Build a desktop app with OpenShell: a time tracker with a Svelte frontend and a Go backend. Projects and time
+entries are stored locally; AI agents must be able to start and stop timers and get a weekly report.</em></p></blockquote>
+<blockquote><p><em>This folder contains a React + FastAPI project. Turn it into an OpenShell desktop app, import the FastAPI routes as
+agent capabilities and create a Windows installer.</em></p></blockquote>
+<blockquote><p><em>Our OpenShell app's backend crashes on startup. Find out why and fix it.</em> (with <code>openshell mcp</code> connected)</p></blockquote>
+<h2 id="writing-apps-that-agents-can-use-well">Writing apps that agents can use well<a class="anchor" href="#writing-apps-that-agents-can-use-well" aria-label="Link to this section">#</a></h2>
+<ul><li>One capability per user intention (<code>add_expense</code>, <code>monthly_summary</code>), not per database table.</li><li>Descriptions say what the function does and what it returns; inputs have JSON Schemas with <code>required</code>.</li><li>Queries get <code>"permission": "read"</code>, changes <code>"actions"</code> – production mode grants exactly these by default.</li><li>Return JSON objects with ids, so agents can chain calls.</li><li>Keep UI-only state (filters, selected item) as frontend actions (<code>registerAction</code>) with <code>"permission": "ui"</code>.</li></ul>
+        <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/ai/README.md" rel="noopener">View this page on GitHub</a></div>
+      </article>
+      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#how-the-repository-supports-ai-harnesses">How the repository supports AI harnesses</a><a class="l2" href="#setup-recipes">Setup recipes</a><a class="l3" href="#claude-code">Claude Code</a><a class="l3" href="#codex--cursor--other-agents">Codex / Cursor / other agents</a><a class="l3" href="#agents-without-file-access-to-this-repository">Agents without file access to this repository</a><a class="l2" href="#example-prompts">Example prompts</a><a class="l2" href="#writing-apps-that-agents-can-use-well">Writing apps that agents can use well</a></aside>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="../download.html">Download</a>
+            <a href="../use.html">For users</a>
+            <a href="../teams.html">For teams</a>
+            <a href="../developers.html">For developers</a>
+            <a href="../agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="../docs/getting-started.html">Getting started</a>
+            <a href="../docs/configuration.html">Configuration</a>
+            <a href="../docs/cli.html">CLI</a>
+            <a href="../docs/platforms.html">Platforms</a>
+            <a href="../docs/remote-access.html">Remote access</a>
+            <a href="../docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="../docs/changelog.html">Changelog</a>
+            <a href="../docs/roadmap.html">Roadmap</a>
+            <a href="../docs/security.html">Security</a>
+            <a href="../docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="../assets/search-index.js"></script>
+    <script src="../assets/site.js"></script>
+    <script src="../assets/pages.js"></script>
+  </body>
+</html>

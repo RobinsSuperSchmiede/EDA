@@ -1,0 +1,337 @@
+<!doctype html>
+<!-- Page for people who use OpenShell apps. Header and footer are written by scripts/build-website.py. -->
+<html lang="en" data-theme="green" data-surface="tinted" data-hero="wordmark" data-header="fade" data-field="hero" data-calm="on" data-intensity="1" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenShell for users – install an app, keep your data, let an assistant help</title>
+    <meta name="description" content="How to install an app built with OpenShell on Windows, macOS, Linux or Android, where your data lives, how AI assistants can use an app and how you stay in control." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/site.css" />
+    <link rel="stylesheet" href="assets/pages.css" />
+  </head>
+  <body data-page="use" class="page">
+    <canvas id="field" aria-hidden="true"></canvas>
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="index.html"><img src="assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="use.html" aria-current="page">Users</a>
+          <a href="teams.html">Teams</a>
+          <a href="developers.html">Developers</a>
+          <a href="agents.html">AI agents</a>
+          <a href="docs/index.html">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main>
+      <section class="hero hero--sub" id="hero">
+        <div class="wrap">
+          <div class="copy-block">
+            <div class="eyebrow rise">For users</div>
+            <h1 class="rise">Apps you install<br />Data you keep</h1>
+            <p class="lead rise">
+              An OpenShell app installs like any other app. It runs on your computer, keeps its files in your user
+              folder and lets an AI assistant help only when you allow it.
+            </p>
+            <div class="actions rise">
+              <a class="cta" href="#install"><span>Install an app</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+              <a class="btn btn--lg" href="#safe">Is it safe?</a>
+            </div>
+            <p class="note rise">Free · no account · Windows, macOS, Linux · Android in progress</p>
+          </div>
+          <div class="hero-visual rise">
+            <div class="stage" style="margin: 0 0 32px; max-width: none">
+              <div class="win">
+                <div class="bar"><img src="assets/logo.png" alt="" />Recipe Box<span class="ctl">— ▢ ✕</span></div>
+                <div class="body">
+                  <h4>Recipes</h4>
+                  <div class="field-input">Search recipes</div>
+                  <div class="row"><span>Lentil soup</span><span class="meta">25 min · vegan</span></div>
+                  <div class="row"><span>Green shakshuka</span><span class="meta">30 min</span></div>
+                  <div class="row"><span>Pea and mint risotto</span><span class="meta">40 min</span></div>
+                </div>
+              </div>
+              <div class="approval" role="presentation">
+                <div class="m">Assistant · Recipe Box</div>
+                <div>Add the recipe “Herb flatbread”?</div>
+                <div class="btns"><span class="btn btn--sm">Deny</span><span class="btn btn--sm on">Allow once</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ what you get -->
+      <section id="what">
+        <div class="wrap">
+          <div class="kicker reveal">What you get</div>
+          <h2 class="reveal">A normal app<br /><span class="soft">That respects you</span></h2>
+          <div class="tiles tiles--2">
+            <div class="tile reveal"><span class="tag">install</span><h3>Like any other app</h3><p>A setup file on Windows, a disk image on macOS, a package or AppImage on Linux. On Windows it installs for your user and needs no admin rights.</p></div>
+            <div class="tile reveal"><span class="tag">data</span><h3>Your files stay yours</h3><p>Every app keeps its data in a folder of your user account. Nothing in OpenShell needs an account or a cloud service.</p></div>
+            <div class="tile reveal"><span class="tag">background</span><h3>Quiet when you want it to be</h3><p>Apps can sit in the tray, keep working when the window is closed and start at login. Right-click the title bar to see what is running.</p></div>
+            <div class="tile reveal"><span class="tag">assistants</span><h3>AI helps only if you let it</h3><p>Assistants can use the app's own functions, never your screen. Changes can wait for your approval, and every call is recorded.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ install -->
+      <section id="install">
+        <div class="wrap">
+          <div class="kicker reveal">Install</div>
+          <h2 class="reveal">Get the app<br /><span class="soft">From whoever made it</span></h2>
+          <p class="lead reveal">
+            There is no app store. You get an OpenShell app from its publisher, usually from a download page that
+            offers your system first. You do not need to install OpenShell separately: the installer contains it.
+          </p>
+
+          <div class="tabset reveal" id="install-tabs">
+            <div class="tabs group" role="tablist">
+              <button class="tab" role="tab" aria-selected="true" data-pane="i-win">Windows</button>
+              <button class="tab" role="tab" aria-selected="false" data-pane="i-mac">macOS</button>
+              <button class="tab" role="tab" aria-selected="false" data-pane="i-linux">Linux</button>
+              <button class="tab" role="tab" aria-selected="false" data-pane="i-android">Android</button>
+              <button class="tab" role="tab" aria-selected="false" data-pane="i-bundle">Any system</button>
+            </div>
+
+            <div class="pane on" id="i-win" role="tabpanel">
+              <div class="steps steps--3">
+                <div class="step"><div class="n">01</div><h3>Download</h3><p>Get the <span class="mono">setup.exe</span> from the publisher's page.</p></div>
+                <div class="step"><div class="n">02</div><h3>Run it</h3><p>It installs for your user in a few seconds. No administrator password.</p></div>
+                <div class="step"><div class="n">03</div><h3>Open</h3><p>Start the app from the Start menu. Windows 11 already has what the window needs.</p></div>
+              </div>
+              <p class="sub">If Windows says “Windows protected your PC”, the installer is not signed. Choose <b>More info</b>, then <b>Run anyway</b>, only if you trust the publisher.</p>
+            </div>
+
+            <div class="pane" id="i-mac" role="tabpanel">
+              <div class="steps steps--3">
+                <div class="step"><div class="n">01</div><h3>Pick your Mac</h3><p>There is a build for Apple Silicon (M-series) and one for Intel Macs.</p></div>
+                <div class="step"><div class="n">02</div><h3>Open the .dmg</h3><p>Drag the app into Applications.</p></div>
+                <div class="step"><div class="n">03</div><h3>Open</h3><p>Start it from Applications or Spotlight.</p></div>
+              </div>
+              <p class="sub">If macOS says the app cannot be opened because the developer is unverified, the app is not notarised. Right-click it, choose <b>Open</b>, and confirm, only if you trust the publisher.</p>
+            </div>
+
+            <div class="pane" id="i-linux" role="tabpanel">
+              <div class="steps steps--3">
+                <div class="step"><div class="n">01</div><h3>AppImage</h3><p>Make it executable and run it. No installation needed.</p></div>
+                <div class="step"><div class="n">02</div><h3>Or a .deb package</h3><p>Install it with your package manager and start it from the menu.</p></div>
+                <div class="step"><div class="n">03</div><h3>WebKitGTK</h3><p>The window uses WebKitGTK 4.1. Most desktops have it; if not, install it first.</p></div>
+              </div>
+              <div class="codeblock mt-s" data-lang="bash"><pre><code>chmod +x my-app_1.2.0_amd64.AppImage &amp;&amp; ./my-app_1.2.0_amd64.AppImage
+sudo apt install ./my-app_1.2.0_amd64.deb        <span class="tc"># Debian, Ubuntu</span>
+sudo apt install libwebkit2gtk-4.1-0             <span class="tc"># only if the window does not open</span></code></pre></div>
+            </div>
+
+            <div class="pane" id="i-android" role="tabpanel">
+              <div class="callout"><b>Not in the Play Store yet.</b> The OpenShell app for Android is written and builds in our CI, but has not been tested on a real phone and is not published. Until then there is a way for the technically inclined.</div>
+              <p class="sub">Install <a href="https://termux.dev" rel="noopener">Termux</a>, then install the OpenShell command line and add the app's <span class="mono">.osapp</span> file. The app runs in the background; open its address in the phone's browser.</p>
+              <div class="codeblock mt-s" data-lang="bash"><pre><code>curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/scripts/install.sh | sh
+openshell install my-app-1.2.0.osapp --start</code></pre></div>
+            </div>
+
+            <div class="pane" id="i-bundle" role="tabpanel">
+              <p class="sub mt-0">Some publishers offer a portable <span class="mono">.osapp</span> file. It runs on every system that has the OpenShell command line, including servers and Termux. Your data stays put when you install a newer version.</p>
+              <div class="codeblock mt-s" data-lang="bash"><pre><code>openshell install my-app-1.2.0.osapp --start
+openshell apps                                  <span class="tc"># list installed apps</span></code></pre></div>
+              <p class="sub">Get the command line from the <a href="download.html">download page</a>.</p>
+            </div>
+          </div>
+
+          <div class="callout mt-m reveal"><b>Does the app need anything else?</b> Apps written in Python, Node.js or Java need that runtime on your computer; the publisher's page says so. Apps compiled to a single program need nothing extra. If something is missing, the app's loading screen tells you what.</div>
+        </div>
+      </section>
+
+      <!-- ============================================================ data -->
+      <section id="data">
+        <div class="wrap">
+          <div class="kicker reveal">Your data</div>
+          <h2 class="reveal">One folder<br /><span class="soft">Per app, per user</span></h2>
+          <p class="lead reveal">
+            An app keeps its files, its database and its logs in a folder named after the app, in your user account.
+            Programs and data are kept apart, so updating or removing the program normally leaves your data alone.
+          </p>
+          <div class="table-wrap reveal">
+            <table>
+              <thead><tr><th>System</th><th>Data folder</th><th>Program</th></tr></thead>
+              <tbody>
+                <tr><td>Windows</td><td><code>%LOCALAPPDATA%\&lt;app id&gt;\</code></td><td><code>%LOCALAPPDATA%\Programs\&lt;App&gt;\</code></td></tr>
+                <tr><td>macOS</td><td><code>~/Library/Application Support/&lt;app id&gt;/</code></td><td><code>/Applications</code></td></tr>
+                <tr><td>Linux</td><td><code>~/.local/share/&lt;app id&gt;/</code></td><td>package or AppImage</td></tr>
+                <tr><td>Bundle (<code>.osapp</code>)</td><td><code>~/.openshell/apps/&lt;app id&gt;/.openshell/</code></td><td><code>~/.openshell/apps/&lt;app id&gt;/</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="sub reveal">Inside the folder: <span class="mono">data/</span> with the app's own files and database, the logs, and an audit log of everything an assistant did. To remove an app completely, uninstall it and delete its data folder.</p>
+        </div>
+      </section>
+
+      <!-- ============================================================ assistants -->
+      <section id="assistants">
+        <div class="wrap">
+          <div class="kicker reveal">With an assistant</div>
+          <h2 class="reveal">Let it use the app<br /><span class="soft">Not your screen</span></h2>
+          <p class="lead reveal">
+            Every installed app can act as a tool for AI assistants that speak MCP, such as Claude Desktop, Claude Code
+            or Cursor. The assistant calls the app's own functions, for example “add a recipe”, instead of clicking
+            around. The app starts in the background if it is not running.
+          </p>
+          <div class="cols mt-m">
+            <div>
+              <div class="steps steps--3" style="grid-template-columns: 1fr; margin-top: 0">
+                <div class="step reveal"><div class="n">01 · choose</div><h3>An assistant with MCP</h3><p>Any client that can start a local MCP server works.</p></div>
+                <div class="step reveal"><div class="n">02 · connect</div><h3>Add the app as a tool</h3><p>Point the assistant at the app's program with <span class="mono">--mcp</span>. The app's runtime panel shows the exact line to copy.</p></div>
+                <div class="step reveal"><div class="n">03 · ask</div><h3>“Add a recipe for flatbread”</h3><p>The assistant calls the function. Changes you marked as critical wait for your yes.</p></div>
+              </div>
+            </div>
+            <div class="reveal">
+              <div class="codeblock" data-lang="json"><pre><code>{
+  <span class="tk">"mcpServers"</span>: {
+    <span class="tk">"recipe-box"</span>: {
+      <span class="tk">"command"</span>: <span class="ts">"C:\\Users\\me\\AppData\\Local\\Programs\\Recipe Box\\recipe-box.exe"</span>,
+      <span class="tk">"args"</span>: [<span class="ts">"--mcp"</span>]
+    }
+  }
+}</code></pre></div>
+              <p class="sub">Your assistant's own settings describe where this goes. The path is that of the installed app.</p>
+            </div>
+          </div>
+
+          <h3 class="mt-l reveal" style="font-size: 24px">You stay in control</h3>
+          <div class="table-wrap reveal">
+            <table>
+              <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+              <tbody>
+                <tr><td>What can an assistant do?</td><td>Only what the app's publisher declared as functions. By default it can read, operate the app's interface and call functions that change the app's own data.</td></tr>
+                <tr><td>What can it never do?</td><td>Run arbitrary commands, read or write files outside the app, or restart services, unless the publisher has switched that on for the installed app.</td></tr>
+                <tr><td>Can I approve each step?</td><td>Yes. Critical actions show a dialog and are denied if nobody answers.</td></tr>
+                <tr><td>Can I see what happened?</td><td>Every call is written to an audit log: who, what, when and whether it worked. <span class="mono">openshell audit</span> shows it.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ devices -->
+      <section id="devices">
+        <div class="wrap">
+          <div class="kicker reveal">More than one device</div>
+          <h2 class="reveal">Use an app<br /><span class="soft">From your other devices</span></h2>
+          <p class="lead reveal">
+            An app can be reached from your laptop, phone or another computer on your network. This is off until the
+            publisher or you switch it on. Each device gets its own pairing, which you can cancel at any time.
+          </p>
+          <div class="tiles">
+            <div class="tile reveal"><span class="tag">pair</span><h3>One device, one key</h3><p>Pairing creates a token for that device only. Scan a QR code or paste the token.</p></div>
+            <div class="tile reveal"><span class="tag">limit</span><h3>Only your network</h3><p>Restrict access to your home network or your VPN, and encrypt the connection with TLS.</p></div>
+            <div class="tile reveal"><span class="tag">revoke</span><h3>Take it back</h3><p>Revoking a device stops its token immediately. Too many wrong tries lock an address out.</p></div>
+          </div>
+          <p class="sub reveal">Details for administrators: <a href="docs/remote-access.html">remote access</a>.</p>
+        </div>
+      </section>
+
+      <!-- ============================================================ safe -->
+      <section id="safe">
+        <div class="wrap">
+          <div class="kicker reveal">Is it safe?</div>
+          <h2 class="reveal">Honest answers</h2>
+          <div class="cols cols--wide mt-m">
+            <ul class="ticks reveal">
+              <li><span><b>Local by default.</b> The app's control interface listens on your own computer only and needs a token. Other devices get in only after you or the publisher enable it.</span></li>
+              <li><span><b>Assistants are fenced in.</b> They get permission scopes, not your computer. Files stay inside the app, and arbitrary shell commands are not possible.</span></li>
+              <li><span><b>Nothing is hidden.</b> Every assistant action is logged. OpenShell is open source under the MIT licence, so anyone can read the code.</span></li>
+              <li><span><b>No tracking by OpenShell.</b> The shell does not collect usage data. What an app itself sends over the internet is up to its publisher.</span></li>
+            </ul>
+            <div class="callout reveal"><b>What OpenShell is not.</b> It is not a sandbox. An app is a program that runs with your user rights, like any program you install, and the permission layer governs cooperating assistants, not malicious software. Install apps from publishers you trust, and keep unsigned installers to sources you know.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ faq -->
+      <section id="faq">
+        <div class="wrap">
+          <h2 class="center reveal">Questions</h2>
+          <div class="faq">
+            <details class="reveal"><summary>Why does my app say “OpenShell”?</summary><p>OpenShell is the shell that runs the app: it opens the window, starts the app's services and offers the interface for assistants. The publisher builds the app itself; OpenShell is the part underneath.</p></details>
+            <details class="reveal"><summary>Do I need to install OpenShell first?</summary><p>No. The installer of an app contains everything. You only need the OpenShell command line for portable <span class="mono">.osapp</span> files, on servers or in Termux.</p></details>
+            <details class="reveal"><summary>How do I uninstall an app?</summary><p>Like any other app: Settings, Apps on Windows; drag it to the Trash on macOS; use your package manager or delete the AppImage on Linux. Delete its data folder as well if you want it gone completely.</p></details>
+            <details class="reveal"><summary>Why does my system warn me when I install?</summary><p>Installers need to be signed with a certificate the publisher pays for. Unsigned ones trigger a warning from Windows SmartScreen or macOS Gatekeeper. The warning means “unknown publisher”, not “harmful”.</p></details>
+            <details class="reveal"><summary>Does it cost anything?</summary><p>OpenShell is free and open source. Whether an app costs money is up to its publisher.</p></details>
+            <details class="reveal"><summary>An app is slow to start or shows an error. What now?</summary><p>The loading screen shows which part is starting. Right-click the title bar for the runtime panel with each service's state and logs; the publisher can use them to help you.</p></details>
+          </div>
+        </div>
+      </section>
+
+      <section class="final" id="download">
+        <div>
+          <h2 class="reveal">Want to make<br />your own?</h2>
+          <p class="lead reveal">Everything you can use, you can also build. Turn a web app into a desktop app in about five minutes.</p>
+          <div class="actions reveal">
+            <a class="cta" href="developers.html"><span>For developers</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+            <a class="btn btn--lg" href="download.html">Download OpenShell</a>
+          </div>
+        </div>
+        <div class="wordmark" aria-hidden="true">openshell</div>
+      </section>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="index.html"><img src="assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="download.html">Download</a>
+            <a href="use.html">For users</a>
+            <a href="teams.html">For teams</a>
+            <a href="developers.html">For developers</a>
+            <a href="agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="docs/getting-started.html">Getting started</a>
+            <a href="docs/configuration.html">Configuration</a>
+            <a href="docs/cli.html">CLI</a>
+            <a href="docs/platforms.html">Platforms</a>
+            <a href="docs/remote-access.html">Remote access</a>
+            <a href="docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="docs/changelog.html">Changelog</a>
+            <a href="docs/roadmap.html">Roadmap</a>
+            <a href="docs/security.html">Security</a>
+            <a href="docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="assets/site.js"></script>
+    <script src="assets/pages.js"></script>
+  </body>
+</html>

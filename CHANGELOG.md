@@ -51,10 +51,13 @@ All notable changes to this project are documented here. The format follows
   for `.osapp` bundles, WebView, foreground service (`specialUse`) with notification and wake lock, lifecycle and
   network events, target SDK 36, 16 KB page-size aligned native library, AAB build and signing in CI
   (`android-app.yml`), Play Store listing, policy answers and privacy policy template. See `docs/android-app.md`.
-- Landing page in `website/`: static, ASCII field of code glyphs, architecture diagram, product gallery and a
-  platforms section (desktop, server, Android, remote gateway). `dev.html` adds a customize bar to try colour themes
-  (green, light blue, red, purple, amber, mono), hero variants, surfaces and background settings; `index.html` is the
-  production page.
+- **Website** in `website/`: a landing page (ASCII field of code glyphs, architecture diagram, product gallery, platforms,
+  shipping, security) with a "find your way" section, plus pages for **users** (`use.html`), **teams and companies**
+  (`teams.html`), **developers** (`developers.html`) and **AI agents** (`agents.html`), a **download page** that detects
+  the visitor's system, and the **documentation** (`website/docs/`, searchable, rendered from `docs/*.md`, the roadmap, the
+  changelog and the project documents). `python scripts/build-website.py` renders the docs and keeps the shared header and
+  footer in sync (`--check` for CI). `dev.html` adds a customize bar to try colour themes (green, light blue, red,
+  purple, amber, mono), hero variants, surfaces and background settings; `index.html` is the production landing page.
 
 ## [0.2.1] - 2026-11-19
 

@@ -1,0 +1,287 @@
+<!doctype html>
+<!-- Page for teams and companies. Header and footer are written by scripts/build-website.py. -->
+<html lang="en" data-theme="green" data-surface="tinted" data-hero="wordmark" data-header="fade" data-field="hero" data-calm="on" data-intensity="1" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenShell for teams – internal tools as managed desktop apps</title>
+    <meta name="description" content="Ship the web apps your team already has as signed desktop apps with one download link per system, update checks, scoped AI access, an audit log and remote access you can restrict. MIT licensed." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/site.css" />
+    <link rel="stylesheet" href="assets/pages.css" />
+  </head>
+  <body data-page="teams" class="page">
+    <canvas id="field" aria-hidden="true"></canvas>
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="index.html"><img src="assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="use.html">Users</a>
+          <a href="teams.html" aria-current="page">Teams</a>
+          <a href="developers.html">Developers</a>
+          <a href="agents.html">AI agents</a>
+          <a href="docs/index.html">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main>
+      <section class="hero hero--sub" id="hero">
+        <div class="wrap">
+          <div class="copy-block">
+            <div class="eyebrow rise">For teams and companies</div>
+            <h1 class="rise">Internal tools without the desktop plumbing</h1>
+            <p class="lead rise">
+              Turn the web apps your team already has into managed desktop apps: one download link per system, signed
+              installers, update checks, and AI access you can limit and audit.
+            </p>
+            <div class="actions rise">
+              <a class="cta" href="#rollout"><span>See the rollout</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+              <a class="btn btn--lg" href="#security">Security and governance</a>
+            </div>
+            <p class="note rise">MIT licence · no per-seat fees · alpha: pin your versions</p>
+          </div>
+          <div class="hero-visual rise">
+            <div class="win">
+              <div class="bar"><img src="assets/logo.png" alt="" />Download · My App 1.2.0<span class="ctl">generated</span></div>
+              <div class="body">
+                <h4>My App 1.2.0</h4>
+                <div class="row"><span><span class="dot" style="display: inline-block; margin-right: 8px"></span>Windows 64-bit · setup.exe</span><span class="meta">recommended for you</span></div>
+                <div class="row"><span>macOS Apple Silicon · .dmg</span><span class="meta">sha256 …</span></div>
+                <div class="row"><span>macOS Intel · .dmg</span><span class="meta">sha256 …</span></div>
+                <div class="row"><span>Linux · .AppImage, .deb</span><span class="meta">sha256 …</span></div>
+                <div class="row"><span>Android and servers · .osapp</span><span class="meta">sha256 …</span></div>
+              </div>
+            </div>
+            <div class="device-label">the download page <span class="mono">openshell release</span> writes for you</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ why -->
+      <section id="why">
+        <div class="wrap">
+          <div class="kicker reveal">Why teams use it</div>
+          <h2 class="reveal">Keep your stack<br /><span class="soft">Gain a product</span></h2>
+          <div class="tiles tiles--2">
+            <div class="tile reveal"><span class="tag">reuse</span><h3>No rewrite</h3><p>Keep React, Vue, Svelte or plain HTML, and a backend in Python, Node.js, Java, C++, Go, Rust or .NET. <span class="mono">openshell init</span> reads your project and writes the config. There is no desktop code to maintain.</p></div>
+            <div class="tile reveal"><span class="tag">ship</span><h3>Installers, signing, updates</h3><p>Branded installers for every system, per-user installs without admin rights, an MSI for software distribution, signing settings and an update check. One tag publishes everything.</p></div>
+            <div class="tile reveal"><span class="tag">govern</span><h3>AI on a leash</h3><p>Agents get permission scopes per mode, critical actions wait for a human, every call lands in an audit log. No agent runs arbitrary commands.</p></div>
+            <div class="tile reveal"><span class="tag">own</span><h3>Your stack, your data</h3><p>MIT licensed, no cloud service, no per-seat fee. Data stays on the user's machine. The shell is never compiled into your app, so a shell update improves every app.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ rollout -->
+      <section id="rollout">
+        <div class="wrap">
+          <div class="kicker reveal">Rollout</div>
+          <h2 class="reveal">From web app<br /><span class="soft">To every desktop</span></h2>
+          <p class="lead reveal">Five steps, most of them one command. Your CI does the heavy lifting on a tag.</p>
+          <div class="steps steps--5">
+            <div class="step reveal"><div class="n">01 · wrap</div><h3>Describe</h3><p><span class="mono">openshell init</span> detects frontend and backend and writes <span class="mono">openshell.json</span>.</p></div>
+            <div class="step reveal"><div class="n">02 · package</div><h3>Build installers</h3><p><span class="mono">openshell package</span> with your name and icon. Add <span class="mono">--target bundle</span> for the portable file.</p></div>
+            <div class="step reveal"><div class="n">03 · sign</div><h3>Remove warnings</h3><p>A Windows certificate or signing command, macOS identity and notarisation. Bring your own certificates.</p></div>
+            <div class="step reveal"><div class="n">04 · publish</div><h3>Tag a version</h3><p><span class="mono">openshell release workflow</span> writes a CI workflow that builds all systems and publishes a download page.</p></div>
+            <div class="step reveal"><div class="n">05 · update</div><h3>Tell users</h3><p><span class="mono">package.update_url</span> and <span class="mono">openshell update</span> return the right download for each system.</p></div>
+          </div>
+          <div class="table-wrap reveal">
+            <table>
+              <thead><tr><th>Your users get</th><th>For</th></tr></thead>
+              <tbody>
+                <tr><td><code>My App_1.2.0_x64-setup.exe</code></td><td>Windows, NSIS, installs per user with no admin rights. An MSI is available for software distribution tools.</td></tr>
+                <tr><td><code>My App_1.2.0_aarch64.dmg</code>, <code>_x64.dmg</code></td><td>macOS on Apple Silicon and on Intel</td></tr>
+                <tr><td><code>my-app_1.2.0_amd64.AppImage</code>, <code>.deb</code></td><td>Linux</td></tr>
+                <tr><td><code>my-app-1.2.0.osapp</code></td><td>Android (OpenShell app, Termux), servers and any host with the OpenShell CLI</td></tr>
+                <tr><td><code>downloads.json</code>, <code>index.html</code></td><td>Machine-readable list with SHA-256 checksums, and a page that offers the visitor's system first</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="sub reveal">Without GitHub, build on each system and run <span class="mono">openshell release manifest dist --base-url https://…</span> to get the same list and page for any web server. Details: <a href="docs/installers.html">installers and releases</a>.</p>
+        </div>
+      </section>
+
+      <!-- ============================================================ deployment -->
+      <section id="deploy">
+        <div class="wrap">
+          <div class="kicker reveal">Deployment</div>
+          <h2 class="reveal">Where it can run</h2>
+          <div class="table-wrap reveal">
+            <table>
+              <thead><tr><th>Scenario</th><th>How</th><th>Notes</th></tr></thead>
+              <tbody>
+                <tr><td>Employee desktops</td><td>Signed installer, or MSI through your software distribution</td><td>Windows, macOS, Linux. Data lives per user. Single instance per app.</td></tr>
+                <tr><td>A shared or always-on host</td><td><code>openshell start --headless --detach</code></td><td>No window. Reach the app in a browser, or from other devices through the remote gateway.</td></tr>
+                <tr><td>Phones and tablets</td><td><code>.osapp</code> bundle in the OpenShell Android app or in Termux</td><td>Android app is in progress; Termux works today with static frontends, database and functions.</td></tr>
+                <tr><td>AI agents on other machines</td><td>Remote gateway, one token per device</td><td>The app's functions only. Restrict by IP range and TLS.</td></tr>
+                <tr><td>Development and CI</td><td><code>openshell dev --headless</code></td><td>Same runtime in a terminal, with logs and status.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="sub reveal">Interpreters your services need (Python, Node.js, a JRE) must exist on the target machine, or you ship them inside the app. Compiled services need nothing. Bundled runtimes are on the <a href="docs/roadmap.html">roadmap</a>.</p>
+        </div>
+      </section>
+
+      <!-- ============================================================ security -->
+      <section id="security">
+        <div class="wrap">
+          <div class="kicker reveal">Security and governance</div>
+          <h2 class="reveal">What your security team<br /><span class="soft">will ask about</span></h2>
+          <div class="table-wrap reveal">
+            <table>
+              <thead><tr><th>Control</th><th>What it does</th><th>Setting</th></tr></thead>
+              <tbody>
+                <tr><td>Permission scopes</td><td>Every agent tool needs exactly one of seven scopes: <code>read</code>, <code>ui</code>, <code>actions</code>, <code>services</code>, <code>files</code>, <code>code</code>, <code>system</code>. Production grants fewer than development.</td><td><code>agents.permissions</code></td></tr>
+                <tr><td>Human approval</td><td>Scopes you list need a decision. The app shows a dialog; unanswered requests are denied.</td><td><code>agents.approval_required</code></td></tr>
+                <tr><td>Audit log</td><td>Every call, allowed, denied or failed, with agent name, channel, tool, scope, arguments and duration, as lines of JSON.</td><td><code>.openshell/audit.jsonl</code></td></tr>
+                <tr><td>File access</td><td>Project-scoped. Absolute paths, <code>..</code>, symlink escapes and OpenShell's own state are rejected; <code>.git</code> is protected.</td><td>built in</td></tr>
+                <tr><td>No shell for agents</td><td>Agents cannot run arbitrary commands. Only tasks you declare, under the <code>system</code> scope.</td><td><code>tasks</code></td></tr>
+                <tr><td>Control API</td><td>Loopback only, bearer token, Host and Origin checks against DNS rebinding and other websites.</td><td>built in</td></tr>
+                <tr><td>Database access</td><td>Per database: none, read or write. Reads are read-only SQL.</td><td><code>agent_access</code></td></tr>
+                <tr><td>Remote access</td><td>Off by default. Per-device tokens stored as hashes, IP and CIDR allowlist, TLS, rate limit with lockout, audited with the device name.</td><td><code>runtime.remote</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="cols mt-m">
+            <div class="callout reveal"><b>Know the limits.</b> The permission layer governs cooperating agents. OpenShell is not a sandbox against malware running as the same user. Exposed TCP ports have no login of their own, and exposed HTTP ports check the token on the first request of a connection. Rate limits live in memory.</div>
+            <div class="callout reveal"><b>Reporting.</b> Vulnerabilities go through private GitHub security advisories, not public issues. You can expect an acknowledgement within a few days. Read the <a href="docs/security.html">security policy</a> and the <a href="docs/architecture.html">architecture</a> for the threat model.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ fit -->
+      <section id="fit">
+        <div class="wrap">
+          <div class="kicker reveal">Fit</div>
+          <h2 class="reveal">A good fit<br /><span class="soft">And where to wait</span></h2>
+          <div class="two">
+            <div class="list reveal">
+              <h3>Works well today</h3>
+              <ul class="ticks">
+                <li><span><b>Internal tools</b> and dashboards that deserve a real desktop presence</span></li>
+                <li><span><b>Local-first apps</b> with the built-in SQLite database</span></li>
+                <li><span><b>Existing web apps</b> in any frontend framework and backend language</span></li>
+                <li><span><b>Tools your AI assistants should use</b>, with limits and an audit trail</span></li>
+                <li><span><b>Mixed teams</b> on Windows, macOS and Linux</span></li>
+              </ul>
+            </div>
+            <div class="list reveal">
+              <h3>Plan around</h3>
+              <ul class="ticks plan">
+                <li><span><b>Bundled runtimes</b> are not here yet; Python, Node.js or a JRE must exist on the machine</span></li>
+                <li><span><b>Automatic installation</b> of updates is planned; today you get the check and the download</span></li>
+                <li><span><b>Agent identities</b>: sessions with their own tokens and per-device permissions are planned</span></li>
+                <li><span><b>Phones</b>: the Android app is not in the Play Store and has not been verified on a device</span></li>
+                <li><span><b>Alpha status</b>: the config format may change before 1.0</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ maturity -->
+      <section id="status">
+        <div class="wrap">
+          <div class="kicker reveal">Maturity</div>
+          <h2 class="reveal">Where it stands<br /><span class="soft">Without the gloss</span></h2>
+          <div class="table-wrap reveal">
+            <table>
+              <thead><tr><th>Area</th><th>Status</th><th>Detail</th></tr></thead>
+              <tbody>
+                <tr><td>Runtime, desktop shell, CLI, MCP</td><td><span class="pill">tested</span></td><td>Tested end to end on Windows 11 with services in Python, Node.js, Java and C++, monitoring, both MCP profiles, approvals and NSIS installers.</td></tr>
+                <tr><td>macOS and Linux</td><td><span class="pill wip">builds in CI</span></td><td>They build and test in CI and have seen little manual testing. Reports are welcome.</td></tr>
+                <tr><td>Release workflow, bundles, signing, update check</td><td><span class="pill wip">on main</span></td><td>Implemented and documented; part of the next release. You need your own signing certificates.</td></tr>
+                <tr><td>Remote access with tokens, allowlist, TLS</td><td><span class="pill wip">on main</span></td><td>Implemented with tests; part of the next release.</td></tr>
+                <tr><td>Android app</td><td><span class="pill wip">in progress</span></td><td>Kotlin host and JNI bridge build in CI. Not yet run on a device, not in the Play Store.</td></tr>
+                <tr><td>Bundled runtimes, auto-install updates, agent sessions</td><td><span class="pill plan">planned</span></td><td>See the <a href="docs/roadmap.html">roadmap</a>.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ licence and support -->
+      <section id="licence">
+        <div class="wrap">
+          <div class="kicker reveal">Licence and support</div>
+          <h2 class="reveal">Free to use<br /><span class="soft">Open to inspect</span></h2>
+          <div class="tiles tiles--4">
+            <div class="tile reveal"><span class="tag">licence</span><h3>MIT</h3><p>Use it commercially, modify it, ship it inside your products. No per-seat or runtime fees.</p></div>
+            <div class="tile reveal"><span class="tag">community</span><h3>Issues and discussions</h3><p>Questions and bugs go to GitHub. There is no paid support plan today.</p></div>
+            <div class="tile reveal"><span class="tag">security</span><h3>Private reports</h3><p>Use security advisories for vulnerabilities. Fixes land on <span class="mono">main</span> and in the latest release.</p></div>
+            <div class="tile reveal"><span class="tag">contribute</span><h3>Help shape it</h3><p>Platform testing on macOS and Linux, templates, docs and code are all welcome.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="final" id="download">
+        <div>
+          <h2 class="reveal">Try it with<br />one internal tool</h2>
+          <p class="lead reveal">Wrap a small app first. If it fits, the rest of your portfolio follows the same way.</p>
+          <div class="actions reveal">
+            <a class="cta" href="docs/getting-started.html"><span>Getting started</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+            <a class="btn btn--lg" href="https://github.com/RobinsSuperSchmiede/EDA/discussions">Ask on GitHub</a>
+          </div>
+        </div>
+        <div class="wordmark" aria-hidden="true">openshell</div>
+      </section>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="index.html"><img src="assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="download.html">Download</a>
+            <a href="use.html">For users</a>
+            <a href="teams.html">For teams</a>
+            <a href="developers.html">For developers</a>
+            <a href="agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="docs/getting-started.html">Getting started</a>
+            <a href="docs/configuration.html">Configuration</a>
+            <a href="docs/cli.html">CLI</a>
+            <a href="docs/platforms.html">Platforms</a>
+            <a href="docs/remote-access.html">Remote access</a>
+            <a href="docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="docs/changelog.html">Changelog</a>
+            <a href="docs/roadmap.html">Roadmap</a>
+            <a href="docs/security.html">Security</a>
+            <a href="docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="assets/site.js"></script>
+    <script src="assets/pages.js"></script>
+  </body>
+</html>

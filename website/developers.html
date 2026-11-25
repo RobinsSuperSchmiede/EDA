@@ -1,0 +1,417 @@
+<!doctype html>
+<!-- Page for developers. Header and footer are written by scripts/build-website.py; plain code blocks are coloured by it. -->
+<html lang="en" data-theme="green" data-surface="tinted" data-hero="wordmark" data-header="fade" data-field="hero" data-calm="on" data-intensity="1" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenShell for developers – turn a web app into a desktop app</title>
+    <meta name="description" content="Describe your frontend, services and database in one openshell.json and get a supervised, hot-reloading native desktop app, installers, and an interface for AI agents. Any backend language. Rust and Tauri 2. MIT." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/site.css" />
+    <link rel="stylesheet" href="assets/pages.css" />
+  </head>
+  <body data-page="developers" class="page">
+    <canvas id="field" aria-hidden="true"></canvas>
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="index.html"><img src="assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="use.html">Users</a>
+          <a href="teams.html">Teams</a>
+          <a href="developers.html" aria-current="page">Developers</a>
+          <a href="agents.html">AI agents</a>
+          <a href="docs/index.html">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main>
+      <section class="hero hero--sub" id="hero">
+        <div class="wrap">
+          <div class="copy-block">
+            <div class="eyebrow rise">For developers</div>
+            <h1 class="rise">Your stack<br />Your code<br />A native app</h1>
+            <p class="lead rise">
+              Describe your frontend, services and database in one file. OpenShell runs and supervises them, reloads on
+              every save and builds the installers. You never write desktop or process-management code.
+            </p>
+            <div class="actions rise">
+              <a class="cta" href="#start"><span>Quick start</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+              <a class="btn btn--lg" href="docs/getting-started.html">Read the docs</a>
+            </div>
+            <p class="note rise">Rust and Tauri 2 · MIT · backends in Python, Node.js, Java, C++, Go, Rust, .NET</p>
+          </div>
+          <div class="hero-visual rise">
+            <div class="term"><span class="c">$</span> openshell dev
+  OpenShell  Field Notes
+  mode    development · desktop
+  agents  openshell mcp
+
+<span class="c">  db:main │</span> applied migration 002_tags.sql
+<span class="c"> backend │</span> starting: python main.py
+<span class="c"> backend │</span> ready after 0.4 s
+<span class="c">frontend │</span> serving web/ at http://127.0.0.1:52471/
+<span class="c"> backend │</span> files changed: backend/main.py
+<span class="c"> backend │</span> restarting · <span class="g">ready after 0.3 s</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ quick start -->
+      <section id="start">
+        <div class="wrap quick">
+          <div>
+            <div class="kicker reveal">Quick start</div>
+            <h2 class="reveal">Five minutes to<br /><span class="soft">a desktop app</span></h2>
+            <p class="lead reveal">Create, run, ship. Or point OpenShell at the web app you already have: <span class="mono">init</span> detects Vite, Next.js, Angular, Vue, Python, Node.js, Go, Rust, Java and C++.</p>
+            <p class="sub reveal">No release yet for your system, or you want the latest? <a href="download.html">Download or build from source</a>.</p>
+          </div>
+          <div class="copy-abs reveal">
+            <button type="button" class="btn btn--sm" data-copy-target="dev-quick">Copy</button>
+            <div class="term" id="dev-quick"><span class="c"># install (Windows: scripts/install.ps1)</span>
+curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/scripts/install.sh | sh
+
+<span class="c">$</span> openshell create my-app --with frontend,database
+<span class="c">$</span> cd my-app
+<span class="c">$</span> openshell dev        <span class="c"># native window, hot reload</span>
+<span class="c">$</span> openshell package    <span class="c"># installer</span>
+
+<span class="c"># existing project</span>
+<span class="c">$</span> openshell init
+<span class="c">$</span> openshell doctor</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ anatomy -->
+      <section id="anatomy">
+        <div class="wrap">
+          <div class="kicker reveal">Anatomy</div>
+          <h2 class="reveal">One file<br /><span class="soft">Describes the app</span></h2>
+          <p class="lead reveal">Your frontend and backend stay normal projects. OpenShell reads <span class="mono">openshell.json</span>, starts what is in it and never compiles your code into the shell.</p>
+          <div class="cols mt-m">
+            <div class="codeblock reveal" data-lang="json"><pre><code>{
+  "version": 1,
+  "app": { "name": "My App", "version": "1.0.0", "icon": "assets/icon.png" },
+  "frontend": {
+    "command": "npm run dev -- --port ${port} --strictPort",
+    "cwd": "frontend",
+    "port": "auto",
+    "url": "http://127.0.0.1:${port}",
+    "setup": { "command": "npm install", "creates": "frontend/node_modules" },
+    "build": "npm run build",
+    "dist": "frontend/dist",
+    "proxy": { "/api": "${services.backend.url}" },
+    "depends_on": ["backend"]
+  },
+  "services": [
+    {
+      "name": "backend",
+      "command": ["python", "main.py"],
+      "cwd": "backend",
+      "port": "auto",
+      "healthcheck": "http://127.0.0.1:${port}/health",
+      "openapi": "/openapi.json",
+      "watch": ["backend"]
+    }
+  ]
+}</code></pre></div>
+            <div>
+              <h3 class="reveal" style="font-size: 24px">The app contract</h3>
+              <p class="sub reveal">Five rules, and your code runs unchanged inside and outside OpenShell.</p>
+              <ul class="ticks reveal">
+                <li><span>Read your port from <b>PORT</b> and bind <b>127.0.0.1</b></span></li>
+                <li><span>Answer <b>GET /health</b> with a 200 when ready</span></li>
+                <li><span>Store data in <b>OPENSHELL_DATA_DIR</b>, so it survives updates</span></li>
+                <li><span>Call the backend with relative <b>/api</b> URLs; OpenShell proxies them</span></li>
+                <li><span>Offer functions to agents with <b>capabilities</b>, an <b>openapi</b> document or frontend actions</span></li>
+              </ul>
+              <div class="actions reveal">
+                <a class="btn btn--lg" href="docs/configuration.html">Configuration reference</a>
+                <a class="btn btn--lg" href="docs/ai-app-development.html#the-app-contract">Contract in detail</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ building blocks -->
+      <section id="blocks">
+        <div class="wrap">
+          <div class="kicker reveal">Building blocks</div>
+          <h2 class="reveal">Use what you need</h2>
+          <p class="lead reveal">Frontend, backend, database and functions for agents are independent. Combine them when you create the app or add them later, in any order.</p>
+          <div class="tiles tiles--4">
+            <div class="tile reveal"><span class="tag">frontend</span><h3>Any web UI</h3><p>Dev server with hot reload, or a production build served by OpenShell with an <span class="mono">/api</span> proxy.</p></div>
+            <div class="tile reveal"><span class="tag">backend</span><h3>Any language</h3><p>Health checks, restarts with backoff, rebuilds on change, logs, CPU and memory.</p></div>
+            <div class="tile reveal"><span class="tag">database</span><h3>Built-in SQLite</h3><p>Migrations, an SDK and per-database agent access. A UI can keep its data without a backend.</p></div>
+            <div class="tile reveal"><span class="tag">functions</span><h3>Scripts as tools</h3><p>A program per call: JSON in, JSON out. An AI interface without any server.</p></div>
+          </div>
+          <div class="codeblock mt-m reveal" data-lang="bash"><pre><code>openshell create notes --with frontend,database     # UI plus built-in SQLite, no backend
+openshell create tools --with functions             # functions for AI agents only: no UI, no server
+openshell add backend --lang node                   # add blocks later, in any order</code></pre></div>
+        </div>
+      </section>
+
+      <!-- ============================================================ languages -->
+      <section id="languages">
+        <div class="wrap">
+          <div class="kicker reveal">Languages and templates</div>
+          <h2 class="reveal">Bring your language</h2>
+          <div class="table-wrap reveal">
+            <table>
+              <thead><tr><th>Backend</th><th>Example <span class="mono">command</span></th><th><span class="mono">build</span></th></tr></thead>
+              <tbody>
+                <tr><td>Python</td><td><code>["python", "main.py"]</code></td><td>none</td></tr>
+                <tr><td>Node.js</td><td><code>["node", "server.js"]</code></td><td>none</td></tr>
+                <tr><td>Java / Spring Boot</td><td><code>["mvnw", "spring-boot:run"]</code></td><td>none, or <code>mvnw package</code> and <code>java -jar</code></td></tr>
+                <tr><td>C++ (CMake)</td><td><code>["build/bin/server"]</code></td><td><code>cmake -S . -B build &amp;&amp; cmake --build build</code></td></tr>
+                <tr><td>Go, Rust, .NET</td><td><code>["bin/server"]</code></td><td><code>go build</code>, <code>cargo build</code>, <code>dotnet build</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="sub reveal">Compiled services rebuild and restart on every change in development. Templates: <span class="mono">vanilla-python</span>, <span class="mono">react-python</span>, <span class="mono">react-node</span>, <span class="mono">vue-python</span>, <span class="mono">svelte-go</span>, <span class="mono">vanilla-java</span>, <span class="mono">vanilla-cpp</span> and <span class="mono">custom</span> (<span class="mono">openshell create --list</span>). More in <a href="docs/languages.html">languages</a>.</p>
+        </div>
+      </section>
+
+      <!-- ============================================================ dev loop -->
+      <section id="loop">
+        <div class="wrap">
+          <div class="kicker reveal">Development</div>
+          <h2 class="reveal">The loop<br /><span class="soft">Edit, save, see</span></h2>
+          <div class="cols mt-m">
+            <div class="table-wrap mt-0 reveal">
+              <table>
+                <thead><tr><th>Task</th><th>Command</th></tr></thead>
+                <tbody>
+                  <tr><td>Run with a window, or in the browser</td><td><code>openshell dev</code> · <code>openshell dev --headless</code></td></tr>
+                  <tr><td>What is running?</td><td><code>openshell status</code></td></tr>
+                  <tr><td>Logs, errors only</td><td><code>openshell logs backend -f --errors</code></td></tr>
+                  <tr><td>Restart, stop, start a service</td><td><code>restart backend</code> · <code>stop worker</code> · <code>run worker</code></td></tr>
+                  <tr><td>Check the setup</td><td><code>openshell doctor</code></td></tr>
+                  <tr><td>Production mode in the background</td><td><code>openshell start --detach</code></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <ul class="ticks reveal">
+              <li><span>Edit a backend file and the service <b>restarts</b>; compiled services rebuild first.</span></li>
+              <li><span>Frontends <b>hot-reload</b>; static ones reload the window.</span></li>
+              <li><span>A crashing service restarts with backoff and is marked <b>failed</b> after five crashes a minute.</span></li>
+              <li><span>Right-click the title bar for the <b>runtime panel</b>: state, CPU, memory and logs.</span></li>
+              <li><span>Every <span class="mono">create</span> and <span class="mono">init</span> adds an <b>AGENTS.md</b> so coding agents know the rules.</span></li>
+            </ul>
+          </div>
+          <p class="sub reveal">All commands: <a href="docs/cli.html">CLI reference</a>.</p>
+        </div>
+      </section>
+
+      <!-- ============================================================ sdk -->
+      <section id="sdk">
+        <div class="wrap">
+          <div class="kicker reveal">Frontend SDK</div>
+          <h2 class="reveal">Optional, and<br /><span class="soft">never in the way</span></h2>
+          <p class="lead reveal">The SDK is served by the shell at <span class="mono">/sdk.js</span>. Your frontend works unchanged without it; with it you reach the runtime, the window, the database and the agent layer.</p>
+          <div class="codeblock mt-m reveal" data-lang="js"><pre><code>const { OpenShell } = await import(`${window.__OPENSHELL__.api}/sdk.js`);
+
+await OpenShell.db.query("SELECT * FROM notes WHERE done = ?", [0]);
+await OpenShell.notify("Export finished", "Saved to reports/q3.pdf");
+await OpenShell.runtime.restart("backend");
+
+// let agents drive your UI
+OpenShell.agent.registerAction(
+  "set_filter",
+  { description: "Show all, open or done todos", permission: "ui" },
+  ({ filter }) =&gt; setFilter(filter),
+);</code></pre></div>
+          <p class="sub reveal">Calls are checked against <span class="mono">agents.sdk_permissions</span>. Reference: <a href="docs/sdk.html">frontend SDK</a>.</p>
+        </div>
+      </section>
+
+      <!-- ============================================================ ship -->
+      <section id="ship">
+        <div class="wrap">
+          <div class="kicker reveal">Ship</div>
+          <h2 class="reveal">From project<br /><span class="soft">To download page</span></h2>
+          <div class="stack mt-m">
+            <div class="codeblock reveal" data-lang="bash"><pre><code>openshell package                       # installer for this system
+openshell package --target msi          # other formats
+openshell package --target bundle       # portable .osapp for every host
+
+openshell release workflow              # writes the CI workflow
+git tag v1.2.0 &amp;&amp; git push origin v1.2.0 # builds and publishes everything
+
+openshell update                        # does a newer version exist?</code></pre></div>
+            <div class="codeblock reveal" data-lang="json"><pre><code>{
+  "app": { "name": "My App", "id": "com.example.myapp", "version": "1.2.0" },
+  "package": {
+    "publisher": "Example Inc.",
+    "targets": ["nsis", "msi"],
+    "exclude": ["docs", "**/*.test.js"],
+    "update_url": "https://github.com/me/app/releases/latest/download/downloads.json",
+    "signing": {
+      "windows": { "certificate_thumbprint": "A1B2…" },
+      "macos": { "signing_identity": "Developer ID Application: Example Inc." }
+    }
+  }
+}</code></pre></div>
+          </div>
+          <div class="table-wrap reveal">
+            <table>
+              <thead><tr><th>System</th><th>Formats</th></tr></thead>
+              <tbody>
+                <tr><td>Windows</td><td><code>nsis</code> (default, per user, no admin rights), <code>msi</code></td></tr>
+                <tr><td>macOS</td><td><code>app</code>, <code>dmg</code></td></tr>
+                <tr><td>Linux</td><td><code>deb</code>, <code>rpm</code>, <code>appimage</code></td></tr>
+                <tr><td>Everywhere</td><td><code>bundle</code>: <code>.osapp</code>, runs on desktop CLI, servers, Termux and the Android app</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="sub reveal">No compiler is involved: the generic shell binary is renamed and re-branded with your icon. Installed apps start in production mode, keep data per user and are MCP servers themselves. See <a href="docs/installers.html">installers and releases</a>.</p>
+        </div>
+      </section>
+
+      <!-- ============================================================ platforms -->
+      <section id="platforms">
+        <div class="wrap">
+          <div class="kicker reveal">Beyond the desktop</div>
+          <h2 class="reveal">Same app<br /><span class="soft">On a server or a phone</span></h2>
+          <div class="cols mt-m">
+            <div class="codeblock reveal" data-lang="json"><pre><code>{
+  "services": [
+    { "name": "compiler", "command": ["cargo", "watch"],
+      "platforms": ["desktop", "server"] },
+    { "name": "sync", "command": ["node", "sync.js"],
+      "background": "pause" }
+  ],
+  "runtime": {
+    "remote": {
+      "enabled": true,
+      "allow": ["192.168.1.0/24"],
+      "tls": { "enabled": true },
+      "shared_token": false
+    }
+  }
+}</code></pre></div>
+            <ul class="ticks reveal">
+              <li><span><b>Platform adapters</b> decide which programs may start. Desktop and server start anything; on Android only system tools and programs shipped with the app.</span></li>
+              <li><span><b>Lifecycle</b>: a service with <span class="mono">"background": "pause"</span> pauses in the background and resumes when the app returns.</span></li>
+              <li><span><b>Remote gateway</b>: other devices call your app's functions over MCP, or reach exposed services, with a token per device.</span></li>
+              <li><span><b>Termux</b>: the CLI runs on a phone with anything you <span class="mono">pkg install</span>.</span></li>
+            </ul>
+          </div>
+          <p class="sub reveal">Read <a href="docs/platforms.html">platforms</a>, <a href="docs/remote-access.html">remote access</a> and the <a href="docs/android-app.html">Android app</a>.</p>
+        </div>
+      </section>
+
+      <!-- ============================================================ agents -->
+      <section id="with-agents">
+        <div class="wrap">
+          <div class="kicker reveal">With AI agents</div>
+          <h2 class="reveal">Let an agent<br /><span class="soft">build it with you</span></h2>
+          <p class="lead reveal">The repository and every new project speak the conventions coding agents look for: <span class="mono">AGENTS.md</span>, <span class="mono">CLAUDE.md</span>, <span class="mono">llms.txt</span> and a complete guide printed by <span class="mono">openshell guide</span>. Try:</p>
+          <div class="callout mt-s reveal">Build me a desktop app with OpenShell: a recipe manager with a React frontend and a Python backend. Recipes should be searchable, and AI agents should be able to add and find recipes.</div>
+          <div class="actions reveal"><a class="btn btn--lg" href="agents.html">For AI agents</a><a class="btn btn--lg" href="docs/ai-app-development.html">Guide for coding agents</a></div>
+        </div>
+      </section>
+
+      <!-- ============================================================ contribute -->
+      <section id="contribute">
+        <div class="wrap">
+          <div class="kicker reveal">Work on OpenShell itself</div>
+          <h2 class="reveal">A small shell<br /><span class="soft">A readable codebase</span></h2>
+          <div class="cols mt-m">
+            <div class="table-wrap mt-0 reveal">
+              <table>
+                <thead><tr><th>Path</th><th>Responsibility</th></tr></thead>
+                <tbody>
+                  <tr><td><code>crates/config</code></td><td><span class="mono">openshell.json</span> model, validation, <span class="mono">${…}</span> variables</td></tr>
+                  <tr><td><code>crates/runtime</code></td><td>Services, health, builds, logs, metrics, platform adapters</td></tr>
+                  <tr><td><code>crates/agent</code></td><td>Permissions, approvals, audit, UI bridge, MCP</td></tr>
+                  <tr><td><code>crates/core</code></td><td>Shell, control API, remote gateway, tools, bundles, releases</td></tr>
+                  <tr><td><code>crates/cli</code>, <code>crates/package</code></td><td>The <span class="mono">openshell</span> binary and the installers</td></tr>
+                  <tr><td><code>crates/android</code>, <code>apps/android</code></td><td>JNI bridge and the Kotlin host</td></tr>
+                  <tr><td><code>apps/desktop</code></td><td>The Tauri 2 desktop shell</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <div class="codeblock reveal" data-lang="bash"><pre><code>cargo build
+cargo test --workspace --exclude openshell-desktop
+cargo run -p openshell-cli -- --help</code></pre></div>
+              <p class="sub reveal">Open an issue or a discussion before large changes. Platform testing on macOS and Linux is especially welcome. Read <a href="docs/contributing.html">contributing</a> and the <a href="docs/architecture.html">architecture</a>.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="final" id="download">
+        <div>
+          <h2 class="reveal">Create your<br />first app</h2>
+          <p class="lead reveal">Install the command line, run <span class="mono">openshell create</span> and edit a file. The window reloads on its own.</p>
+          <div class="actions reveal">
+            <a class="cta" href="docs/getting-started.html"><span>Getting started</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+            <a class="btn btn--lg" href="https://github.com/RobinsSuperSchmiede/EDA">View on GitHub</a>
+          </div>
+        </div>
+        <div class="wordmark" aria-hidden="true">openshell</div>
+      </section>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="index.html"><img src="assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="download.html">Download</a>
+            <a href="use.html">For users</a>
+            <a href="teams.html">For teams</a>
+            <a href="developers.html">For developers</a>
+            <a href="agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="docs/getting-started.html">Getting started</a>
+            <a href="docs/configuration.html">Configuration</a>
+            <a href="docs/cli.html">CLI</a>
+            <a href="docs/platforms.html">Platforms</a>
+            <a href="docs/remote-access.html">Remote access</a>
+            <a href="docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="docs/changelog.html">Changelog</a>
+            <a href="docs/roadmap.html">Roadmap</a>
+            <a href="docs/security.html">Security</a>
+            <a href="docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="assets/site.js"></script>
+    <script src="assets/pages.js"></script>
+  </body>
+</html>

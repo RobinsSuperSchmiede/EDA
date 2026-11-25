@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en" data-theme="green" data-surface="tinted" data-header="fade" data-field="off" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Languages: C++, Java and others – OpenShell docs</title>
+    <meta name="description" content="Python, Node.js, Java, C++, Go, Rust and .NET backends." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="../assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/site.css" />
+    <link rel="stylesheet" href="../assets/pages.css" />
+  </head>
+  <body data-page="docs" class="page docs-page">
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="../use.html">Users</a>
+          <a href="../teams.html">Teams</a>
+          <a href="../developers.html">Developers</a>
+          <a href="../agents.html">AI agents</a>
+          <a href="../docs/index.html" aria-current="page">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="../download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main class="docs">
+      <aside class="docs-nav" id="docs-nav"><div class="docs-search"><input type="search" id="doc-search" placeholder="Search the docs" autocomplete="off" aria-label="Search the docs" /><div class="search-results" id="search-results" hidden></div></div><nav aria-label="Documentation"><a class="docs-home" href="index.html">Overview</a><h4>Learn</h4><a href="getting-started.html">Getting started</a><a href="tutorial.html">Tutorial</a><a href="building-blocks.html">Building blocks</a><a href="languages.html" aria-current="page">Languages</a><h4>Reference</h4><a href="configuration.html">Configuration</a><a href="cli.html">CLI</a><a href="sdk.html">Frontend SDK</a><a href="control-api.html">Control API</a><h4>Ship and run</h4><a href="installers.html">Installers and releases</a><a href="platforms.html">Platforms</a><a href="remote-access.html">Remote access</a><a href="android-app.html">Android app</a><h4>AI agents</h4><a href="agents.html">Agent Interaction Layer</a><a href="ai.html">AI material</a><a href="ai-app-development.html">Building apps with AI</a><h4>Project</h4><a href="architecture.html">Architecture</a><a href="platform-milestones.html">Platform milestones</a><a href="roadmap.html">Roadmap</a><a href="changelog.html">Changelog</a><a href="security.html">Security policy</a><a href="contributing.html">Contributing</a></nav></aside>
+      <article class="prose" data-source="docs/languages.md">
+        <div class="crumbs"><a href="index.html">Docs</a><span>/</span><span>Learn</span></div>
+        <h1 id="languages-c-java-and-others">Languages: C++, Java and others</h1>
+<p>OpenShell runs any executable, so every language works. Compiled languages use a <strong><code>build</code></strong> step:</p>
+<ul><li>in <strong>development</strong> mode the build runs before every start – and therefore after every file change in <code>watch</code>,
+so editing <code>src/</code> recompiles and restarts the service automatically,</li><li><code>openshell build</code> / <code>openshell package</code> run all builds for production,</li><li>a failing build marks the service <code>failed</code> with the compiler output in the logs (also readable by agents via
+<code>logs_read {"errors_only": true}</code>); fixing the code retries automatically.</li></ul>
+<div class="codeblock" data-lang="json"><pre><code><span class="tk">"build"</span>: <span class="ts">"cmake --build build"</span>                                       <span class="tc">// shell string</span>
+<span class="tk">"build"</span>: [<span class="ts">"javac"</span>, <span class="ts">"-d"</span>, <span class="ts">"build/classes"</span>, <span class="ts">"src/Main.java"</span>]           <span class="tc">// argv</span>
+<span class="tk">"build"</span>: { <span class="tk">"command"</span>: <span class="ts">"mvn -q package"</span>, <span class="tk">"cwd"</span>: <span class="ts">"backend"</span>, <span class="tk">"on_start"</span>: <span class="ts">"never"</span> }   <span class="tc">// development (default) | always | never</span></code></pre></div>
+<p>Templates: <code>openshell create my-app -t vanilla-java</code> and <code>-t vanilla-cpp</code>. <code>openshell init</code> detects Maven, Gradle,
+Spring Boot, plain <code>javac</code> sources, CMake and Makefiles.</p>
+<h2 id="java">Java<a class="anchor" href="#java" aria-label="Link to this section">#</a></h2>
+<h3 id="plain-jdk-template-vanilla-java">Plain JDK (template <code>vanilla-java</code>)<a class="anchor" href="#plain-jdk-template-vanilla-java" aria-label="Link to this section">#</a></h3>
+<div class="codeblock" data-lang="json"><pre><code>{
+  <span class="tk">"name"</span>: <span class="ts">"backend"</span>,
+  <span class="tk">"cwd"</span>: <span class="ts">"backend"</span>,
+  <span class="tk">"build"</span>: [<span class="ts">"javac"</span>, <span class="ts">"-d"</span>, <span class="ts">"build/classes"</span>, <span class="ts">"src/Main.java"</span>],
+  <span class="tk">"command"</span>: [<span class="ts">"java"</span>, <span class="ts">"-cp"</span>, <span class="ts">"build/classes"</span>, <span class="ts">"Main"</span>],
+  <span class="tk">"port"</span>: <span class="ts">"auto"</span>,
+  <span class="tk">"healthcheck"</span>: <span class="ts">"http://127.0.0.1:${port}/health"</span>,
+  <span class="tk">"watch"</span>: [<span class="ts">"backend/src"</span>]
+}</code></pre></div>
+<h3 id="spring-boot">Spring Boot<a class="anchor" href="#spring-boot" aria-label="Link to this section">#</a></h3>
+<div class="codeblock" data-lang="json"><pre><code>{
+  <span class="tk">"name"</span>: <span class="ts">"backend"</span>,
+  <span class="tk">"cwd"</span>: <span class="ts">"backend"</span>,
+  <span class="tk">"command"</span>: [<span class="ts">"mvnw"</span>, <span class="ts">"-q"</span>, <span class="ts">"spring-boot:run"</span>, <span class="ts">"-Dspring-boot.run.arguments=--server.port=${port}"</span>],
+  <span class="tk">"port"</span>: <span class="ts">"auto"</span>,
+  <span class="tk">"healthcheck"</span>: { <span class="tk">"http"</span>: <span class="ts">"http://127.0.0.1:${port}/actuator/health"</span>, <span class="tk">"ready_timeout_ms"</span>: <span class="tn">120000</span> },
+  <span class="tk">"openapi"</span>: <span class="ts">"/v3/api-docs"</span>,
+  <span class="tk">"watch"</span>: [<span class="ts">"backend/src"</span>]
+}</code></pre></div>
+<p><code>mvnw</code> / <code>gradlew</code> are found in the service directory on all platforms. With
+<a href="https://springdoc.org" rel="noopener">springdoc-openapi</a> the <code>openapi</code> field turns every REST endpoint into an agent tool.
+For production use the jar:</p>
+<div class="codeblock" data-lang="json"><pre><code><span class="tk">"build"</span>: { <span class="tk">"command"</span>: [<span class="ts">"mvnw"</span>, <span class="ts">"-q"</span>, <span class="ts">"-DskipTests"</span>, <span class="ts">"package"</span>], <span class="tk">"on_start"</span>: <span class="ts">"never"</span> },
+<span class="tk">"command"</span>: [<span class="ts">"java"</span>, <span class="ts">"-jar"</span>, <span class="ts">"target/app-1.0.0.jar"</span>, <span class="ts">"--server.port=${port}"</span>]</code></pre></div>
+<p>Gradle: <code>["gradlew", "-q", "bootRun", "--args=--server.port=${port}"]</code>.</p>
+<p>Java UI apps (Swing/JavaFX) cannot be embedded into the WebView; run them as a service if they offer an HTTP API, or
+use OpenShell for their web front end.</p>
+<h2 id="c">C++<a class="anchor" href="#c" aria-label="Link to this section">#</a></h2>
+<h3 id="cmake-template-vanilla-cpp">CMake (template <code>vanilla-cpp</code>)<a class="anchor" href="#cmake-template-vanilla-cpp" aria-label="Link to this section">#</a></h3>
+<div class="codeblock" data-lang="json"><pre><code>{
+  <span class="tk">"name"</span>: <span class="ts">"backend"</span>,
+  <span class="tk">"cwd"</span>: <span class="ts">"backend"</span>,
+  <span class="tk">"build"</span>: <span class="ts">"cmake -S . -B build -DCMAKE_BUILD_TYPE=Release &amp;&amp; cmake --build build --config Release"</span>,
+  <span class="tk">"command"</span>: [<span class="ts">"build/bin/todo-server"</span>],
+  <span class="tk">"port"</span>: <span class="ts">"auto"</span>,
+  <span class="tk">"watch"</span>: [<span class="ts">"backend/src"</span>, <span class="ts">"backend/CMakeLists.txt"</span>]
+}</code></pre></div>
+<ul><li><code>command</code> paths without extension also find <code>name.exe</code> on Windows.</li><li>Multi-config generators (Visual Studio) put binaries into <code>build/Release/</code> – the template sets
+<code>CMAKE_RUNTIME_OUTPUT_DIRECTORY</code> so the path is <code>build/bin</code> everywhere.</li><li>On Windows run OpenShell from a <em>Developer PowerShell</em> (or install CMake + Ninja / MinGW) so the compiler is found.</li><li>Ship only the binary: <code>"package": { "include": ["openshell.json", "web", "backend/build/bin"] }</code>.</li><li>HTTP libraries such as cpp-httplib, Crow, Drogon or Boost.Beast work the same way.</li></ul>
+<h2 id="others">Others<a class="anchor" href="#others" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Language</th><th><code>build</code></th><th><code>command</code></th></tr></thead><tbody><tr><td>Rust</td><td><code>cargo build --release</code></td><td><code>["target/release/server"]</code></td></tr><tr><td>Go</td><td><code>go build -o bin/server .</code></td><td><code>["bin/server"]</code> (or <code>go run .</code> without build)</td></tr><tr><td>C# / .NET</td><td><code>dotnet build -c Release</code></td><td><code>["dotnet", "run", "--no-build", "-c", "Release", "--", "--urls", "http://127.0.0.1:${port}"]</code></td></tr><tr><td>Kotlin (Ktor)</td><td>–</td><td><code>["gradlew", "-q", "run"]</code></td></tr><tr><td>Python</td><td>– (<code>setup</code> for <code>pip install</code>)</td><td><code>["python", "main.py"]</code></td></tr><tr><td>Node.js / Deno / Bun</td><td>–</td><td><code>["node", "server.js"]</code>, <code>["deno", "run", "-A", "main.ts"]</code></td></tr></tbody></table></div>
+<p>ASP.NET (Swashbuckle), FastAPI, NestJS and Spring all publish OpenAPI documents – set <code>openapi</code> and agents can use
+the backend without UI automation.</p>
+        <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/languages.md" rel="noopener">View this page on GitHub</a></div>
+      </article>
+      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#java">Java</a><a class="l3" href="#plain-jdk-template-vanilla-java">Plain JDK (template vanilla-java)</a><a class="l3" href="#spring-boot">Spring Boot</a><a class="l2" href="#c">C++</a><a class="l3" href="#cmake-template-vanilla-cpp">CMake (template vanilla-cpp)</a><a class="l2" href="#others">Others</a></aside>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="../download.html">Download</a>
+            <a href="../use.html">For users</a>
+            <a href="../teams.html">For teams</a>
+            <a href="../developers.html">For developers</a>
+            <a href="../agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="../docs/getting-started.html">Getting started</a>
+            <a href="../docs/configuration.html">Configuration</a>
+            <a href="../docs/cli.html">CLI</a>
+            <a href="../docs/platforms.html">Platforms</a>
+            <a href="../docs/remote-access.html">Remote access</a>
+            <a href="../docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="../docs/changelog.html">Changelog</a>
+            <a href="../docs/roadmap.html">Roadmap</a>
+            <a href="../docs/security.html">Security</a>
+            <a href="../docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="../assets/search-index.js"></script>
+    <script src="../assets/site.js"></script>
+    <script src="../assets/pages.js"></script>
+  </body>
+</html>

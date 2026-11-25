@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en" data-theme="green" data-surface="tinted" data-header="fade" data-field="off" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Contributing to OpenShell – OpenShell docs</title>
+    <meta name="description" content="Set up a development environment and where things live." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="../assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/site.css" />
+    <link rel="stylesheet" href="../assets/pages.css" />
+  </head>
+  <body data-page="docs" class="page docs-page">
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="../use.html">Users</a>
+          <a href="../teams.html">Teams</a>
+          <a href="../developers.html">Developers</a>
+          <a href="../agents.html">AI agents</a>
+          <a href="../docs/index.html" aria-current="page">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="../download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main class="docs">
+      <aside class="docs-nav" id="docs-nav"><div class="docs-search"><input type="search" id="doc-search" placeholder="Search the docs" autocomplete="off" aria-label="Search the docs" /><div class="search-results" id="search-results" hidden></div></div><nav aria-label="Documentation"><a class="docs-home" href="index.html">Overview</a><h4>Learn</h4><a href="getting-started.html">Getting started</a><a href="tutorial.html">Tutorial</a><a href="building-blocks.html">Building blocks</a><a href="languages.html">Languages</a><h4>Reference</h4><a href="configuration.html">Configuration</a><a href="cli.html">CLI</a><a href="sdk.html">Frontend SDK</a><a href="control-api.html">Control API</a><h4>Ship and run</h4><a href="installers.html">Installers and releases</a><a href="platforms.html">Platforms</a><a href="remote-access.html">Remote access</a><a href="android-app.html">Android app</a><h4>AI agents</h4><a href="agents.html">Agent Interaction Layer</a><a href="ai.html">AI material</a><a href="ai-app-development.html">Building apps with AI</a><h4>Project</h4><a href="architecture.html">Architecture</a><a href="platform-milestones.html">Platform milestones</a><a href="roadmap.html">Roadmap</a><a href="changelog.html">Changelog</a><a href="security.html">Security policy</a><a href="contributing.html" aria-current="page">Contributing</a></nav></aside>
+      <article class="prose" data-source="CONTRIBUTING.md">
+        <div class="crumbs"><a href="index.html">Docs</a><span>/</span><span>Project</span></div>
+        <h1 id="contributing-to-openshell">Contributing to OpenShell</h1>
+<p>Thanks for your interest! OpenShell aims to stay small: a generic shell plus a reliable runtime and agent layer.
+Please open an issue or discussion before large changes.</p>
+<h2 id="development-setup">Development setup<a class="anchor" href="#development-setup" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="bash"><pre><code>cargo build                      <span class="tc"># all crates incl. the desktop shell</span>
+cargo test --workspace --exclude openshell-desktop
+cargo run -p openshell-cli -- --help</code></pre></div>
+<ul><li>Windows: WebView2 (preinstalled on Windows 11).</li><li>macOS: Xcode command line tools.</li><li>Linux: <code>libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf</code> (see the Tauri prerequisites).</li></ul>
+<p>Run the example while developing:</p>
+<div class="codeblock" data-lang="bash"><pre><code>cargo build
+cd examples/todo-app
+../../target/debug/openshell dev</code></pre></div>
+<h2 id="where-things-live">Where things live<a class="anchor" href="#where-things-live" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Change</th><th>Crate</th></tr></thead><tbody><tr><td>Config fields, validation</td><td><code>crates/config</code></td></tr><tr><td>Process supervision, health, logs, static server</td><td><code>crates/runtime</code></td></tr><tr><td>Permissions, approvals, audit, UI bridge (<code>assets/bridge.js</code>), MCP, tool definitions</td><td><code>crates/agent</code></td></tr><tr><td>Tool implementations, control API routes</td><td><code>crates/core</code></td></tr><tr><td>CLI commands, templates</td><td><code>crates/cli</code>, <code>templates/</code> (<code>templates/_shared</code> is added to every project)</td></tr><tr><td>Installers</td><td><code>crates/package</code></td></tr><tr><td>Docs for AI agents</td><td><code>docs/ai/</code>, <code>AGENTS.md</code>, <code>llms.txt</code></td></tr><tr><td>Window, tray, dialogs, loading screen</td><td><code>apps/desktop</code></td></tr><tr><td>Frontend SDK</td><td><code>packages/sdk</code></td></tr></tbody></table></div>
+<p>When you add a config field, regenerate the schema: <code>cargo run -p openshell-cli -- schema &gt; schema/openshell.schema.json</code>.
+When you change documentation, regenerate <code>llms-full.txt</code>: <code>python scripts/gen-llms-full.py</code>. CI checks both.</p>
+<p>Using an AI coding agent to contribute? <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/AGENTS.md" rel="noopener">AGENTS.md</a> contains the project map, commands and conventions.
+Changes that affect app developers must also update <a href="ai-app-development.html">Building apps with AI</a> and
+<a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/templates/_shared/AGENTS.md" rel="noopener">templates/_shared/AGENTS.md</a> – that is what AI agents read when they build apps.</p>
+<h2 id="guidelines">Guidelines<a class="anchor" href="#guidelines" aria-label="Link to this section">#</a></h2>
+<ul><li>Keep the shell technology-agnostic: no assumptions about frontend frameworks, languages or AI vendors.</li><li>Every agent tool declares exactly one permission scope and is audited.</li><li>Tests for runtime behaviour use portable shell commands (<code>echo</code>, <code>exit</code>, <code>ping</code>/<code>sleep</code>).</li><li>Run <code>cargo fmt</code> and <code>cargo clippy</code> before opening a PR.</li><li>Write user-facing docs for new commands, tools and config fields.</li></ul>
+<h2 id="reporting-security-issues">Reporting security issues<a class="anchor" href="#reporting-security-issues" aria-label="Link to this section">#</a></h2>
+<p>Please do not open public issues for vulnerabilities; contact the maintainers privately via GitHub security advisories.</p>
+        <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/CONTRIBUTING.md" rel="noopener">View this page on GitHub</a></div>
+      </article>
+      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#development-setup">Development setup</a><a class="l2" href="#where-things-live">Where things live</a><a class="l2" href="#guidelines">Guidelines</a><a class="l2" href="#reporting-security-issues">Reporting security issues</a></aside>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="../download.html">Download</a>
+            <a href="../use.html">For users</a>
+            <a href="../teams.html">For teams</a>
+            <a href="../developers.html">For developers</a>
+            <a href="../agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="../docs/getting-started.html">Getting started</a>
+            <a href="../docs/configuration.html">Configuration</a>
+            <a href="../docs/cli.html">CLI</a>
+            <a href="../docs/platforms.html">Platforms</a>
+            <a href="../docs/remote-access.html">Remote access</a>
+            <a href="../docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="../docs/changelog.html">Changelog</a>
+            <a href="../docs/roadmap.html">Roadmap</a>
+            <a href="../docs/security.html">Security</a>
+            <a href="../docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="../assets/search-index.js"></script>
+    <script src="../assets/site.js"></script>
+    <script src="../assets/pages.js"></script>
+  </body>
+</html>

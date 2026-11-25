@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en" data-theme="green" data-surface="tinted" data-header="fade" data-field="off" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Platform milestones: Android, universal shell, secure remote access – OpenShell docs</title>
+    <meta name="description" content="What is done and what is next on Android and connected devices." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="../assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/site.css" />
+    <link rel="stylesheet" href="../assets/pages.css" />
+  </head>
+  <body data-page="docs" class="page docs-page">
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="../use.html">Users</a>
+          <a href="../teams.html">Teams</a>
+          <a href="../developers.html">Developers</a>
+          <a href="../agents.html">AI agents</a>
+          <a href="../docs/index.html" aria-current="page">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="../download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main class="docs">
+      <aside class="docs-nav" id="docs-nav"><div class="docs-search"><input type="search" id="doc-search" placeholder="Search the docs" autocomplete="off" aria-label="Search the docs" /><div class="search-results" id="search-results" hidden></div></div><nav aria-label="Documentation"><a class="docs-home" href="index.html">Overview</a><h4>Learn</h4><a href="getting-started.html">Getting started</a><a href="tutorial.html">Tutorial</a><a href="building-blocks.html">Building blocks</a><a href="languages.html">Languages</a><h4>Reference</h4><a href="configuration.html">Configuration</a><a href="cli.html">CLI</a><a href="sdk.html">Frontend SDK</a><a href="control-api.html">Control API</a><h4>Ship and run</h4><a href="installers.html">Installers and releases</a><a href="platforms.html">Platforms</a><a href="remote-access.html">Remote access</a><a href="android-app.html">Android app</a><h4>AI agents</h4><a href="agents.html">Agent Interaction Layer</a><a href="ai.html">AI material</a><a href="ai-app-development.html">Building apps with AI</a><h4>Project</h4><a href="architecture.html">Architecture</a><a href="platform-milestones.html" aria-current="page">Platform milestones</a><a href="roadmap.html">Roadmap</a><a href="changelog.html">Changelog</a><a href="security.html">Security policy</a><a href="contributing.html">Contributing</a></nav></aside>
+      <article class="prose" data-source="docs/platform-milestones.md">
+        <div class="crumbs"><a href="index.html">Docs</a><span>/</span><span>Project</span></div>
+        <h1 id="platform-milestones-android-universal-shell-secure-remote-access">Platform milestones: Android, universal shell, secure remote access</h1>
+<p>This plan splits the platform work (Android, one download per system, apps built on the phone,
+secure remote access, Play Store) into milestones. Each milestone builds on its own, has tests
+and is documented. The last section lists what cannot be finished inside this repository.</p>
+<p>Status legend: ✅ done · 🚧 partial · ⏳ open</p>
+<h2 id="m1--secure-remote-gateway-and-exposed-services-">M1 – Secure remote gateway and exposed services ✅<a class="anchor" href="#m1--secure-remote-gateway-and-exposed-services-" aria-label="Link to this section">#</a></h2>
+<p>Goal: reach the phone's (or any host's) websites, APIs and services from another computer over
+IP address and port, with security features that can be switched on one by one.</p>
+<div class="table-wrap"><table><thead><tr><th>Feature</th><th>Config</th><th>Default</th></tr></thead><tbody><tr><td>Bind address and port</td><td><code>runtime.remote.bind</code>, <code>runtime.remote.port</code></td><td><code>0.0.0.0:7420</code></td></tr><tr><td>IP / CIDR allowlist</td><td><code>runtime.remote.allow</code></td><td>everyone who can reach the port</td></tr><tr><td>Per-device tokens (pairing, QR code)</td><td><code>openshell remote pair &lt;device&gt;</code></td><td>shared pairing token</td></tr><tr><td>Rate limit + lockout after failed logins</td><td><code>runtime.remote.rate_limit</code></td><td>120 requests/min, 10 failures → 5 min block</td></tr><tr><td>TLS (own certificate or self-signed with pinned fingerprint)</td><td><code>runtime.remote.tls</code></td><td>off</td></tr><tr><td>Opt-in exposure per service (HTTP with token, raw TCP)</td><td><code>runtime.remote.expose[]</code></td><td>nothing exposed</td></tr><tr><td>Audit of remote access</td><td>audit log, channel <code>remote</code></td><td>on</td></tr></tbody></table></div>
+<p>Code: <code>crates/config/src/model.rs</code> (<code>RemoteConfig</code>, <code>ExposeConfig</code>, <code>RateLimitConfig</code>,
+<code>TlsConfig</code>), <code>crates/core/src/remote/*</code>, <code>openshell remote …</code> in the CLI.</p>
+<h2 id="m2--apps-on-the-phone-termux-">M2 – Apps on the phone (Termux) ✅<a class="anchor" href="#m2--apps-on-the-phone-termux-" aria-label="Link to this section">#</a></h2>
+<p>Goal: <code>openshell create</code>, <code>dev</code>, <code>start</code>, <code>package --target bundle</code> on the phone; Python, Node,
+Java, Rust, Go … from Termux packages run as services, setup and build steps.</p>
+<ul><li><code>TermuxAdapter</code> (<code>crates/runtime/src/platform.rs</code>): platform <code>android</code>, <code>processes: full</code>,
+programs from <code>$PREFIX/bin</code> and the project, shell <code>$PREFIX/bin/sh</code>, <code>wake_lock</code> capability.
+Picked automatically inside Termux; <code>OPENSHELL_ANDROID_MODE=app|termux</code> overrides.</li><li><code>openshell doctor</code> gives <code>pkg install …</code> hints per language on Termux.</li><li><code>openshell start/dev</code> take a Termux wake lock (<code>termux-wake-lock</code>) while services must stay alive.</li></ul>
+<h2 id="m3--universal-shell-one-link-per-system---android-link">M3 – Universal shell: one link per system ✅ (🚧 Android link)<a class="anchor" href="#m3--universal-shell-one-link-per-system---android-link" aria-label="Link to this section">#</a></h2>
+<p>Goal: a developer builds once; users download one file per system, the program is unchanged.</p>
+<ul><li><code>openshell package --target bundle</code>: a portable, platform-neutral app bundle (<code>&lt;app&gt;-&lt;version&gt;.osapp</code>,
+a zip with <code>openshell.json</code> and the app files) – runs with <code>openshell start --bundle</code> on any host,
+including Termux, and is what the Android app imports.</li><li><code>openshell package --manifest &lt;base-url&gt;</code>: writes <code>downloads.json</code> (version, file, size,
+SHA-256 per platform) and a <code>download.html</code> page that picks the visitor's system.</li><li><code>openshell package --ci github</code>: writes <code>.github/workflows/openshell-release.yml</code> into the app –
+one tag push builds Windows, macOS (arm64 + x64), Linux installers and the bundle in parallel and
+publishes them with the manifest as a GitHub release.</li><li>Code signing (<code>package.signing</code>: Windows certificate thumbprint / sign command, macOS signing
+identity) is passed to the bundler.</li><li>Update check: <code>package.update_url</code> points at the <code>downloads.json</code> of the newest release; the
+installed app reports a newer version (<code>GET /v1/update</code>, <code>openshell update --check</code>).</li></ul>
+<h2 id="m4--native-android-app-and-play-store-">M4 – Native Android app and Play Store 🚧<a class="anchor" href="#m4--native-android-app-and-play-store-" aria-label="Link to this section">#</a></h2>
+<p>Goal: an Android app (AAB) that can be published in the Play Store.</p>
+<ul><li><code>crates/android</code> (<code>openshell-android</code>, <code>cdylib</code> <code>libopenshell_android.so</code>): JNI bridge that starts
+the unchanged core headless with an <code>AndroidAdapter</code> for the APK's native library directory and
+forwards lifecycle events.</li><li><code>apps/android/</code> – Gradle project (Kotlin): <code>MainActivity</code> (WebView on the app's frontend),
+<code>RuntimeService</code> (foreground service type <code>specialUse</code>, notification with running services,
+battery-optimisation request), app bundle import, <code>targetSdk 36</code>, 16 KB page-size aligned
+native libraries, release signing from <code>keystore.properties</code> / environment, <code>bundleRelease</code> → AAB.</li><li><code>apps/android/store/</code> – listing texts, data-safety answers, foreground-service justification.</li><li>CI workflow <code>android-app.yml</code> builds the Rust library for arm64/x86_64 and the AAB.</li></ul>
+<h2 id="m5--docs-roadmap-changelog-">M5 – Docs, roadmap, changelog ✅<a class="anchor" href="#m5--docs-roadmap-changelog-" aria-label="Link to this section">#</a></h2>
+<p><code>docs/platforms.md</code>, <code>docs/remote.md</code>, <code>docs/android-app.md</code>, <code>docs/installers.md</code>,
+<code>docs/configuration.md</code>, <code>docs/cli.md</code>, <code>docs/ai/app-development.md</code>, <code>ROADMAP.md</code>, <code>CHANGELOG.md</code>.</p>
+<h2 id="what-cannot-be-finished-inside-this-repository">What cannot be finished inside this repository<a class="anchor" href="#what-cannot-be-finished-inside-this-repository" aria-label="Link to this section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Item</th><th>Why</th><th>What is prepared</th></tr></thead><tbody><tr><td>Play Store publishing</td><td>needs the Google Play developer account, an upload key / Play App Signing, the store review (foreground service <code>specialUse</code> justification, data-safety form)</td><td>AAB build, signing config, listing texts, checklist in <code>docs/android-app.md</code></td></tr><tr><td>Signed installers (Windows / macOS)</td><td>needs certificates, Apple Developer ID and notarisation credentials</td><td><code>package.signing</code> + CI secrets</td></tr><tr><td>Building the Android app locally here</td><td>no Android SDK/NDK on this machine</td><td>CI workflow builds it; not verified on a device in this round</td></tr><tr><td>Bundled Node.js / Python inside the APK</td><td>needs prebuilt Android runtimes (<code>libnode.so</code>, <code>libpython.so</code>) and their licences</td><td><code>AndroidAdapter::with_program</code>, <code>OPENSHELL_ANDROID_PROGRAMS</code>; Termux covers this today</td></tr><tr><td>Device mesh beyond pairing (mDNS, <code>--device</code>, project sync)</td><td>larger design work</td><td>per-device tokens + QR pairing are the base</td></tr><tr><td>Agent sessions with own permissions, screenshot fallback, installing updates automatically</td><td>not started in this round</td><td>update check (M3), per-device tokens (M1)</td></tr><tr><td>Play policy on running user code</td><td>apps from Play may not download executable code; projects are user-provided data, runtimes must be in the APK</td><td>documented in <code>docs/android-app.md</code></td></tr></tbody></table></div>
+        <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/platform-milestones.md" rel="noopener">View this page on GitHub</a></div>
+      </article>
+      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#m1--secure-remote-gateway-and-exposed-services-">M1 – Secure remote gateway and exposed services ✅</a><a class="l2" href="#m2--apps-on-the-phone-termux-">M2 – Apps on the phone (Termux) ✅</a><a class="l2" href="#m3--universal-shell-one-link-per-system---android-link">M3 – Universal shell: one link per system ✅ (🚧 Android link)</a><a class="l2" href="#m4--native-android-app-and-play-store-">M4 – Native Android app and Play Store 🚧</a><a class="l2" href="#m5--docs-roadmap-changelog-">M5 – Docs, roadmap, changelog ✅</a><a class="l2" href="#what-cannot-be-finished-inside-this-repository">What cannot be finished inside this repository</a></aside>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="../download.html">Download</a>
+            <a href="../use.html">For users</a>
+            <a href="../teams.html">For teams</a>
+            <a href="../developers.html">For developers</a>
+            <a href="../agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="../docs/getting-started.html">Getting started</a>
+            <a href="../docs/configuration.html">Configuration</a>
+            <a href="../docs/cli.html">CLI</a>
+            <a href="../docs/platforms.html">Platforms</a>
+            <a href="../docs/remote-access.html">Remote access</a>
+            <a href="../docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="../docs/changelog.html">Changelog</a>
+            <a href="../docs/roadmap.html">Roadmap</a>
+            <a href="../docs/security.html">Security</a>
+            <a href="../docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="../assets/search-index.js"></script>
+    <script src="../assets/site.js"></script>
+    <script src="../assets/pages.js"></script>
+  </body>
+</html>

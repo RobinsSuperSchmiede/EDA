@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en" data-theme="green" data-surface="tinted" data-header="fade" data-field="off" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenShell documentation</title>
+    <meta name="description" content="Guides, references and project documents for OpenShell: getting started, configuration, CLI, platforms, remote access, AI agents." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="../assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/site.css" />
+    <link rel="stylesheet" href="../assets/pages.css" />
+  </head>
+  <body data-page="docs" class="page docs-page docs-hub">
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="../use.html">Users</a>
+          <a href="../teams.html">Teams</a>
+          <a href="../developers.html">Developers</a>
+          <a href="../agents.html">AI agents</a>
+          <a href="../docs/index.html" aria-current="page">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="../download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main class="hub">
+      <div class="wrap">
+        <div class="kicker">Documentation</div>
+        <h1>Everything about OpenShell</h1>
+        <p class="lead">Guides for your first app, references for every setting and command, and the project's own documents. Pick your role or search.</p>
+        <div class="hub-search"><input type="search" id="hub-search" placeholder="Search guides, settings, commands" autocomplete="off" aria-label="Search the docs" /><div class="search-results" id="hub-results" hidden></div></div>
+        
+        <div class="roles">
+          <a href="../use.html"><b>I use apps</b><span>Install, data, assistants</span></a>
+          <a href="../teams.html"><b>I roll out tools</b><span>Rollout, security, licence</span></a>
+          <a href="getting-started.html"><b>I build apps</b><span>Start with the first app</span></a>
+          <a href="agents.html"><b>I connect agents</b><span>MCP, tools, permissions</span></a>
+        </div>
+        <section class="doc-group"><h2>Learn</h2><div class="doc-cards"><a class="doc-card" href="getting-started.html"><h3>Getting started</h3><p>Install OpenShell, create a first app or bring an existing project.</p></a><a class="doc-card" href="tutorial.html"><h3>Tutorial</h3><p>Build a complete app – frontend, backend, agent functions and an installer – step by step.</p></a><a class="doc-card" href="building-blocks.html"><h3>Building blocks</h3><p>Frontend, backend, database, functions: use only what you need.</p></a><a class="doc-card" href="languages.html"><h3>Languages</h3><p>Python, Node.js, Java, C++, Go, Rust and .NET backends.</p></a></div></section><section class="doc-group"><h2>Reference</h2><div class="doc-cards"><a class="doc-card" href="configuration.html"><h3>Configuration</h3><p>Every field of openshell.json.</p></a><a class="doc-card" href="cli.html"><h3>CLI</h3><p>All commands of the openshell binary.</p></a><a class="doc-card" href="sdk.html"><h3>Frontend SDK</h3><p>Runtime status, window control, notifications, databases and agent actions from the frontend.</p></a><a class="doc-card" href="control-api.html"><h3>Control API</h3><p>The local HTTP API behind the CLI, the SDK and MCP.</p></a></div></section><section class="doc-group"><h2>Ship and run</h2><div class="doc-cards"><a class="doc-card" href="installers.html"><h3>Installers and releases</h3><p>openshell package, app bundles, one download link per system, signing and update checks.</p></a><a class="doc-card" href="platforms.html"><h3>Platforms</h3><p>Desktop, server, Android and Termux: platform adapters, lifecycle, remote gateway.</p></a><a class="doc-card" href="remote-access.html"><h3>Remote access</h3><p>Use an app from other devices: pairing, allowlist, TLS, exposed services.</p></a><a class="doc-card" href="android-app.html"><h3>Android app</h3><p>The native Android host: how it works, building the AAB, Play Store checklist.</p></a></div></section><section class="doc-group"><h2>AI agents</h2><div class="doc-cards"><a class="doc-card" href="agents.html"><h3>Agent Interaction Layer</h3><p>MCP profiles, tools, UI automation, capabilities, permissions and approvals.</p></a><a class="doc-card" href="ai.html"><h3>AI material</h3><p>Setup recipes for Claude Code, Codex, Cursor, Copilot and more.</p></a><a class="doc-card" href="ai-app-development.html"><h3>Building apps with AI</h3><p>The complete guide for coding agents that build apps on OpenShell.</p></a></div></section><section class="doc-group"><h2>Project</h2><div class="doc-cards"><a class="doc-card" href="architecture.html"><h3>Architecture</h3><p>Components, data flow and design decisions.</p></a><a class="doc-card" href="platform-milestones.html"><h3>Platform milestones</h3><p>What is done and what is next on Android and connected devices.</p></a><a class="doc-card" href="roadmap.html"><h3>Roadmap</h3><p>What is done, in progress and planned.</p></a><a class="doc-card" href="changelog.html"><h3>Changelog</h3><p>What changed in every release.</p></a><a class="doc-card" href="security.html"><h3>Security policy</h3><p>Threat model and how to report a vulnerability.</p></a><a class="doc-card" href="contributing.html"><h3>Contributing</h3><p>Set up a development environment and where things live.</p></a></div></section>
+      </div>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="../download.html">Download</a>
+            <a href="../use.html">For users</a>
+            <a href="../teams.html">For teams</a>
+            <a href="../developers.html">For developers</a>
+            <a href="../agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="../docs/getting-started.html">Getting started</a>
+            <a href="../docs/configuration.html">Configuration</a>
+            <a href="../docs/cli.html">CLI</a>
+            <a href="../docs/platforms.html">Platforms</a>
+            <a href="../docs/remote-access.html">Remote access</a>
+            <a href="../docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="../docs/changelog.html">Changelog</a>
+            <a href="../docs/roadmap.html">Roadmap</a>
+            <a href="../docs/security.html">Security</a>
+            <a href="../docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="../assets/search-index.js"></script>
+    <script src="../assets/site.js"></script>
+    <script src="../assets/pages.js"></script>
+  </body>
+</html>

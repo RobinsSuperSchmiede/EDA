@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en" data-theme="green" data-surface="tinted" data-header="fade" data-field="off" data-motion="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tutorial: build a complete OpenShell app – OpenShell docs</title>
+    <meta name="description" content="Build a complete app – frontend, backend, agent functions and an installer – step by step." />
+    <meta name="theme-color" content="#0f3624" />
+    <link rel="icon" href="../assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/site.css" />
+    <link rel="stylesheet" href="../assets/pages.css" />
+  </head>
+  <body data-page="docs" class="page docs-page">
+    <!-- chrome:header -->
+    <div class="top-fade" aria-hidden="true"></div>
+    <header class="top" id="top-bar">
+      <div class="top-inner">
+        <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+        <nav class="top-nav" id="top-nav" aria-label="Main">
+          <a href="../use.html">Users</a>
+          <a href="../teams.html">Teams</a>
+          <a href="../developers.html">Developers</a>
+          <a href="../agents.html">AI agents</a>
+          <a href="../docs/index.html" aria-current="page">Docs</a>
+        </nav>
+        <div class="top-end">
+          <button class="nav-toggle btn btn--sm" type="button" id="nav-toggle" aria-expanded="false" aria-controls="top-nav">Menu</button>
+          <a class="cta cta--sm" href="../download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+        </div>
+      </div>
+    </header>
+    <!-- /chrome:header -->
+
+    <main class="docs">
+      <aside class="docs-nav" id="docs-nav"><div class="docs-search"><input type="search" id="doc-search" placeholder="Search the docs" autocomplete="off" aria-label="Search the docs" /><div class="search-results" id="search-results" hidden></div></div><nav aria-label="Documentation"><a class="docs-home" href="index.html">Overview</a><h4>Learn</h4><a href="getting-started.html">Getting started</a><a href="tutorial.html" aria-current="page">Tutorial</a><a href="building-blocks.html">Building blocks</a><a href="languages.html">Languages</a><h4>Reference</h4><a href="configuration.html">Configuration</a><a href="cli.html">CLI</a><a href="sdk.html">Frontend SDK</a><a href="control-api.html">Control API</a><h4>Ship and run</h4><a href="installers.html">Installers and releases</a><a href="platforms.html">Platforms</a><a href="remote-access.html">Remote access</a><a href="android-app.html">Android app</a><h4>AI agents</h4><a href="agents.html">Agent Interaction Layer</a><a href="ai.html">AI material</a><a href="ai-app-development.html">Building apps with AI</a><h4>Project</h4><a href="architecture.html">Architecture</a><a href="platform-milestones.html">Platform milestones</a><a href="roadmap.html">Roadmap</a><a href="changelog.html">Changelog</a><a href="security.html">Security policy</a><a href="contributing.html">Contributing</a></nav></aside>
+      <article class="prose" data-source="docs/tutorial.md">
+        <div class="crumbs"><a href="index.html">Docs</a><span>/</span><span>Learn</span></div>
+        <h1 id="tutorial-build-a-complete-openshell-app">Tutorial: build a complete OpenShell app</h1>
+<p>In about 20 minutes you build <strong>Bookmarks</strong>, a small desktop app with a Python backend and a plain HTML frontend,
+make it usable for AI agents and package it as an installer. Everything here works the same with the React, Vue,
+Svelte, Java or C++ templates.</p>
+<p>Prerequisites: <code>openshell</code> and <code>openshell-desktop</code> on your <code>PATH</code> (<a href="getting-started.html">getting started</a>), Python 3.</p>
+<h2 id="1-create-the-project">1. Create the project<a class="anchor" href="#1-create-the-project" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="bash"><pre><code>openshell create bookmarks
+cd bookmarks
+openshell dev</code></pre></div>
+<p>A window opens with the template's todo list. The terminal shows the logs of both services:</p>
+<div class="codeblock"><pre><code> backend │ starting: python main.py
+ backend │ ready after 0.4s
+frontend │ serving …/web at http://127.0.0.1:53121/</code></pre></div>
+<p>Leave it running. The project looks like this:</p>
+<div class="codeblock"><pre><code>openshell.json      what OpenShell runs (open it – it is short)
+backend/main.py     JSON API, Python standard library
+web/                index.html, app.js, style.css – served by OpenShell, /api is proxied to the backend
+AGENTS.md           instructions for AI coding agents (see step 6)</code></pre></div>
+<h2 id="2-add-a-backend-endpoint">2. Add a backend endpoint<a class="anchor" href="#2-add-a-backend-endpoint" aria-label="Link to this section">#</a></h2>
+<p>Replace the todo logic in <code>backend/main.py</code> with bookmarks. The essentials of the OpenShell contract are already in
+the template:</p>
+<div class="codeblock" data-lang="python"><pre><code>PORT = int(os.environ.get("PORT", "8000"))                       # OpenShell assigns the port
+DATA_DIR = os.environ.get("OPENSHELL_DATA_DIR") or "../data"     # per-app data directory
+# ...
+if path == "/health":                                            # health check used by OpenShell
+    return self.send_json(200, {"status": "ok"})</code></pre></div>
+<p>Add two routes (sketch):</p>
+<div class="codeblock" data-lang="python"><pre><code>if path == "/api/bookmarks" and self.command == "GET":
+    q = parse_qs(urlparse(self.path).query).get("q", [""])[0].lower()
+    items = [b for b in load() if q in b["title"].lower() or q in b["url"].lower()]
+    return self.send_json(200, items)
+
+if path == "/api/bookmarks" and self.command == "POST":
+    body = self.read_json()
+    item = {"id": next_id(), "title": body["title"], "url": body["url"]}
+    save(load() + [item])
+    return self.send_json(201, item)</code></pre></div>
+<p>Save the file: the log shows <code>files changed: backend\main.py</code> → <code>restarting</code> → <code>ready</code>. If you made a mistake, the
+error is in <code>openshell logs backend --errors</code> and the service restarts again on the next save.</p>
+<h2 id="3-update-the-frontend">3. Update the frontend<a class="anchor" href="#3-update-the-frontend" aria-label="Link to this section">#</a></h2>
+<p>Edit <code>web/index.html</code> and <code>web/app.js</code> to list <code>GET /api/bookmarks</code> and post new ones. On save, OpenShell reloads the
+window (<code>"watch": ["web"]</code> in the config). With a dev server template (React/Vue/Svelte) the dev server hot-reloads
+instead.</p>
+<p>Useful while developing:</p>
+<div class="codeblock" data-lang="bash"><pre><code>openshell status                 <span class="tc"># state, pid, port, CPU, memory of each service</span>
+openshell logs -f                <span class="tc"># follow all logs</span>
+openshell restart backend</code></pre></div>
+<p>Right-click the window's title bar (Windows) or use the tray icon for the same overview.</p>
+<h2 id="4-make-the-app-usable-for-ai-agents">4. Make the app usable for AI agents<a class="anchor" href="#4-make-the-app-usable-for-ai-agents" aria-label="Link to this section">#</a></h2>
+<p>Agents should be able to <em>use</em> Bookmarks without clicking through the UI. Declare its functions as <strong>capabilities</strong>
+in <code>openshell.json</code>:</p>
+<div class="codeblock" data-lang="json"><pre><code><span class="tk">"capabilities"</span>: [
+  {
+    <span class="tk">"name"</span>: <span class="ts">"search_bookmarks"</span>,
+    <span class="tk">"description"</span>: <span class="ts">"Search bookmarks by text in title or URL"</span>,
+    <span class="tk">"permission"</span>: <span class="ts">"read"</span>,
+    <span class="tk">"input_schema"</span>: { <span class="tk">"type"</span>: <span class="ts">"object"</span>, <span class="tk">"properties"</span>: { <span class="tk">"q"</span>: { <span class="tk">"type"</span>: <span class="ts">"string"</span> } } },
+    <span class="tk">"http"</span>: { <span class="tk">"service"</span>: <span class="ts">"backend"</span>, <span class="tk">"method"</span>: <span class="ts">"GET"</span>, <span class="tk">"path"</span>: <span class="ts">"/api/bookmarks"</span> }
+  },
+  {
+    <span class="tk">"name"</span>: <span class="ts">"add_bookmark"</span>,
+    <span class="tk">"description"</span>: <span class="ts">"Save a bookmark"</span>,
+    <span class="tk">"permission"</span>: <span class="ts">"actions"</span>,
+    <span class="tk">"input_schema"</span>: {
+      <span class="tk">"type"</span>: <span class="ts">"object"</span>,
+      <span class="tk">"properties"</span>: { <span class="tk">"title"</span>: { <span class="tk">"type"</span>: <span class="ts">"string"</span> }, <span class="tk">"url"</span>: { <span class="tk">"type"</span>: <span class="ts">"string"</span> } },
+      <span class="tk">"required"</span>: [<span class="ts">"title"</span>, <span class="ts">"url"</span>]
+    },
+    <span class="tk">"http"</span>: { <span class="tk">"service"</span>: <span class="ts">"backend"</span>, <span class="tk">"method"</span>: <span class="ts">"POST"</span>, <span class="tk">"path"</span>: <span class="ts">"/api/bookmarks"</span> }
+  }
+]</code></pre></div>
+<p>Try them right away:</p>
+<div class="codeblock" data-lang="bash"><pre><code>openshell call cap_add_bookmark '{"title": "Tauri", "url": "https://tauri.app"}'
+openshell call cap_search_bookmarks '{"q": "tauri"}'</code></pre></div>
+<p>Alternatives:</p>
+<ul><li><strong>OpenAPI:</strong> if your backend publishes an OpenAPI document (FastAPI does at <code>/openapi.json</code>), set
+<code>"openapi": "/openapi.json"</code> on the service instead – every endpoint becomes a capability automatically.</li><li><strong>Frontend actions:</strong> UI-only functions (e.g. "show the bookmarks of folder X") can be registered from the page with
+<code>OpenShell.agent.registerAction(...)</code> – see the template's <code>web/app.js</code> and the <a href="sdk.html">SDK</a>.</li></ul>
+<h2 id="5-connect-an-assistant">5. Connect an assistant<a class="anchor" href="#5-connect-an-assistant" aria-label="Link to this section">#</a></h2>
+<div class="codeblock" data-lang="bash"><pre><code>claude mcp add bookmarks -- openshell mcp --app --start --project /path/to/bookmarks</code></pre></div>
+<p>Ask: <em>"Save https://modelcontextprotocol.io as 'MCP spec' in my bookmarks."</em> The assistant sees exactly
+<code>app_status</code>, <code>search_bookmarks</code> and <code>add_bookmark</code> – nothing else. With <code>--start</code>, the app is started in the
+background if it is not running.</p>
+<p>To let a coding agent work <em>on</em> the app, connect the full profile instead: <code>openshell mcp --project …</code>
+(<a href="agents.html">Agent Interaction Layer</a>).</p>
+<h2 id="6-let-an-ai-coding-agent-extend-the-app">6. Let an AI coding agent extend the app<a class="anchor" href="#6-let-an-ai-coding-agent-extend-the-app" aria-label="Link to this section">#</a></h2>
+<p>The project contains an <code>AGENTS.md</code> (and <code>CLAUDE.md</code>) that tells coding agents how OpenShell apps work, how to verify
+changes (<code>openshell status</code>, <code>openshell call ui_snapshot</code>, <code>openshell logs --errors</code>) and how to expose new functions.
+Open the folder in Claude Code, Codex, Cursor, … and ask:</p>
+<blockquote><p><em>Add folders to the bookmarks app: each bookmark can be in a folder, the UI shows a folder list, and agents can
+list folders and move bookmarks.</em></p></blockquote>
+<h2 id="7-ship-it">7. Ship it<a class="anchor" href="#7-ship-it" aria-label="Link to this section">#</a></h2>
+<p>Give the app a version and an icon in <code>openshell.json</code>:</p>
+<div class="codeblock" data-lang="json"><pre><code><span class="tk">"app"</span>: { <span class="tk">"name"</span>: <span class="ts">"Bookmarks"</span>, <span class="tk">"id"</span>: <span class="ts">"com.example.bookmarks"</span>, <span class="tk">"version"</span>: <span class="ts">"1.0.0"</span>, <span class="tk">"icon"</span>: <span class="ts">"icon.png"</span> }</code></pre></div>
+<div class="codeblock" data-lang="bash"><pre><code>openshell start            <span class="tc"># try production mode first</span>
+openshell package          <span class="tc"># → .openshell/package/bin/bundle/nsis/Bookmarks_1.0.0_x64-setup.exe (Windows)</span></code></pre></div>
+<p>The installed app stores its data in the user's data directory, runs in production mode (agents get only
+<code>read</code>, <code>ui</code> and <code>actions</code> by default) and can be used by agents with <code>bookmarks.exe --mcp</code>.
+More in <a href="installers.html">Installers and releases</a>.</p>
+<h2 id="where-to-go-next">Where to go next<a class="anchor" href="#where-to-go-next" aria-label="Link to this section">#</a></h2>
+<ul><li><a href="configuration.html">Configuration reference</a> – databases as external services, workers, tasks, proxies, modes</li><li><a href="languages.html">Languages</a> – Java/Spring Boot, C++/CMake, Go, Rust, .NET backends</li><li><a href="agents.html">Agents</a> – permissions, approvals, UI automation, audit log</li></ul>
+        <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/tutorial.md" rel="noopener">View this page on GitHub</a></div>
+      </article>
+      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#1-create-the-project">1. Create the project</a><a class="l2" href="#2-add-a-backend-endpoint">2. Add a backend endpoint</a><a class="l2" href="#3-update-the-frontend">3. Update the frontend</a><a class="l2" href="#4-make-the-app-usable-for-ai-agents">4. Make the app usable for AI agents</a><a class="l2" href="#5-connect-an-assistant">5. Connect an assistant</a><a class="l2" href="#6-let-an-ai-coding-agent-extend-the-app">6. Let an AI coding agent extend the app</a><a class="l2" href="#7-ship-it">7. Ship it</a><a class="l2" href="#where-to-go-next">Where to go next</a></aside>
+    </main>
+
+    <!-- chrome:footer -->
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
+            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <a href="../download.html">Download</a>
+            <a href="../use.html">For users</a>
+            <a href="../teams.html">For teams</a>
+            <a href="../developers.html">For developers</a>
+            <a href="../agents.html">For AI agents</a>
+          </div>
+          <div>
+            <h4>Documentation</h4>
+            <a href="../docs/getting-started.html">Getting started</a>
+            <a href="../docs/configuration.html">Configuration</a>
+            <a href="../docs/cli.html">CLI</a>
+            <a href="../docs/platforms.html">Platforms</a>
+            <a href="../docs/remote-access.html">Remote access</a>
+            <a href="../docs/index.html">All docs</a>
+          </div>
+          <div>
+            <h4>Project</h4>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA">GitHub</a>
+            <a href="../docs/changelog.html">Changelog</a>
+            <a href="../docs/roadmap.html">Roadmap</a>
+            <a href="../docs/security.html">Security</a>
+            <a href="../docs/contributing.html">Contributing</a>
+            <a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/llms.txt">llms.txt</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© OpenShell contributors · MIT</span>
+          <a class="right" href="#top-bar">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+    <!-- /chrome:footer -->
+
+    <script src="../assets/search-index.js"></script>
+    <script src="../assets/site.js"></script>
+    <script src="../assets/pages.js"></script>
+  </body>
+</html>
