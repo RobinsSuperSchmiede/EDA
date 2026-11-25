@@ -72,7 +72,7 @@ jobs:
             echo "$so: LOAD alignment $align"
             [ "$align" = "0x4000" ] || [ "$align" = "0x10000" ] || (echo "not 16 KB aligned" && exit 1)
           done
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: openshell-android
           path: |
