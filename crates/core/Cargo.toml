@@ -24,8 +24,8 @@ rusqlite = { version = "0.43", features = ["bundled"] }
 # remote gateway: TLS (ring backend, no aws-lc: keeps the Android build simple), device tokens
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
 tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12", "logging"] }
-rcgen = { version = "0.13", default-features = false, features = ["crypto", "ring", "pem"] }
-sha2 = "0.10"
+rcgen = { version = "0.14", default-features = false, features = ["crypto", "ring", "pem"] }
+sha2 = "0.11"
 # portable app bundles (.osapp)
 zip = { version = "9", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 # bundled language runtimes (`openshell runtime install`): tar.gz archives
@@ -34,7 +34,7 @@ tar = "0.4"
 hyper-util = { version = "0.1", features = ["server-auto", "service", "tokio", "http1", "http2"] }
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_Console"] }
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_Console"] }
 
 [dev-dependencies]
 tempfile.workspace = true
