@@ -28,6 +28,9 @@ rcgen = { version = "0.13", default-features = false, features = ["crypto", "rin
 sha2 = "0.10"
 # portable app bundles (.osapp)
 zip = { version = "9", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+# bundled language runtimes (`openshell runtime install`): tar.gz archives
+flate2 = "1"
+tar = "0.4"
 hyper-util = { version = "0.1", features = ["server-auto", "service", "tokio", "http1", "http2"] }
 
 [target.'cfg(windows)'.dependencies]

@@ -17,10 +17,13 @@
 //! | `POST /v1/lifecycle`                | admin          | app lifecycle from the host (mobile)  |
 //! | `GET  /v1/remote`                   | admin          | remote gateway: URLs and pairing token|
 //! | `GET  /v1/update`                   | admin          | newer release at `package.update_url`?|
+//! | `GET  /v1/agents`                   | admin          | effective agent permissions, sessions, devices |
 //! | `GET/POST /v1/remote/devices`, `POST /v1/remote/devices/{name}/revoke`, `POST /v1/remote/unblock` | admin | device pairing |
 //!
 //! Protection: loopback only, `Host` header check (DNS rebinding), `Origin`
-//! allow-list (CORS / CSRF) and two bearer tokens (admin, app).
+//! allow-list (CORS / CSRF) and bearer tokens: admin, app (SDK) and agent sessions
+//! (`osa_…`, own scopes, MCP and tools only). With `agents.enabled: false` the MCP
+//! endpoints, the tools API and the UI bridge refuse every request.
 
 use crate::exec::{AgentTools, AppTools};
 use crate::Shell;
@@ -33,7 +36,7 @@ use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use futures::{SinkExt, StreamExt};
 use openshell_agent::mcp::{handle_message, CallContext};
-use openshell_agent::policy::Decision;
+use openshell_agent::policy::{Decision, Policy};
 use openshell_runtime::LogQuery;
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -42,10 +45,25 @@ use std::sync::{Mutex, OnceLock};
 
 pub const SDK_JS: &str = include_str!("../../../packages/sdk/src/index.js");
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 enum Role {
     Admin,
     App,
+    /// An agent session token (`openshell agents token`).
+    Session(crate::sessions::AgentSession),
+}
+
+pub(crate) const AGENTS_OFF: &str =
+    "the agent layer is off – set `\"agents\": { \"enabled\": true }` in openshell.json to let AI agents connect";
+
+/// Policy and audit identity of a caller of the agent endpoints.
+fn caller(shell: &Shell, role: &Role) -> (Policy, Option<String>) {
+    match role {
+        Role::Session(s) => {
+            (shell.inner.agent_policy.restricted(&s.scopes), Some(format!("session:{}", s.name)))
+        }
+        _ => (shell.inner.agent_policy.clone(), None),
+    }
 }
 
 struct ApiError(StatusCode, String);
@@ -88,6 +106,7 @@ pub(crate) fn spawn(shell: Shell, listener: tokio::net::TcpListener) {
         .route("/v1/remote/devices/{name}/revoke", post(remote_revoke))
         .route("/v1/remote/unblock", post(remote_unblock))
         .route("/v1/update", get(update))
+        .route("/v1/agents", get(agents))
         .layer(from_fn_with_state(shell.clone(), guard))
         .with_state(shell);
     tokio::spawn(async move {
@@ -148,15 +167,44 @@ async fn guard(State(shell): State<Shell>, mut req: Request, next: Next) -> Resp
             .and_then(|h| h.strip_prefix("Bearer "))
             .map(str::to_string)
             .or_else(|| query_token(&req));
-        let role = match token {
-            Some(t) if t == shell.inner.admin_token => Role::Admin,
-            Some(t) if t == shell.inner.app_token => Role::App,
+        let session = match &token {
+            Some(t) if *t != shell.inner.admin_token && *t != shell.inner.app_token => {
+                shell.inner.sessions.verify(t)
+            }
+            _ => None,
+        };
+        let role = match (token, session) {
+            (Some(t), _) if t == shell.inner.admin_token => Role::Admin,
+            (Some(t), _) if t == shell.inner.app_token => Role::App,
+            (_, Some(s)) => Role::Session(s),
             _ => {
                 return ApiError(StatusCode::UNAUTHORIZED, "missing or invalid token".into()).into_response()
             }
         };
-        if role == Role::App && !(path.starts_with("/v1/sdk/") || path == "/v1/ui/bridge") {
-            return ApiError(StatusCode::FORBIDDEN, "not allowed with the app token".into()).into_response();
+        let agent_path = matches!(path.as_str(), "/mcp" | "/mcp/app" | "/v1/tools" | "/v1/ui/bridge")
+            || path.starts_with("/v1/tools/");
+        if agent_path && !shell.inner.project.config.agents.enabled {
+            return ApiError(StatusCode::FORBIDDEN, AGENTS_OFF.into()).into_response();
+        }
+        match &role {
+            Role::App if !(path.starts_with("/v1/sdk/") || path == "/v1/ui/bridge") => {
+                return ApiError(StatusCode::FORBIDDEN, "not allowed with the app token".into())
+                    .into_response();
+            }
+            Role::Session(s) => {
+                let full = s.profile == crate::sessions::SessionProfile::Full;
+                let allowed = path == "/mcp/app"
+                    || (full && (path == "/mcp" || path == "/v1/tools" || path.starts_with("/v1/tools/")));
+                if !allowed {
+                    let msg = if full {
+                        "agent session tokens can use /mcp, /mcp/app and /v1/tools only"
+                    } else {
+                        "this agent session uses the app profile: only /mcp/app is allowed"
+                    };
+                    return ApiError(StatusCode::FORBIDDEN, msg.into()).into_response();
+                }
+            }
+            _ => {}
         }
         req.extensions_mut().insert(role);
     }
@@ -300,8 +348,9 @@ async fn audit(State(shell): State<Shell>, Query(p): Query<LimitParams>) -> ApiR
     Ok(Json(json!({ "entries": shell.inner.audit.recent(p.limit.unwrap_or(50)) })))
 }
 
-async fn tools(State(shell): State<Shell>) -> ApiResult {
-    let policy = &shell.inner.agent_policy;
+async fn tools(State(shell): State<Shell>, Extension(role): Extension<Role>) -> ApiResult {
+    let (policy, _) = caller(&shell, &role);
+    let policy = &policy;
     let tools: Vec<Value> = shell
         .tools()
         .into_iter()
@@ -326,12 +375,17 @@ async fn tools(State(shell): State<Shell>) -> ApiResult {
 async fn tool_call(
     State(shell): State<Shell>,
     Path(name): Path<String>,
+    Extension(role): Extension<Role>,
     headers: HeaderMap,
     body: Option<Json<Value>>,
 ) -> ApiResult {
     let args = body.map(|b| b.0).unwrap_or(json!({}));
-    let ctx = CallContext { agent: agent_name(&headers, "http-agent"), channel: "http".into() };
-    let policy = shell.inner.agent_policy.clone();
+    let (policy, identity) = caller(&shell, &role);
+    let agent = match identity {
+        Some(id) => id,
+        None => agent_name(&headers, "http-agent"),
+    };
+    let ctx = CallContext { agent, channel: "http".into() };
     let outcome = shell.call_tool(&name, args, ctx, &policy).await;
     Ok(Json(json!(outcome)))
 }
@@ -341,12 +395,24 @@ fn mcp_sessions() -> &'static Mutex<HashMap<String, String>> {
     S.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
-async fn mcp(State(shell): State<Shell>, headers: HeaderMap, Json(msg): Json<Value>) -> Response {
-    mcp_with(shell, headers, msg, McpProfile::Full).await
+async fn mcp(
+    State(shell): State<Shell>,
+    Extension(role): Extension<Role>,
+    headers: HeaderMap,
+    Json(msg): Json<Value>,
+) -> Response {
+    let (policy, identity) = caller(&shell, &role);
+    mcp_with(shell, headers, msg, McpProfile::Full, policy, identity).await
 }
 
-async fn mcp_app(State(shell): State<Shell>, headers: HeaderMap, Json(msg): Json<Value>) -> Response {
-    mcp_with(shell, headers, msg, McpProfile::App).await
+async fn mcp_app(
+    State(shell): State<Shell>,
+    Extension(role): Extension<Role>,
+    headers: HeaderMap,
+    Json(msg): Json<Value>,
+) -> Response {
+    let (policy, identity) = caller(&shell, &role);
+    mcp_with(shell, headers, msg, McpProfile::App, policy, identity).await
 }
 
 /// Which tools an MCP endpoint offers and how calls are labelled in the audit log.
@@ -360,7 +426,16 @@ pub(crate) enum McpProfile {
     Remote,
 }
 
-pub(crate) async fn mcp_with(shell: Shell, headers: HeaderMap, msg: Value, profile: McpProfile) -> Response {
+/// Handle one MCP message. `policy` is the caller's policy; `identity` (agent sessions) replaces
+/// what the client claims to be in the audit log.
+pub(crate) async fn mcp_with(
+    shell: Shell,
+    headers: HeaderMap,
+    msg: Value,
+    profile: McpProfile,
+    policy: Policy,
+    identity: Option<String>,
+) -> Response {
     let app_profile = profile != McpProfile::Full;
     let session = headers.get("mcp-session-id").and_then(|h| h.to_str().ok()).map(str::to_string);
     let is_init = msg.get("method").and_then(|m| m.as_str()) == Some("initialize");
@@ -372,6 +447,11 @@ pub(crate) async fn mcp_with(shell: Shell, headers: HeaderMap, msg: Value, profi
         .or_else(|| client_name.clone())
         .or_else(|| session.as_ref().and_then(|s| mcp_sessions().lock().unwrap().get(s).cloned()))
         .unwrap_or_else(|| "mcp-client".into());
+    let agent = match identity {
+        Some(id) if agent != id => format!("{id} ({agent})"),
+        Some(id) => id,
+        None => agent,
+    };
     let ctx = CallContext {
         agent: agent.clone(),
         channel: match profile {
@@ -381,9 +461,9 @@ pub(crate) async fn mcp_with(shell: Shell, headers: HeaderMap, msg: Value, profi
         },
     };
     let reply = if app_profile {
-        handle_message(&AppTools(shell), msg, ctx).await
+        handle_message(&AppTools(shell, policy), msg, ctx).await
     } else {
-        handle_message(&AgentTools(shell), msg, ctx).await
+        handle_message(&AgentTools(shell, policy), msg, ctx).await
     };
     let mut resp = match reply {
         Some(v) => Json(v).into_response(),
@@ -452,8 +532,11 @@ async fn sdk_call(
 ) -> ApiResult {
     let args = body.map(|b| b.0).unwrap_or(json!({}));
     let ctx = CallContext { agent: "frontend".into(), channel: "sdk".into() };
-    let policy =
-        if role == Role::Admin { shell.inner.agent_policy.clone() } else { shell.inner.sdk_policy.clone() };
+    let policy = if matches!(role, Role::Admin) {
+        shell.inner.agent_policy.clone()
+    } else {
+        shell.inner.sdk_policy.clone()
+    };
     let outcome = shell.call_tool(&tool, args, ctx, &policy).await;
     Ok(Json(json!(outcome)))
 }
@@ -511,6 +594,11 @@ async fn update(State(shell): State<Shell>) -> ApiResult {
     Ok(Json(json!({ "configured": true, "update": info })))
 }
 
+/// Effective agent permissions: what agents get in this mode, per mode, per session and device.
+async fn agents(State(shell): State<Shell>) -> ApiResult {
+    Ok(Json(shell.agents_overview()))
+}
+
 fn gateway(shell: &Shell) -> Result<&std::sync::Arc<crate::remote::Gateway>, ApiError> {
     shell.inner.remote.as_ref().ok_or_else(|| {
         ApiError(StatusCode::CONFLICT, "the remote gateway is off (runtime.remote.enabled)".into())
@@ -524,15 +612,19 @@ async fn remote_devices(State(shell): State<Shell>) -> ApiResult {
 #[derive(Deserialize)]
 struct PairBody {
     name: String,
+    /// Scopes of the device (default: everything the app grants agents).
+    #[serde(default)]
+    scopes: Vec<openshell_config::Permission>,
 }
 
 /// Pair a device: the token is returned once, with a pairing URI for a QR code.
 async fn remote_pair(State(shell): State<Shell>, Json(body): Json<PairBody>) -> ApiResult {
     let gw = gateway(&shell)?;
-    let token = gw.pair(&body.name).map_err(bad)?;
+    let token = gw.pair(&body.name, body.scopes.clone()).map_err(bad)?;
     tracing::info!("remote gateway: paired device `{}`", body.name);
     Ok(Json(json!({
         "name": body.name,
+        "scopes": body.scopes,
         "token": token,
         "mcp_url": gw.info.mcp_url,
         "urls": gw.info.urls,

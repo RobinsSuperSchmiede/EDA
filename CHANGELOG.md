@@ -5,7 +5,41 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed (breaking)
+- **AI agents are opt-in.** `agents.enabled` defaults to `false`. While it is off, `/mcp`, `/mcp/app`, the tools
+  API, the UI bridge and the remote gateway's MCP endpoint refuse every request and no bridge script is injected;
+  the app, the frontend SDK and exposed services keep working. Templates, `openshell create`, `openshell init` and
+  `openshell add function` write `"enabled": true`; `openshell agents enable` / `disable` switch it. Existing apps
+  that use agents need `"agents": { "enabled": true }` – `openshell doctor` warns when agent settings are present
+  without it.
+
 ### Added
+- **Bundled runtimes** (`runtimes` in openshell.json): ship Python (python-build-standalone), Node.js (nodejs.org)
+  or a Java JRE (Eclipse Temurin) inside the app. `openshell runtime add|install|remove` downloads them into the
+  project with SHA-256 verification; their executable folders come first in `PATH` for every service, setup and
+  build step, function and task, and `openshell package` ships them. The app release workflow installs them on
+  every build machine.
+- **Version requirements** (`services[].requires`, `frontend.requires`): `{ "python": ">=3.10, <3.14" }` for
+  `python`, `node`, `java`, `dotnet`, `go`, `rust`. `openshell doctor` reports mismatches as errors (bundled runtimes
+  included), the app logs them as warnings when it starts. `openshell init` proposes `requires` from the version it
+  finds.
+- **Languages as data**: one entry per runtime and language (programs, version probe, bundle layout, support level,
+  templates) in `openshell_config::runtimes`, one detector per language in `crates/cli/src/languages/`. New:
+  `openshell languages`, `openshell create --list` shows language and support level, `openshell init` detects .NET
+  (`*.csproj`, ASP.NET Core, Swashbuckle OpenAPI). `openshell doctor` lists runtimes from the same table.
+- **Agent sessions** with their own tokens and scopes: `openshell agents token <name> [--scopes read,actions]
+  [--full]`, `openshell agents tokens`, `openshell agents revoke <name>`. Tokens (`osa_…`) are stored hashed, reach
+  only `/mcp/app` (or with `--full` also `/mcp` and `/v1/tools`), never get more than `agents.permissions` grants,
+  are audited as `session:<name>` and stop working at once when revoked. `openshell mcp --token` /
+  `OPENSHELL_AGENT_TOKEN` (also for installed apps' `--mcp`).
+- **Permissions per device**: `openshell remote pair <device> --scopes read` (also `scopes` in
+  `POST /v1/remote/devices`).
+- **Effective permissions**: `openshell agents`, `GET /v1/agents` and a new *AI agents* section in the desktop
+  runtime panel (scopes per mode, approvals, sessions and devices with what they effectively may do); the title-bar
+  menu shows when agents are off. Denials name the session's or device's scopes.
+- **Template end-to-end tests**: `scripts/e2e-templates.py` creates every template, runs it headless, waits for
+  healthy services, loads the frontend and calls an agent function; CI runs it on Windows, macOS and Linux (job
+  `templates`). CI also checks that the generated website is up to date.
 - **Building blocks**: frontend, backend, database and agent functions are independent and freely combinable.
   `openshell add frontend | backend [--lang] | database [name] | function <name>` adds a block to an app;
   `openshell create <name> --with frontend,database,…` composes a new one (interactive selection in a terminal).

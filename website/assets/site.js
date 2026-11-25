@@ -33,14 +33,14 @@
 
   // ------------------------------------------------------------------ features as a spec sheet
   const FEATURES = [
-    ["Runtime", ["Start order and health checks", "Restarts with backoff", "Logs from every service", "CPU and memory per service", "Builds for C++, Java, Go, Rust", "Hot reload on save"]],
+    ["Runtime", ["Start order and health checks", "Restarts with backoff", "Logs from every service", "CPU and memory per service", "Builds for C++, Java, Go, Rust", "Version requirements per service", "Hot reload on save"]],
     ["Desktop", ["Native Tauri 2 window", "Service menu in the title bar", "Tray and background mode", "Your own title bar", "Notifications", "Launch at login"]],
     ["Platforms", ["Windows, macOS, Linux", "Headless servers", "Android runtime, CLI and Termux", "services.platforms", "Pause in the background", "Android app|in progress", "Device mesh|partly"]],
-    ["Remote access", ["Gateway for the app profile", "QR pairing, revocable device tokens", "IP and CIDR allowlist", "TLS with pinned fingerprint", "Exposed HTTP and TCP services", "Rate limit and lockout", "Per-device permissions|planned", "mDNS discovery|planned"]],
-    ["Building blocks", ["Frontend in any framework", "Backend in any language", "Built-in SQLite", "Script functions", "Console for apps without UI", "openshell add / create --with"]],
+    ["Remote access", ["Gateway for the app profile", "QR pairing, revocable device tokens", "IP and CIDR allowlist", "TLS with pinned fingerprint", "Exposed HTTP and TCP services", "Rate limit and lockout", "Per-device scopes", "mDNS discovery|planned"]],
+    ["Building blocks", ["Frontend in any framework", "Backend in your language", "Built-in SQLite", "Script functions", "Console for apps without UI", "openshell add / create --with"]],
     ["Agents", ["MCP over stdio and HTTP", "App and developer profiles", "OpenAPI import", "Semantic UI automation", "MCP resources and live updates", "Screenshot fallback|planned"]],
-    ["Security", ["Permission scopes per mode", "Human approvals", "Audit log", "Project-scoped files", "Per-database agent access", "No arbitrary shell commands", "Agent sessions with own tokens|planned"]],
-    ["Shipping", ["NSIS, MSI, DMG, DEB, AppImage", "Portable .osapp bundles", "One download link per system", "Code signing settings", "Update check", "Your name and icon", "Per-user data", "Auto-install updates|planned", "Bundled runtimes|planned"]],
+    ["Security", ["Permission scopes per mode", "Human approvals", "Audit log", "Project-scoped files", "Per-database agent access", "No arbitrary shell commands", "Agents opt-in per app", "Agent sessions with own tokens and scopes"]],
+    ["Shipping", ["NSIS, MSI, DMG, DEB, AppImage", "Portable .osapp bundles", "One download link per system", "Code signing settings", "Update check", "Your name and icon", "Per-user data", "Auto-install updates|planned", "Bundled Python, Node.js and JRE"]],
   ];
 
   const spec = document.getElementById("feature-grid");

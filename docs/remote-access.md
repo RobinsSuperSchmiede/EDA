@@ -108,5 +108,6 @@ Never expose a port to the internet without TLS and an allowlist; prefer a VPN.
   client closes them (restart the app to cut them immediately).
 - `tcp` ports have no login – use `allow`, a VPN, or the service's own authentication.
 - Rate limits and blocks are kept in memory and reset when the app restarts.
-- The tokens give access to the app profile and exposed services only. Per-device *permissions*
-  (different functions per device) are planned.
+- The tokens give access to the app profile and exposed services only. Give a device its own scopes
+  with `openshell remote pair <device> --scopes read` (default: what the app grants agents); scopes limit
+  the app's functions, not exposed services. The gateway's MCP endpoint needs `agents.enabled: true`.

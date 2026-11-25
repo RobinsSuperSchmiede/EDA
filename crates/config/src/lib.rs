@@ -13,6 +13,7 @@
 mod files;
 mod interpolate;
 mod model;
+pub mod runtimes;
 mod validate;
 
 pub use files::{package_files, DEFAULT_EXCLUDES};

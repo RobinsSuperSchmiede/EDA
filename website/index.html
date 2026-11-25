@@ -4,14 +4,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>OpenShell – any web app, a native desktop app, agents included</title>
+    <title>OpenShell – the app runtime that turns a web app and its backend into one desktop app</title>
     <meta
       name="description"
-      content="OpenShell is an open-source shell built on Rust and Tauri 2. Bring a web frontend, any backend, a database or just functions – OpenShell runs them as a native desktop app that people and AI agents can use. The same core runs headless on servers and Android."
+      content="OpenShell is an open-source app runtime built on Rust and Tauri 2. It starts, supervises and packages your web frontend, backend and database as one native desktop app. AI agent access is optional. Alpha, MIT licensed."
     />
-    <meta property="og:title" content="OpenShell – the shell for agent-native apps" />
+    <meta property="og:title" content="OpenShell – the app runtime for web apps on the desktop" />
     <meta property="og:type" content="website" />
-    <meta property="og:description" content="Any web app. A native desktop app. Agents included. Free and open source." />
+    <meta property="og:description" content="Ship your web frontend and its backend as one native desktop app. Open source, built on Tauri 2." />
     <meta name="theme-color" content="#0f3624" />
     <link rel="icon" href="assets/logo.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -48,16 +48,17 @@
       <section class="hero" id="hero">
         <div class="wrap">
           <div class="copy-block">
-            <h1 class="rise">Any web app<br />A native desktop app<br />Agents included</h1>
+            <div class="eyebrow rise">OpenShell · the app runtime for desktop</div>
+            <h1 class="rise">Ship your web stack<br />as one desktop app</h1>
             <p class="lead rise">
-              OpenShell runs your frontend, backends, database and AI functions as one desktop app – supervised,
-              packaged and open to the AI agents you choose. The same core runs headless on servers and Android.
+              OpenShell starts, supervises and packages your frontend, backend and database as one native desktop app.
+              You write no desktop code. Letting AI agents use the app is optional.
             </p>
             <div class="actions rise">
               <a class="cta" href="download.html"><span>Download</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
-              <a class="btn btn--lg" href="#who">Find your way</a>
+              <a class="btn btn--lg" href="#what">What is it exactly?</a>
             </div>
-            <p class="note rise">Free and open source · MIT · Windows, macOS, Linux · Android app in progress</p>
+            <p class="note rise">Open source · MIT · alpha · tested on Windows 11, builds for macOS and Linux</p>
           </div>
           <div class="stage-slot rise"></div>
         </div>
@@ -65,13 +66,75 @@
         <div class="scroll-hint" aria-hidden="true">scroll ↓</div>
       </section>
 
+      <!-- ============================================================ what it is -->
+      <section id="what">
+        <div class="wrap">
+          <div class="kicker reveal">What it is</div>
+          <h2 class="reveal">A runtime<br /><span class="soft">Not a framework</span></h2>
+          <p class="lead reveal">
+            You keep writing a normal web frontend and a normal backend. OpenShell starts them in the right order,
+            checks that they are healthy, restarts them when they crash, shows the frontend in a native window and
+            builds the installer.
+          </p>
+          <div class="two mt-m">
+            <div class="list reveal">
+              <h3>It is</h3>
+              <ul class="ticks">
+                <li><span>A <b>runtime</b> that starts and supervises your processes: frontend, backend, workers</span></li>
+                <li><span>A thin layer on <b>Tauri 2</b>: native window, tray, notifications, installers</span></li>
+                <li><span>A <b>packager</b>: one config file, an installer for Windows, macOS and Linux</span></li>
+                <li><span>An <b>optional</b> interface that lets AI assistants call your app's functions</span></li>
+              </ul>
+            </div>
+            <div class="list reveal">
+              <h3>It is not</h3>
+              <ul class="ticks not">
+                <li><span>A <b>UI framework</b>. Bring React, Vue, Svelte or plain HTML</span></li>
+                <li><span>A replacement for <b>Tauri</b> if you want to write Rust. It is built on Tauri</span></li>
+                <li><span><b>Docker</b> or a sandbox. It runs native processes with the user's rights</span></li>
+                <li><span>An <b>AI model</b> or agent product. It never ships or requires a model</span></li>
+                <li><span>A <b>cloud service</b>. Everything runs on the user's machine</span></li>
+              </ul>
+            </div>
+          </div>
+          <div class="tiles mt-m">
+            <div class="tile reveal"><span class="pill">core</span><h3>1 · Run and package</h3><p>One config, supervised processes, a native window, hot reload, installers. This is the product. Everything else is optional.</p></div>
+            <div class="tile reveal"><span class="pill plan">optional</span><h3>2 · Building blocks</h3><p>A built-in SQLite database and script functions, for apps that do not need a backend. Use them or leave them.</p></div>
+            <div class="tile reveal"><span class="pill plan">optional</span><h3>3 · Agent access</h3><p>An MCP interface for AI assistants. Off until the app opts in, and nothing connects until you add the app to an assistant.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ why -->
+      <section id="why">
+        <div class="wrap">
+          <div class="kicker reveal">Why OpenShell</div>
+          <h2 class="reveal">The part you would<br /><span class="soft">otherwise wire up yourself</span></h2>
+          <p class="lead reveal">
+            Tauri and Electron put your frontend in a window. The backend behind it still has to start, stay healthy and
+            ship with the app. OpenShell is that missing piece: it runs everything behind the window.
+          </p>
+          <div class="table-wrap reveal">
+            <table>
+              <thead><tr><th>If you …</th><th>Use</th><th>Because</th></tr></thead>
+              <tbody>
+                <tr><td>write the desktop app in Rust, with a frontend as the only other part</td><td>Tauri directly</td><td>OpenShell adds little you need. It is built on Tauri 2 and does not replace it.</td></tr>
+                <tr><td>need the same Chromium and Node inside every copy of the app</td><td>Electron</td><td>OpenShell uses the system WebView and keeps your backend a separate process.</td></tr>
+                <tr><td>have a web frontend plus a backend in Python, Java, Node.js, C++ or Go, and want one installer</td><td><b>OpenShell</b></td><td>It starts, health-checks, restarts, logs and packages them. No desktop code, no process plumbing.</td></tr>
+                <tr><td>deploy server software on machines you control</td><td>Docker or containers</td><td>OpenShell runs native processes on an end user's computer, with a window and an installer. It is not isolation.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout mt-s reveal"><b>In one line.</b> Tauri and Electron give your frontend a window. OpenShell also runs, supervises and ships everything behind it, from one file you can read.</div>
+        </div>
+      </section>
 
       <!-- ============================================================ audiences -->
       <section id="who">
         <div class="wrap">
-          <div class="kicker reveal">Find your way</div>
-          <h2 class="reveal">One shell<br /><span class="soft">Four ways in</span></h2>
-          <p class="lead reveal">Whether you install an app, roll tools out to a team, build apps or connect an AI agent – start where you are.</p>
+          <div class="kicker reveal">Who it is for</div>
+          <h2 class="reveal">Built for web developers<br /><span class="soft">Useful to four groups</span></h2>
+          <p class="lead reveal">The core audience is developers with a web frontend and a backend who need a desktop app. The other paths are for the people around that app.</p>
           <div class="aud">
             <a class="aud-card reveal" href="use.html">
 <span class="ascii">┌────────┐
@@ -95,8 +158,8 @@
 <span class="ascii">$ openshell dev
   backend ready
   window open ▌</span>
-              <h3>I build apps</h3>
-              <p>Keep your frontend and your backend in any language. Describe them in one file and get a native app.</p>
+              <h3>I build apps · core audience</h3>
+              <p>Keep your frontend and your backend. Describe them in one file and get a native app.</p>
               <ul><li>Five-minute quick start</li><li>Config, CLI and SDK</li><li>Packaging and releases</li></ul>
               <span class="go">For developers →</span>
             </a>
@@ -111,9 +174,9 @@
             </a>
           </div>
           <div class="stats reveal">
-            <div class="stat"><b>32</b><span>tools for agents, each behind one scope</span></div>
-            <div class="stat"><b>7</b><span>backend languages: Python, Node.js, Java, C++, Go, Rust, .NET</span></div>
-            <div class="stat"><b>8</b><span>project templates, plus any web app via <span class="mono">init</span></span></div>
+            <div class="stat"><b>1</b><span>config file describes the whole app</span></div>
+            <div class="stat"><b>4</b><span>backend languages tested end to end: Python, Node.js, Java, C++</span></div>
+            <div class="stat"><b>8</b><span>project templates, plus any existing web app via <span class="mono">init</span></span></div>
             <div class="stat"><b>MIT</b><span>licence – free for personal and commercial use</span></div>
           </div>
         </div>
@@ -125,8 +188,9 @@
           <div class="kicker reveal">How it works</div>
           <h2 class="reveal">The shell is not your app<br /><span class="soft">It runs your app</span></h2>
           <p class="lead reveal">
-            OpenShell sits between the people and agents using your app and the parts it is made of. Your code stays a
-            normal project; OpenShell never compiles it in.
+            OpenShell sits between the people using your app and the parts it is made of. Your code stays a normal
+            project; OpenShell never compiles it in. Agents appear in the picture because they can connect, not because
+            they have to.
           </p>
 
           <div class="stage-slot">
@@ -246,17 +310,46 @@
             <div class="step reveal"><div class="n">01 · describe</div><h3>One config file</h3><p>Frontend, services, database and functions in <span class="mono">openshell.json</span> – or let <span class="mono">openshell init</span> detect them.</p></div>
             <div class="step reveal"><div class="n">02 · run</div><h3>Supervised</h3><p>Services start in order, are health-checked, restarted on crashes and reloaded when you save.</p></div>
             <div class="step reveal"><div class="n">03 · use</div><h3>Native window</h3><p>The frontend appears in a real desktop window with tray, notifications and a live service menu.</p></div>
-            <div class="step reveal"><div class="n">04 · open up</div><h3>Agent-ready</h3><p>Agents connect over MCP – to use the app's functions or to build it, within the scopes you allow.</p></div>
+            <div class="step reveal"><div class="n">04 · optional</div><h3>Agent access</h3><p>If you want it, agents connect over MCP within the scopes you allow. Without it, nothing changes.</p></div>
           </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ no magic -->
+      <section id="nomagic">
+        <div class="wrap">
+          <div class="kicker reveal">No magic</div>
+          <h2 class="reveal">Everything it does<br /><span class="soft">You can read</span></h2>
+          <p class="lead reveal">
+            OpenShell does not guess while your app runs. Detection happens once, when you run
+            <span class="mono">openshell init</span>, and it writes a file you can read and change.
+          </p>
+          <div class="stack mt-m">
+            <div class="term reveal"><span class="c">$</span> openshell dev
+  <span class="c">1</span>  read openshell.json            <span class="c">the only source of truth</span>
+  <span class="c">2</span>  run setup steps                <span class="c">e.g. npm install, only if missing</span>
+  <span class="c">3</span>  start services in order        <span class="c">the commands you wrote, nothing else</span>
+  <span class="c">4</span>  wait for /health               <span class="c">then start what depends on it</span>
+  <span class="c">5</span>  open the window                <span class="c">your frontend, in the system WebView</span>
+  <span class="c">6</span>  watch the files you listed     <span class="c">restart or reload on change</span></div>
+            <ul class="ticks reveal">
+              <li><span><b>You review the config.</b> <span class="mono">init</span> proposes it. Check ports and health checks before you rely on it.</span></li>
+              <li><span><b>The contract is small.</b> Your process gets <span class="mono">PORT</span> and <span class="mono">OPENSHELL_DATA_DIR</span>, binds 127.0.0.1 and answers <span class="mono">/health</span>.</span></li>
+              <li><span><b>Your code is yours.</b> Only commands you run (<span class="mono">create</span>, <span class="mono">add</span>, <span class="mono">init</span>) or an agent you gave the <span class="mono">code</span> scope change it.</span></li>
+              <li><span><b>No lock-in.</b> Frontend and backend stay normal projects that run without OpenShell.</span></li>
+              <li><span><b>Checks before starting.</b> <span class="mono">openshell doctor</span> lists missing commands, folders and ports.</span></li>
+            </ul>
+          </div>
+          <p class="sub reveal"><span class="mono">create</span> and <span class="mono">init</span> also add an <span class="mono">AGENTS.md</span> and a <span class="mono">CLAUDE.md</span> for coding agents. Delete them if you do not use agents.</p>
         </div>
       </section>
 
       <!-- ============================================================ building blocks -->
       <section id="blocks">
         <div class="wrap">
-          <div class="kicker reveal">Building blocks</div>
+          <div class="kicker reveal">Optional parts</div>
           <h2 class="reveal">Pick the parts<br /><span class="soft">Skip the rest</span></h2>
-          <p class="lead reveal">Every block is optional. Store data without a backend, give agents tools without a UI, or combine everything. Click to compose.</p>
+          <p class="lead reveal">Every block is optional, and so is every part of the agent layer. Store data without a backend, or combine everything. Click to compose.</p>
           <div class="blocks" id="picker">
             <button class="block reveal" type="button" data-block="frontend" aria-pressed="true"><span class="state">✓</span>
 <span class="ascii">┌──────┐
@@ -265,7 +358,7 @@
             <button class="block reveal" type="button" data-block="backend" aria-pressed="false"><span class="state">✓</span>
 <span class="ascii">  ┌─┐
 ──┤ ├──
-  └─┘</span><h3>Backend</h3><p>Any language, supervised and hot-reloaded</p></button>
+  └─┘</span><h3>Backend</h3><p>Any language that serves HTTP, supervised and hot-reloaded</p></button>
             <button class="block reveal" type="button" data-block="database" aria-pressed="true"><span class="state">✓</span>
 <span class="ascii"> ╭────╮
  ├────┤
@@ -273,7 +366,7 @@
             <button class="block reveal" type="button" data-block="functions" aria-pressed="false"><span class="state">✓</span>
 <span class="ascii"> { } →
  f(x)
- → { }</span><h3>Functions</h3><p>Tools for AI agents as plain scripts</p></button>
+ → { }</span><h3>Functions</h3><p>Plain scripts an assistant can call. For agent use only</p></button>
           </div>
           <div class="composer reveal"><code id="cmd">openshell create my-app --with frontend,database</code><span id="cmd-note">A desktop UI that keeps its data – no backend</span></div>
         </div>
@@ -375,43 +468,75 @@
         </div>
       </section>
 
-      <!-- ============================================================ agents -->
-      <section id="agents">
+      <!-- ============================================================ languages -->
+      <section id="languages">
         <div class="wrap">
-          <div class="kicker reveal">For AI agents</div>
-          <h2 class="reveal">Use it or build it<br /><span class="soft">Two profiles, one protocol</span></h2>
-          <div class="split">
-            <div class="card reveal">
-              <div class="tagline">app profile</div>
-              <h3>Use the app</h3>
-              <p>Only the app's functions – declared capabilities, imported OpenAPI operations, frontend actions and the database as far as you allow. Installed apps start in the background when an agent connects.</p>
-              <div class="term"><span class="c"># installed app</span>
-fieldnotes.exe --mcp
-<span class="c"># project</span>
-openshell mcp --app --start</div>
-            </div>
-            <div class="card reveal">
-              <div class="tagline">developer profile</div>
-              <h3>Build the app</h3>
-              <p>32 tools for coding agents: status, logs, restarts, project files, database, and semantic UI automation that clicks by element, not by pixel.</p>
-              <div class="term">claude mcp add notes -- openshell mcp
-<span class="c">› ui_snapshot</span>   <span class="a">e7 button "Add"</span>
-<span class="c">› logs_read</span>     <span class="g">0 errors</span></div>
+          <div class="kicker reveal">Languages and runtimes</div>
+          <h2 class="reveal">What works<br /><span class="soft">And what is tested</span></h2>
+          <p class="lead reveal">
+            A backend can be any program that reads its port from <span class="mono">PORT</span>, binds 127.0.0.1 and
+            answers <span class="mono">/health</span>. That is the contract. It is not a promise that every language is
+            equally polished, so here is the honest state.
+          </p>
+          <div class="table-wrap reveal">
+            <table>
+              <thead><tr><th>Language</th><th>State</th><th>Notes</th></tr></thead>
+              <tbody>
+                <tr><td>Python</td><td><span class="pill">tested</span></td><td>Templates for HTML, React and Vue. The interpreter must exist on the target machine.</td></tr>
+                <tr><td>Node.js</td><td><span class="pill">tested</span></td><td>Template with React. Node.js must exist on the target machine.</td></tr>
+                <tr><td>Java, Spring Boot</td><td><span class="pill">tested</span></td><td>A JRE must exist, or you ship one inside the app. OpenAPI import works with springdoc.</td></tr>
+                <tr><td>C++ (CMake)</td><td><span class="pill">tested</span></td><td>Compiled: nothing to install on the target. Rebuilds and restarts on change.</td></tr>
+                <tr><td>Go, Rust, .NET</td><td><span class="pill wip">less tested</span></td><td>Same contract and the same build steps as C++. One Go template. Fewer real-world runs.</td></tr>
+                <tr><td>Anything else</td><td><span class="pill plan">by contract</span></td><td>Works if it follows the contract. No template and no detection in <span class="mono">init</span>.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="cols mt-m">
+            <div class="callout reveal"><b>Runtimes: yours or bundled.</b> OpenShell does not manage the Python, Java or .NET on a user's machine. Either the machine has what your service needs, or you ship it: <span class="mono">openshell runtime add python|node|java</span> puts Python, Node.js or a JRE into the app. <span class="mono">requires</span> pins versions; <span class="mono">openshell doctor</span> checks them.</div>
+            <div class="callout reveal"><b>Tested where.</b> In CI, every template is created, started, checked for healthy services and called as an agent on Windows, macOS and Linux (<span class="mono">scripts/e2e-templates.py</span>). The shell's own tests run there too.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ shipping -->
+      <section id="ship">
+        <div class="wrap">
+          <div class="kicker reveal">Shipping</div>
+          <h2 class="reveal">Build once<br /><span class="soft">One link per system</span></h2>
+          <p class="lead reveal">
+            Tag a version and a workflow builds the installers for Windows, macOS and Linux and the bundle for phones
+            and servers. Visitors get a download page that offers their own system first.
+          </p>
+          <div class="cols cols--wide mt-m">
+            <div class="term reveal"><span class="c">$</span> openshell release workflow
+  wrote .github/workflows/openshell-release.yml
+
+<span class="c">$</span> git tag v1.2.0 &amp;&amp; git push origin v1.2.0
+  <span class="g">✓</span> Windows   My App_1.2.0_x64-setup.exe
+  <span class="g">✓</span> macOS     My App_1.2.0_aarch64.dmg · _x64.dmg
+  <span class="g">✓</span> Linux     my-app_1.2.0_amd64.AppImage · .deb
+  <span class="g">✓</span> Bundle    my-app-1.2.0.osapp
+  <span class="g">✓</span> downloads.json · index.html</div>
+            <div class="tiles tiles--2 mt-0">
+              <div class="tile reveal"><span class="tag">installers</span><h3>Native and branded</h3><p>NSIS, MSI, DMG, DEB, RPM and AppImage with your name and icon. Windows installs per user, no admin rights.</p></div>
+              <div class="tile reveal"><span class="tag">bundles</span><h3>Portable .osapp</h3><p>One file that runs on every OpenShell host: desktop CLI, server, Termux and the Android app. Data survives updates.</p></div>
+              <div class="tile reveal"><span class="tag">signing</span><h3>No scary warnings</h3><p>Settings for Windows certificates and macOS notarisation. Secrets stay in the environment.</p></div>
+              <div class="tile reveal"><span class="tag">updates</span><h3>Know when there is more</h3><p><span class="mono">openshell update</span> checks your release feed and returns the right download. Automatic install is planned.</p></div>
             </div>
           </div>
-          <p class="works reveal">Claude Code · Codex · Cursor · Copilot · Ollama · LM Studio · any MCP client. OpenShell never ships or requires a model.</p>
+          <div class="callout mt-s reveal"><b>Signing is yours.</b> Installers need a certificate that someone has to buy: a code-signing certificate for Windows, an Apple Developer account for macOS. OpenShell takes care of the settings and the CI workflow, not of the certificates. Unsigned installers work, with a warning.</div>
         </div>
       </section>
 
       <!-- ============================================================ platforms -->
       <section id="platforms">
         <div class="wrap">
-          <div class="kicker reveal">Platforms</div>
-          <h2 class="reveal">Desktop, server, phone<br /><span class="soft">One core runs them all</span></h2>
+          <div class="kicker reveal">Beyond the desktop</div>
+          <h2 class="reveal">The same core<br /><span class="soft">Runs headless too</span></h2>
           <p class="lead reveal">
-            The runtime, the agent layer and the control API are the same everywhere. A small platform adapter decides
-            which programs may start and how long they may live – so an app built on the desktop also runs on a server
-            or an Android phone.
+            The desktop is the product. Because the core is platform-neutral, the same app can also run without a
+            window on a server, and in Termux on Android. A small platform adapter decides which programs may start.
+            The native Android app is still in progress.
           </p>
 
           <div class="devices reveal" aria-label="The same app on a desktop, a phone and a server">
@@ -425,7 +550,7 @@ openshell mcp --app --start</div>
                   <div class="svc"><span class="dot"></span>database main<span class="meta">3 tables</span></div>
                 </div>
               </div>
-              <div class="device-label">desktop · Windows, macOS, Linux · any program</div>
+              <div class="device-label">desktop · Windows, macOS, Linux · the main target</div>
             </div>
             <div>
               <div class="phone">
@@ -485,75 +610,84 @@ openshell mcp --app --start</div>
         </div>
       </section>
 
-
-      <!-- ============================================================ shipping -->
-      <section id="ship">
+      <!-- ============================================================ agents -->
+      <section id="agents">
         <div class="wrap">
-          <div class="kicker reveal">Shipping</div>
-          <h2 class="reveal">Build once<br /><span class="soft">One link per system</span></h2>
-          <p class="lead reveal">
-            Tag a version and a workflow builds the installers for Windows, macOS and Linux and the bundle for phones
-            and servers. Visitors get a download page that offers their own system first.
-          </p>
+          <div class="kicker reveal">Optional: AI agents</div>
+          <h2 class="reveal">Let agents use the app<br /><span class="soft">Only if you want to</span></h2>
           <div class="cols cols--wide mt-m">
-            <div class="term reveal"><span class="c">$</span> openshell release workflow
-  wrote .github/workflows/openshell-release.yml
-
-<span class="c">$</span> git tag v1.2.0 &amp;&amp; git push origin v1.2.0
-  <span class="g">✓</span> Windows   My App_1.2.0_x64-setup.exe
-  <span class="g">✓</span> macOS     My App_1.2.0_aarch64.dmg · _x64.dmg
-  <span class="g">✓</span> Linux     my-app_1.2.0_amd64.AppImage · .deb
-  <span class="g">✓</span> Bundle    my-app-1.2.0.osapp
-  <span class="g">✓</span> downloads.json · index.html</div>
-            <div class="tiles tiles--2 mt-0">
-              <div class="tile reveal"><span class="tag">installers</span><h3>Native and branded</h3><p>NSIS, MSI, DMG, DEB, RPM and AppImage with your name and icon. Windows installs per user, no admin rights.</p></div>
-              <div class="tile reveal"><span class="tag">bundles</span><h3>Portable .osapp</h3><p>One file that runs on every OpenShell host: desktop CLI, server, Termux and the Android app. Data survives updates.</p></div>
-              <div class="tile reveal"><span class="tag">signing</span><h3>No scary warnings</h3><p>Settings for Windows certificates and macOS notarisation. Secrets stay in the environment.</p></div>
-              <div class="tile reveal"><span class="tag">updates</span><h3>Know when there is more</h3><p><span class="mono">openshell update</span> checks your release feed and returns the right download. Automatic install is planned.</p></div>
+            <div>
+              <h3 class="reveal" style="font-size: 22px">MCP in thirty seconds</h3>
+              <p class="sub reveal mt-s">
+                MCP, the Model Context Protocol, is an open standard that lets AI assistants call functions in other
+                programs. OpenShell offers your app's own functions that way, so an assistant can call
+                <span class="mono">add_note</span> instead of clicking through your window. Nothing is connected until
+                you add the app to an assistant's MCP settings.
+              </p>
+            </div>
+            <div class="term soft-wrap reveal"><span class="c">without MCP</span>  assistant → screenshot → guess where to click → hope
+<span class="c">with MCP</span>     assistant → <span class="a">add_note</span> {"text": "Rain on plot 2"} → <span class="g">saved · id 41</span></div>
+          </div>
+          <div class="split">
+            <div class="card reveal">
+              <div class="tagline">app profile</div>
+              <h3>Use the app</h3>
+              <p>Only the app's functions – declared capabilities, imported OpenAPI operations, frontend actions and the database as far as you allow. Installed apps start in the background when an agent connects.</p>
+              <div class="term"><span class="c"># installed app</span>
+fieldnotes.exe --mcp
+<span class="c"># project</span>
+openshell mcp --app --start</div>
+            </div>
+            <div class="card reveal">
+              <div class="tagline">developer profile</div>
+              <h3>Build the app</h3>
+              <p>32 tools for coding agents: status, logs, restarts, project files, database, and semantic UI automation that clicks by element, not by pixel.</p>
+              <div class="term">claude mcp add notes -- openshell mcp
+<span class="c">› ui_snapshot</span>   <span class="a">e7 button "Add"</span>
+<span class="c">› logs_read</span>     <span class="g">0 errors</span></div>
             </div>
           </div>
-        </div>
-      </section>
-
-      <!-- ============================================================ features -->
-      <section id="features">
-        <div class="wrap">
-          <div class="kicker reveal">In the box</div>
-          <h2 class="reveal">Everything an app<br /><span class="soft">needs around it</span></h2>
-          <div class="spec" id="feature-grid"></div>
+          <p class="works reveal">Claude Code · Codex · Cursor · Copilot · Ollama · LM Studio · any MCP client. OpenShell never ships or requires a model. The layer is opt-in: it stays closed until an app sets <span class="mono">"agents": { "enabled": true }</span>, and each agent can get its own token and scopes (<span class="mono">openshell agents token</span>).</p>
         </div>
       </section>
 
       <!-- ============================================================ security -->
       <section id="security">
         <div class="wrap">
-          <div class="kicker reveal">Security</div>
-          <h2 class="reveal">Agents get exactly<br /><span class="soft">what you allow</span></h2>
-          <div class="two three">
-            <div class="list reveal">
-              <h3>Scopes you grant</h3>
-              <ul>
-                <li><b>read</b>status, logs, capabilities</li>
-                <li><b>ui</b>operate the interface</li>
-                <li><b>actions</b>call functions that change data</li>
-                <li><b>services</b>restart and stop services</li>
-                <li><b>code</b>edit project files</li>
-              </ul>
-            </div>
+          <div class="kicker reveal">Permissions</div>
+          <h2 class="reveal">What an agent may do<br /><span class="soft">In one table</span></h2>
+          <p class="lead reveal">Every agent tool needs exactly one of seven scopes. You decide per mode which scopes are granted. Production grants less than development.</p>
+          <div class="table-wrap reveal">
+            <table>
+              <thead><tr><th>Scope</th><th>Lets an agent …</th><th>Development</th><th>Production</th></tr></thead>
+              <tbody>
+                <tr><td><code>read</code></td><td>read status, logs, configuration, capabilities and, read-only, databases</td><td>✓</td><td>✓</td></tr>
+                <tr><td><code>ui</code></td><td>look at and operate the app's interface, show notifications</td><td>✓</td><td>✓</td></tr>
+                <tr><td><code>actions</code></td><td>call the app's functions that change data</td><td>✓</td><td>✓</td></tr>
+                <tr><td><code>services</code></td><td>start, stop and restart services</td><td>✓</td><td>–</td></tr>
+                <tr><td><code>files</code></td><td>read project files</td><td>✓</td><td>–</td></tr>
+                <tr><td><code>code</code></td><td>write project files</td><td>✓</td><td>–</td></tr>
+                <tr><td><code>system</code></td><td>run tasks you declared, evaluate JavaScript in the page. Needs approval by default</td><td>–</td><td>–</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="two mt-m">
             <div class="list reveal">
               <h3>Always in place</h3>
               <ul>
-                <li><b>approve</b>critical actions wait for you</li>
-                <li><b>audit</b>every call is recorded</li>
+                <li><b>approve</b>scopes you list wait for a person</li>
+                <li><b>audit</b>every call is recorded, allowed or not</li>
                 <li><b>files</b>only inside the project</li>
                 <li><b>shell</b>no arbitrary commands, ever</li>
                 <li><b>api</b>loopback only, tokens, origin checks</li>
-                <li><b>remote</b>off by default, app profile only</li>
+                <li><b>opt-in</b>agents are off until an app switches them on</li>
+                <li><b>sessions</b>own token and scopes per agent</li>
               </ul>
             </div>
             <div class="list reveal">
               <h3>For other devices</h3>
               <ul>
+                <li><b>remote</b>off by default, app profile only</li>
                 <li><b>tokens</b>one per device, revocable</li>
                 <li><b>allow</b>IP and CIDR allowlist</li>
                 <li><b>tls</b>pinned fingerprint or your certificate</li>
@@ -562,9 +696,44 @@ openshell mcp --app --start</div>
               </ul>
             </div>
           </div>
+          <div class="callout mt-s reveal"><b>See it, and know the limit.</b> <span class="mono">openshell tools</span> shows every tool with its scope and current access, <span class="mono">openshell audit</span> shows what agents did. The permission layer governs cooperating agents. It is not a sandbox against malware running as the same user. More in <a href="teams.html#security">security for teams</a>.</div>
         </div>
       </section>
 
+      <!-- ============================================================ status -->
+      <section id="status">
+        <div class="wrap">
+          <div class="kicker reveal">Status and scope</div>
+          <h2 class="reveal">Alpha<br /><span class="soft">Here is what that means</span></h2>
+          <p class="lead reveal">OpenShell does a lot, and not all of it has had the same testing. Plan with this table, not with the feature list.</p>
+          <div class="table-wrap reveal">
+            <table>
+              <thead><tr><th>Area</th><th>State</th><th>Detail</th></tr></thead>
+              <tbody>
+                <tr><td>Runtime, window, CLI, MCP</td><td><span class="pill">tested</span></td><td>End to end on Windows 11: services in Python, Node.js, Java and C++, monitoring, both MCP profiles, approvals, NSIS installers.</td></tr>
+                <tr><td>macOS and Linux</td><td><span class="pill wip">builds in CI</span></td><td>The shell's tests and the desktop build run in CI. Little manual testing of real apps.</td></tr>
+                <tr><td>Release workflow, bundles, signing, remote access</td><td><span class="pill wip">on main</span></td><td>Implemented and documented. Part of the next release.</td></tr>
+                <tr><td>Android app</td><td><span class="pill wip">in progress</span></td><td>Builds in CI. Not yet run on a device, not in the Play Store.</td></tr>
+                <tr><td>Bundled runtimes, version requirements, agent sessions, device scopes, agents opt-in</td><td><span class="pill wip">on main</span></td><td>Implemented with tests; part of the next release.</td></tr>
+                <tr><td>Auto-install updates, screenshot fallback, runtimes inside the Android app</td><td><span class="pill plan">planned</span></td><td>See the <a href="docs/roadmap.html">roadmap</a>.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="cols mt-m">
+            <div class="callout reveal"><b>What alpha means for you.</b> The config format and some APIs may change before 1.0. Pin a version, read the changelog before you update, and expect rough edges on macOS and Linux.</div>
+            <div class="callout reveal"><b>How we keep it small.</b> The project aims to stay a generic shell with a reliable runtime and agent layer. It makes no assumptions about frontend frameworks, backend languages or AI vendors. Frameworks, models and clouds are not its job. See <a href="docs/contributing.html">contributing</a>.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ features -->
+      <section id="features">
+        <div class="wrap">
+          <div class="kicker reveal">In the box</div>
+          <h2 class="reveal">The full list<br /><span class="soft">For when you want details</span></h2>
+          <div class="spec" id="feature-grid"></div>
+        </div>
+      </section>
 
       <!-- ============================================================ documentation -->
       <section id="docs">
@@ -613,13 +782,17 @@ curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/script
           <h2 class="center reveal">FAQ</h2>
           <div class="faq">
             <details class="reveal"><summary>Do I have to rewrite my app?</summary><p>No. Your frontend and backend stay normal projects. OpenShell reads an <span class="mono">openshell.json</span> and runs them – the shell is never compiled into your app, so improving the shell improves every app.</p></details>
-            <details class="reveal"><summary>How is it different from Tauri or Electron?</summary><p>OpenShell is built on Tauri 2 and adds what you would otherwise write yourself: process supervision, health checks, logs, a database, hot reload, installers and a standard interface for AI agents. You configure instead of coding a desktop shell.</p></details>
+            <details class="reveal"><summary>Why not just Tauri, Electron or Docker?</summary><p>If your app is a frontend and some Rust, use Tauri directly. If you need the same Chromium and Node in every copy, use Electron. If you ship server software, use containers. OpenShell is for a web frontend plus a backend in another language that should become one installer, without you writing the process management. The <a href="#why">comparison above</a> has the details.</p></details>
+            <details class="reveal"><summary>Why is it called OpenShell?</summary><p>The shell is the layer around your app: the window, the process supervision and the packaging. It is not a command shell and not an operating system. The command line tool is called <span class="mono">openshell</span> only because it is the program that controls that layer.</p></details>
+            <details class="reveal"><summary>Do I have to use the AI parts?</summary><p>No. The agent layer is off unless an app opts in with <span class="mono">"agents": { "enabled": true }</span>; templates and <span class="mono">init</span> do that, <span class="mono">openshell agents disable</span> closes it again. <span class="mono">create</span> and <span class="mono">init</span> add an <span class="mono">AGENTS.md</span> and a <span class="mono">CLAUDE.md</span> to your project; delete them if you like.</p></details>
+            <details class="reveal"><summary>Does it work with my language?</summary><p>If your backend can read <span class="mono">PORT</span>, bind 127.0.0.1 and answer <span class="mono">/health</span>, yes. Python, Node.js, Java and C++ are tested end to end; Go, Rust and .NET follow the same contract with less testing. OpenShell does not install runtimes for you. See <a href="#languages">languages and runtimes</a>.</p></details>
+            <details class="reveal"><summary>What if I outgrow it?</summary><p>Your frontend and backend stay normal projects that run without OpenShell. Leaving means writing your own process management and installer, not rewriting your app.</p></details>
             <details class="reveal"><summary>Do I need a backend?</summary><p>Only if you want one. A frontend can keep its data in the built-in SQLite database, and AI functions can be plain scripts.</p></details>
             <details class="reveal"><summary>Does it run on Android?</summary><p>The runtime and the CLI do: they run headless in Termux with static frontends, the built-in database, functions and the remote gateway. A native Android app that runs <span class="mono">.osapp</span> bundles in the foreground is written and builds in CI; it has not been verified on a real device yet and is not in the Play Store.</p></details>
             <details class="reveal"><summary>Is it ready for production?</summary><p>OpenShell is alpha. It is tested end to end on Windows 11; macOS and Linux build in CI and have seen less manual testing. Pin a version and expect the config format to change before 1.0. The <a href="docs/roadmap.html">roadmap</a> says what is done and what is not.</p></details>
             <details class="reveal"><summary>How do I give an app to other people?</summary><p>Run <span class="mono">openshell package</span> for an installer, or <span class="mono">openshell release workflow</span> to publish installers for every system from a tag, with a download page. See <a href="teams.html">for teams</a> and <a href="docs/installers.html">installers</a>.</p></details>
             <details class="reveal"><summary>Which agents and models work with it?</summary><p>Any MCP client – Claude Code, Codex, Cursor, Copilot – and anything that speaks HTTP/JSON. OpenShell never ships a model; it can detect local providers like Ollama and LM Studio.</p></details>
-            <details class="reveal"><summary>Can an agent damage my computer?</summary><p>Agents only get the scopes you grant per mode, critical actions need your approval, file access stays inside the project, arbitrary commands are impossible and every call is audited.</p></details>
+            <details class="reveal"><summary>Can an agent damage my computer?</summary><p>Agents only get the scopes you grant per mode, critical actions need your approval, file access stays inside the project, arbitrary commands are impossible and every call is audited. It is not a sandbox against malware running as you. See the <a href="#security">permissions table</a>.</p></details>
             <details class="reveal"><summary>What does it cost?</summary><p>Nothing. OpenShell is open source under the MIT license.</p></details>
           </div>
         </div>
@@ -628,8 +801,8 @@ curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/script
       <!-- ============================================================ final -->
       <section class="final" id="download">
         <div>
-          <h2 class="reveal">Build the shell once</h2>
-          <p class="lead reveal">Build applications on top of it. Let agents use and evolve them – on every device you own.</p>
+          <h2 class="reveal">Ship your web stack<br />as one desktop app</h2>
+          <p class="lead reveal">Start with one small app. If it fits, the rest follows the same way.</p>
           <div class="actions reveal">
             <a class="cta" href="download.html"><span>Download OpenShell</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
             <a class="btn btn--lg" href="https://github.com/RobinsSuperSchmiede/EDA">View on GitHub</a>
@@ -637,6 +810,7 @@ curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/script
         </div>
         <div class="wordmark" aria-hidden="true">openshell</div>
       </section>
+
     </main>
 
     <!-- chrome:footer -->
@@ -645,7 +819,7 @@ curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/script
         <div class="foot-grid">
           <div class="foot-brand">
             <a class="brand" href="index.html"><img src="assets/logo.png" alt="" />OpenShell</a>
-            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+            <p>The app runtime that turns a web app and its backend into one desktop app. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
           </div>
           <div>
             <h4>Product</h4>

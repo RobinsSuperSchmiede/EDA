@@ -37,5 +37,6 @@
     { "name": "todo_stats", "description": "Number of total, done and open todos", "permission": "read",
       "http": { "service": "backend", "method": "GET", "path": "/api/stats" } }
   ],
-  "package": { "include": ["openshell.json", "web", "backend/build/bin"] }
+  "package": { "include": ["openshell.json", "web", "backend/build/bin"] },
+  "agents": { "enabled": true }
 }

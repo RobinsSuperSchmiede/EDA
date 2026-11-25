@@ -1124,3 +1124,17 @@
 .doc-group {
   padding: 0;
 }
+
+/* "it is not" lists */
+.ticks.not li::before {
+  content: "✕";
+  color: var(--text-3);
+}
+.tile .pill {
+  align-self: flex-start;
+}
+
+.term.soft-wrap {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

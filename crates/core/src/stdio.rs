@@ -51,7 +51,12 @@ impl ToolProvider for Offline {
 
 async fn connect(state_dir: &Option<PathBuf>, agent: &str) -> Option<ControlClient> {
     let dir = state_dir.as_ref()?;
-    ControlClient::connect(dir).await.ok().map(|c| c.with_agent(agent.to_string()))
+    let client = ControlClient::connect(dir).await.ok()?.with_agent(agent.to_string());
+    // an agent session token (`openshell agents token`) instead of the admin token
+    Some(match std::env::var("OPENSHELL_AGENT_TOKEN") {
+        Ok(t) if !t.trim().is_empty() => client.with_token(t.trim()),
+        _ => client,
+    })
 }
 
 /// Wait until no service is still starting, so `tools/list` includes imported capabilities.

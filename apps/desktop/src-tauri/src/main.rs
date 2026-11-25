@@ -264,6 +264,7 @@ fn get_state(state: State<'_, AppState>, since: Option<u64>) -> Value {
         "has_frontend": rt.has_service("frontend"),
         "databases": shell.databases().list(),
         "capabilities": shell.capabilities_summary(),
+        "agents": shell.agents_overview(),
     })
 }
 

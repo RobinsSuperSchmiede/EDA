@@ -76,6 +76,9 @@ jobs:
         run: |
           [IO.File]::WriteAllBytes("cert.pfx", [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
           Import-PfxCertificate -FilePath cert.pfx -CertStoreLocation Cert:\CurrentUser\My -Password (ConvertTo-SecureString $env:WINDOWS_CERTIFICATE_PASSWORD -AsPlainText -Force)
+      - name: Bundled runtimes for this system (`runtimes` in openshell.json; nothing to do without)
+        shell: bash
+        run: openshell runtime install
       - name: Build installers
         shell: bash
         env:

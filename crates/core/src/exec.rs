@@ -632,14 +632,15 @@ fn summarize(name: &str, args: &Value) -> String {
     }
 }
 
-/// Exposes the shell's tools to MCP with a fixed policy (agents).
-pub struct AgentTools(pub Shell);
+/// Exposes the shell's tools to MCP with the policy of the caller (the app's agent policy,
+/// or a restricted one for an agent session or a paired device).
+pub struct AgentTools(pub Shell, pub Policy);
 
 /// The "use" profile: only the application's own functions (capabilities from the config,
 /// OpenAPI imports and frontend actions) under their plain names, plus `app_status`.
 /// Agents that want to *use* the application – not develop it – get a small, domain-specific
 /// tool list and never need UI automation.
-pub struct AppTools(pub Shell);
+pub struct AppTools(pub Shell, pub Policy);
 
 impl ToolProvider for AppTools {
     fn list_tools(&self) -> Vec<ToolDef> {
@@ -679,7 +680,7 @@ impl ToolProvider for AppTools {
 
     fn call_tool<'a>(&'a self, name: &'a str, args: Value, ctx: CallContext) -> BoxFuture<'a, ToolOutcome> {
         Box::pin(async move {
-            let policy = self.0.inner.agent_policy.clone();
+            let policy = self.1.clone();
             if name == "app_status" {
                 let services: Vec<Value> = self
                     .0
@@ -821,7 +822,7 @@ impl ToolProvider for AgentTools {
     }
     fn call_tool<'a>(&'a self, name: &'a str, args: Value, ctx: CallContext) -> BoxFuture<'a, ToolOutcome> {
         Box::pin(async move {
-            let policy = self.0.inner.agent_policy.clone();
+            let policy = self.1.clone();
             self.0.call_tool(name, args, ctx, &policy).await
         })
     }

@@ -35,6 +35,42 @@ jobs:
       - name: Build desktop shell
         run: cargo build -p openshell-desktop --locked
 
+  templates:
+    # one real app per language on every OS: create, run headless, health, frontend, an agent call
+    name: Templates (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Linux dependencies (Tauri)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: false
+      - name: Build the CLI
+        run: cargo build -p openshell-cli --locked
+      - name: Run every template
+        run: python scripts/e2e-templates.py --strict
+
   generated-files:
     name: Generated files are up to date
     runs-on: ubuntu-latest
@@ -48,6 +84,8 @@ jobs:
           diff -u schema/openshell.schema.json /tmp/schema.json || (echo "run: cargo run -p openshell-cli -- schema > schema/openshell.schema.json" && exit 1)
       - name: llms-full.txt
         run: python3 scripts/gen-llms-full.py --check
+      - name: Website (docs pages, shared header and footer)
+        run: python3 scripts/build-website.py --check
 
   android:
     name: Android (core, CLI and app library build for aarch64-linux-android)

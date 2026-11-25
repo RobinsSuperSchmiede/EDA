@@ -36,7 +36,8 @@ pub fn build_command(
         }
         CommandSpec::Argv(argv) => {
             let program = argv.first().ok_or_else(|| anyhow!("empty command"))?;
-            let resolved = resolve_program(program, cwd)?;
+            // the service's own PATH counts (bundled runtimes are put in front of it)
+            let resolved = resolve_program_in(program, cwd, env.get("PATH").map(String::as_str))?;
             let mut c = Command::new(resolved);
             c.args(&argv[1..]);
             c.args(extra_args);
@@ -85,6 +86,11 @@ fn shell_quote(arg: &str) -> String {
 
 /// Resolve a program name: paths are taken relative to `cwd`, bare names are looked up in `PATH`.
 pub fn resolve_program(program: &str, cwd: &Path) -> Result<std::path::PathBuf> {
+    resolve_program_in(program, cwd, None)
+}
+
+/// Like [`resolve_program`], searching `path` instead of the process `PATH` when given.
+pub fn resolve_program_in(program: &str, cwd: &Path, path: Option<&str>) -> Result<std::path::PathBuf> {
     if program.contains('/') || program.contains('\\') {
         let p = Path::new(program);
         let p = if p.is_absolute() { p.to_path_buf() } else { cwd.join(p) };
@@ -97,7 +103,11 @@ pub fn resolve_program(program: &str, cwd: &Path) -> Result<std::path::PathBuf> 
         }
         return Ok(p);
     }
-    if let Ok(p) = which::which(program) {
+    let find = |name: &str| match path {
+        Some(p) => which::which_in(name, Some(p), cwd).ok(),
+        None => which::which(name).ok(),
+    };
+    if let Some(p) = find(program) {
         return Ok(p);
     }
     // portable aliases: configs written on Windows use `python`, Linux/macOS often only have `python3`
@@ -108,7 +118,7 @@ pub fn resolve_program(program: &str, cwd: &Path) -> Result<std::path::PathBuf> 
         "pip3" => Some("pip"),
         _ => None,
     };
-    if let Some(p) = alias.and_then(|a| which::which(a).ok()) {
+    if let Some(p) = alias.and_then(find) {
         return Ok(p);
     }
     // project-local wrappers such as `gradlew` / `mvnw` (as cmd.exe would find them)

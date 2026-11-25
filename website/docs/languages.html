@@ -48,6 +48,20 @@ so editing <code>src/</code> recompiles and restarts the service automatically,<
 <span class="tk">"build"</span>: { <span class="tk">"command"</span>: <span class="ts">"mvn -q package"</span>, <span class="tk">"cwd"</span>: <span class="ts">"backend"</span>, <span class="tk">"on_start"</span>: <span class="ts">"never"</span> }   <span class="tc">// development (default) | always | never</span></code></pre></div>
 <p>Templates: <code>openshell create my-app -t vanilla-java</code> and <code>-t vanilla-cpp</code>. <code>openshell init</code> detects Maven, Gradle,
 Spring Boot, plain <code>javac</code> sources, CMake and Makefiles.</p>
+<h2 id="support-levels">Support levels<a class="anchor" href="#support-levels" aria-label="Link to this section">#</a></h2>
+<p><code>openshell languages</code> prints this table from the same data the CLI uses:</p>
+<div class="table-wrap"><table><thead><tr><th>Language</th><th>Level</th><th>Runtime on the target machine</th><th>Templates</th></tr></thead><tbody><tr><td>Python</td><td>tested</td><td>Python, or bundled (<code>openshell runtime add python</code>)</td><td><code>vanilla-python</code>, <code>react-python</code>, <code>vue-python</code></td></tr><tr><td>Node.js</td><td>tested</td><td>Node.js, or bundled (<code>openshell runtime add node</code>)</td><td><code>react-node</code></td></tr><tr><td>Java / Spring Boot</td><td>tested</td><td>a JRE, or bundled (<code>openshell runtime add java</code>)</td><td><code>vanilla-java</code></td></tr><tr><td>C++ (CMake)</td><td>tested</td><td>none (compiled)</td><td><code>vanilla-cpp</code></td></tr><tr><td>Go</td><td>less tested</td><td>none (<code>go build</code>)</td><td><code>svelte-go</code></td></tr><tr><td>Rust</td><td>less tested</td><td>none (<code>cargo build</code>)</td><td>–</td></tr><tr><td>.NET</td><td>less tested</td><td>.NET runtime, or none when published self-contained</td><td>–</td></tr><tr><td>anything else</td><td>by contract</td><td>whatever it needs</td><td>–</td></tr></tbody></table></div>
+<p><em>Tested</em> means CI creates the template, runs it headless on Windows, macOS and Linux, waits until every service is
+healthy, loads the frontend and calls an agent function (<code>scripts/e2e-templates.py</code>). <em>By contract</em>: any program
+that reads <code>PORT</code>, binds <code>127.0.0.1</code> and answers <code>/health</code> works.</p>
+<p>Each language is one unit in the code: an entry in <code>crates/config/src/runtimes.rs</code> (runtime, version probe, support
+level, templates) and a detector in <code>crates/cli/src/languages/</code> for <code>openshell init</code>.</p>
+<h2 id="versions">Versions<a class="anchor" href="#versions" aria-label="Link to this section">#</a></h2>
+<p>Pin what a service needs with <code>requires</code> – <code>openshell doctor</code> reports a mismatch as an error, the app logs a warning
+when it starts:</p>
+<div class="codeblock" data-lang="json"><pre><code>{ <span class="tk">"name"</span>: <span class="ts">"api"</span>, <span class="tk">"command"</span>: [<span class="ts">"python"</span>, <span class="ts">"main.py"</span>], <span class="tk">"requires"</span>: { <span class="tk">"python"</span>: <span class="ts">"&gt;=3.10, &lt;3.14"</span> } }</code></pre></div>
+<p>Known runtimes: <code>python</code>, <code>node</code>, <code>java</code>, <code>dotnet</code>, <code>go</code>, <code>rust</code>. To not depend on the user's machine at all, bundle
+the runtime (see <a href="installers.html#runtimes">Installers and releases</a>).</p>
 <h2 id="java">Java<a class="anchor" href="#java" aria-label="Link to this section">#</a></h2>
 <h3 id="plain-jdk-template-vanilla-java">Plain JDK (template <code>vanilla-java</code>)<a class="anchor" href="#plain-jdk-template-vanilla-java" aria-label="Link to this section">#</a></h3>
 <div class="codeblock" data-lang="json"><pre><code>{
@@ -90,12 +104,12 @@ use OpenShell for their web front end.</p>
 <ul><li><code>command</code> paths without extension also find <code>name.exe</code> on Windows.</li><li>Multi-config generators (Visual Studio) put binaries into <code>build/Release/</code> – the template sets
 <code>CMAKE_RUNTIME_OUTPUT_DIRECTORY</code> so the path is <code>build/bin</code> everywhere.</li><li>On Windows run OpenShell from a <em>Developer PowerShell</em> (or install CMake + Ninja / MinGW) so the compiler is found.</li><li>Ship only the binary: <code>"package": { "include": ["openshell.json", "web", "backend/build/bin"] }</code>.</li><li>HTTP libraries such as cpp-httplib, Crow, Drogon or Boost.Beast work the same way.</li></ul>
 <h2 id="others">Others<a class="anchor" href="#others" aria-label="Link to this section">#</a></h2>
-<div class="table-wrap"><table><thead><tr><th>Language</th><th><code>build</code></th><th><code>command</code></th></tr></thead><tbody><tr><td>Rust</td><td><code>cargo build --release</code></td><td><code>["target/release/server"]</code></td></tr><tr><td>Go</td><td><code>go build -o bin/server .</code></td><td><code>["bin/server"]</code> (or <code>go run .</code> without build)</td></tr><tr><td>C# / .NET</td><td><code>dotnet build -c Release</code></td><td><code>["dotnet", "run", "--no-build", "-c", "Release", "--", "--urls", "http://127.0.0.1:${port}"]</code></td></tr><tr><td>Kotlin (Ktor)</td><td>–</td><td><code>["gradlew", "-q", "run"]</code></td></tr><tr><td>Python</td><td>– (<code>setup</code> for <code>pip install</code>)</td><td><code>["python", "main.py"]</code></td></tr><tr><td>Node.js / Deno / Bun</td><td>–</td><td><code>["node", "server.js"]</code>, <code>["deno", "run", "-A", "main.ts"]</code></td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>Language</th><th><code>build</code></th><th><code>command</code></th></tr></thead><tbody><tr><td>Rust</td><td><code>cargo build --release</code></td><td><code>["target/release/server"]</code></td></tr><tr><td>Go</td><td><code>go build -o bin/server .</code></td><td><code>["bin/server"]</code> (or <code>go run .</code> without build)</td></tr><tr><td>C# / .NET</td><td><code>dotnet build -c Release</code></td><td><code>["dotnet", "run", "--no-build", "-c", "Release", "--", "--urls", "http://127.0.0.1:${port}"]</code> (<code>openshell init</code> detects <code>*.csproj</code>)</td></tr><tr><td>Kotlin (Ktor)</td><td>–</td><td><code>["gradlew", "-q", "run"]</code></td></tr><tr><td>Python</td><td>– (<code>setup</code> for <code>pip install</code>)</td><td><code>["python", "main.py"]</code></td></tr><tr><td>Node.js / Deno / Bun</td><td>–</td><td><code>["node", "server.js"]</code>, <code>["deno", "run", "-A", "main.ts"]</code></td></tr></tbody></table></div>
 <p>ASP.NET (Swashbuckle), FastAPI, NestJS and Spring all publish OpenAPI documents – set <code>openapi</code> and agents can use
 the backend without UI automation.</p>
         <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/languages.md" rel="noopener">View this page on GitHub</a></div>
       </article>
-      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#java">Java</a><a class="l3" href="#plain-jdk-template-vanilla-java">Plain JDK (template vanilla-java)</a><a class="l3" href="#spring-boot">Spring Boot</a><a class="l2" href="#c">C++</a><a class="l3" href="#cmake-template-vanilla-cpp">CMake (template vanilla-cpp)</a><a class="l2" href="#others">Others</a></aside>
+      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#support-levels">Support levels</a><a class="l2" href="#versions">Versions</a><a class="l2" href="#java">Java</a><a class="l3" href="#plain-jdk-template-vanilla-java">Plain JDK (template vanilla-java)</a><a class="l3" href="#spring-boot">Spring Boot</a><a class="l2" href="#c">C++</a><a class="l3" href="#cmake-template-vanilla-cpp">CMake (template vanilla-cpp)</a><a class="l2" href="#others">Others</a></aside>
     </main>
 
     <!-- chrome:footer -->
@@ -104,7 +118,7 @@ the backend without UI automation.</p>
         <div class="foot-grid">
           <div class="foot-brand">
             <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
-            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+            <p>The app runtime that turns a web app and its backend into one desktop app. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
           </div>
           <div>
             <h4>Product</h4>

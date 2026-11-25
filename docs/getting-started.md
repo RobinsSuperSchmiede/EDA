@@ -104,11 +104,14 @@ While `openshell dev` runs:
 ## 4. Connect an AI agent
 
 Coding agents: every project created with `openshell create` / `openshell init` contains an `AGENTS.md`, and
-`openshell guide` prints the complete guide for building OpenShell apps. To connect an agent to the running app:
+`openshell guide` prints the complete guide for building OpenShell apps. Agents are opt-in: projects from `create`
+and `init` have `"agents": { "enabled": true }`; elsewhere switch them on with `openshell agents enable`. To connect
+an agent to the running app:
 
 ```bash
 claude mcp add my-app-dev -- openshell mcp --project /path/to/my-app              # develop the app
 claude mcp add my-app     -- openshell mcp --app --start --project /path/to/my-app  # use the app
 ```
 
-See [agents.md](agents.md) for other agents, the tool list and permissions.
+See [agents.md](agents.md) for other agents, the tool list and permissions. To give each agent its own token and
+scopes: `openshell agents token claude --scopes read,actions`.

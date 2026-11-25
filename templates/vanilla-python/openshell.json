@@ -53,6 +53,7 @@
     }
   ],
   "agents": {
+    "enabled": true,
     "permissions": {
       "development": ["read", "ui", "actions", "services", "files", "code"],
       "production": ["read", "ui", "actions"]

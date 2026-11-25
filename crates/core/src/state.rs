@@ -89,6 +89,13 @@ impl ControlClient {
         self
     }
 
+    /// Use another token than the admin token of `runtime.json`, e.g. an agent session token
+    /// (`openshell agents token`); the shell then applies that session's scopes.
+    pub fn with_token(mut self, token: impl Into<String>) -> Self {
+        self.info.token = token.into();
+        self
+    }
+
     fn url(&self, path: &str) -> String {
         format!("{}{}", self.info.url, path)
     }

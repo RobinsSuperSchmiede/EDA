@@ -202,7 +202,9 @@ keep their data per user and are MCP servers themselves. See [docs/installers.md
 
 ## AI agents
 
-OpenShell offers agents two profiles over [MCP](https://modelcontextprotocol.io) (and plain HTTP/JSON):
+The agent layer is **opt-in**: an app opens it with `"agents": { "enabled": true }` (templates and `openshell init`
+do this; `openshell agents enable` / `disable` switch it). OpenShell offers agents two profiles over
+[MCP](https://modelcontextprotocol.io) (and plain HTTP/JSON):
 
 | | **App profile** – *use* the app | **Full profile** – *develop* the app |
 |---|---|---|

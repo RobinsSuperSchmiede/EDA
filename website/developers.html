@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>OpenShell for developers – turn a web app into a desktop app</title>
-    <meta name="description" content="Describe your frontend, services and database in one openshell.json and get a supervised, hot-reloading native desktop app, installers, and an interface for AI agents. Any backend language. Rust and Tauri 2. MIT." />
+    <meta name="description" content="Describe your frontend, services and database in one openshell.json and get a supervised, hot-reloading native desktop app, installers, and an optional interface for AI agents. Backends in Python, Node.js, Java, C++, Go, Rust or .NET. Rust and Tauri 2. MIT." />
     <meta name="theme-color" content="#0f3624" />
     <link rel="icon" href="assets/logo.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -154,7 +154,7 @@ curl -fsSL https://raw.githubusercontent.com/RobinsSuperSchmiede/EDA/main/script
           <p class="lead reveal">Frontend, backend, database and functions for agents are independent. Combine them when you create the app or add them later, in any order.</p>
           <div class="tiles tiles--4">
             <div class="tile reveal"><span class="tag">frontend</span><h3>Any web UI</h3><p>Dev server with hot reload, or a production build served by OpenShell with an <span class="mono">/api</span> proxy.</p></div>
-            <div class="tile reveal"><span class="tag">backend</span><h3>Any language</h3><p>Health checks, restarts with backoff, rebuilds on change, logs, CPU and memory.</p></div>
+            <div class="tile reveal"><span class="tag">backend</span><h3>Your language</h3><p>Anything that serves HTTP on localhost. Health checks, restarts with backoff, rebuilds on change, logs, CPU and memory.</p></div>
             <div class="tile reveal"><span class="tag">database</span><h3>Built-in SQLite</h3><p>Migrations, an SDK and per-database agent access. A UI can keep its data without a backend.</p></div>
             <div class="tile reveal"><span class="tag">functions</span><h3>Scripts as tools</h3><p>A program per call: JSON in, JSON out. An AI interface without any server.</p></div>
           </div>
@@ -181,7 +181,7 @@ openshell add backend --lang node                   # add blocks later, in any o
               </tbody>
             </table>
           </div>
-          <p class="sub reveal">Compiled services rebuild and restart on every change in development. Templates: <span class="mono">vanilla-python</span>, <span class="mono">react-python</span>, <span class="mono">react-node</span>, <span class="mono">vue-python</span>, <span class="mono">svelte-go</span>, <span class="mono">vanilla-java</span>, <span class="mono">vanilla-cpp</span> and <span class="mono">custom</span> (<span class="mono">openshell create --list</span>). More in <a href="docs/languages.html">languages</a>.</p>
+          <p class="sub reveal">Compiled services rebuild and restart on every change in development. Templates: <span class="mono">vanilla-python</span>, <span class="mono">react-python</span>, <span class="mono">react-node</span>, <span class="mono">vue-python</span>, <span class="mono">svelte-go</span>, <span class="mono">vanilla-java</span>, <span class="mono">vanilla-cpp</span> and <span class="mono">custom</span> (<span class="mono">openshell create --list</span>, support levels: <span class="mono">openshell languages</span>). Pin versions with <span class="mono">"requires": { "python": ">=3.10" }</span> and ship Python, Node.js or a JRE with <span class="mono">openshell runtime add</span>. More in <a href="docs/languages.html">languages</a>.</p>
         </div>
       </section>
 
@@ -319,7 +319,7 @@ openshell update                        # does a newer version exist?</code></pr
         <div class="wrap">
           <div class="kicker reveal">With AI agents</div>
           <h2 class="reveal">Let an agent<br /><span class="soft">build it with you</span></h2>
-          <p class="lead reveal">The repository and every new project speak the conventions coding agents look for: <span class="mono">AGENTS.md</span>, <span class="mono">CLAUDE.md</span>, <span class="mono">llms.txt</span> and a complete guide printed by <span class="mono">openshell guide</span>. Try:</p>
+          <p class="lead reveal">Agents are opt-in per app (<span class="mono">"agents": { "enabled": true }</span>, set by the templates). The repository and every new project speak the conventions coding agents look for: <span class="mono">AGENTS.md</span>, <span class="mono">CLAUDE.md</span>, <span class="mono">llms.txt</span> and a complete guide printed by <span class="mono">openshell guide</span>. Try:</p>
           <div class="callout mt-s reveal">Build me a desktop app with OpenShell: a recipe manager with a React frontend and a Python backend. Recipes should be searchable, and AI agents should be able to add and find recipes.</div>
           <div class="actions reveal"><a class="btn btn--lg" href="agents.html">For AI agents</a><a class="btn btn--lg" href="docs/ai-app-development.html">Guide for coding agents</a></div>
         </div>
@@ -374,7 +374,7 @@ cargo run -p openshell-cli -- --help</code></pre></div>
         <div class="foot-grid">
           <div class="foot-brand">
             <a class="brand" href="index.html"><img src="assets/logo.png" alt="" />OpenShell</a>
-            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+            <p>The app runtime that turns a web app and its backend into one desktop app. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
           </div>
           <div>
             <h4>Product</h4>

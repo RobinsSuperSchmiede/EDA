@@ -1,4 +1,5 @@
 mod add;
+mod agents;
 mod control;
 mod create;
 mod doctor;
@@ -8,10 +9,11 @@ mod package;
 mod release;
 mod remote;
 mod run;
+mod runtime;
 
 pub use add::Lang;
 
-use crate::{AddBlock, Cmd, ReleaseCmd, RemoteCmd};
+use crate::{AddBlock, AgentsCmd, Cmd, ReleaseCmd, RemoteCmd, RuntimeCmd};
 use anyhow::Result;
 use openshell_core::config::Project;
 use openshell_core::state::ControlClient;
@@ -53,7 +55,39 @@ pub async fn run(project: Option<PathBuf>, cmd: Cmd) -> Result<()> {
         Cmd::Build => run::build(&dir).await,
         Cmd::Package { target, out, skip_build } => package::run(&dir, target, out, skip_build).await,
         Cmd::Doctor => doctor::run(&dir).await,
-        Cmd::Mcp { app, start } => mcp::run(&dir, app, start).await,
+        Cmd::Mcp { app, start, token } => mcp::run(&dir, app, start, token).await,
+        Cmd::Agents { action } => {
+            agents::run(
+                &dir,
+                match action.unwrap_or(AgentsCmd::Show) {
+                    AgentsCmd::Show => agents::Action::Show,
+                    AgentsCmd::Enable => agents::Action::Enable,
+                    AgentsCmd::Disable => agents::Action::Disable,
+                    AgentsCmd::Token { name, scopes, full } => agents::Action::Token { name, scopes, full },
+                    AgentsCmd::Tokens => agents::Action::Tokens,
+                    AgentsCmd::Revoke { name } => agents::Action::Revoke { name },
+                },
+            )
+            .await
+        }
+        Cmd::Runtime { action } => {
+            runtime::run(
+                &dir,
+                match action.unwrap_or(RuntimeCmd::List) {
+                    RuntimeCmd::List => runtime::Action::List,
+                    RuntimeCmd::Add { name, version, path, no_install } => {
+                        runtime::Action::Add { name, version, path, install: !no_install }
+                    }
+                    RuntimeCmd::Install { name, force } => runtime::Action::Install { name, force },
+                    RuntimeCmd::Remove { name, keep_files } => runtime::Action::Remove { name, keep_files },
+                },
+            )
+            .await
+        }
+        Cmd::Languages => {
+            create::print_languages();
+            Ok(())
+        }
         Cmd::Stop { service } => control::stop(&dir, service).await,
         Cmd::Restart { service } => control::service(&dir, &service, "restart").await,
         Cmd::Run { service } => control::service(&dir, &service, "start").await,
@@ -70,7 +104,9 @@ pub async fn run(project: Option<PathBuf>, cmd: Cmd) -> Result<()> {
         Cmd::Remote { action } => {
             let action = match action {
                 None => remote::Action::Show,
-                Some(RemoteCmd::Pair { device, no_qr }) => remote::Action::Pair { device, qr: !no_qr },
+                Some(RemoteCmd::Pair { device, no_qr, scopes }) => {
+                    remote::Action::Pair { device, qr: !no_qr, scopes }
+                }
                 Some(RemoteCmd::Devices) => remote::Action::Devices,
                 Some(RemoteCmd::Revoke { device }) => remote::Action::Revoke { device },
                 Some(RemoteCmd::Unblock { address }) => remote::Action::Unblock { address },
@@ -97,4 +133,14 @@ pub fn load_project(dir: &Path) -> Result<Project> {
 pub async fn connect(dir: &Path) -> Result<ControlClient> {
     let project = load_project(dir)?;
     ControlClient::connect(&project.state_dir()).await
+}
+
+/// `p` relative to `root` with forward slashes (`.` for the root itself).
+pub(crate) fn rel_path(root: &Path, p: &Path) -> String {
+    let r = p.strip_prefix(root).unwrap_or(p).to_string_lossy().replace('\\', "/");
+    if r.is_empty() {
+        ".".into()
+    } else {
+        r
+    }
 }

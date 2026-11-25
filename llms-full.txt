@@ -212,7 +212,9 @@ keep their data per user and are MCP servers themselves. See [docs/installers.md
 
 ## AI agents
 
-OpenShell offers agents two profiles over [MCP](https://modelcontextprotocol.io) (and plain HTTP/JSON):
+The agent layer is **opt-in**: an app opens it with `"agents": { "enabled": true }` (templates and `openshell init`
+do this; `openshell agents enable` / `disable` switch it). OpenShell offers agents two profiles over
+[MCP](https://modelcontextprotocol.io) (and plain HTTP/JSON):
 
 | | **App profile** – *use* the app | **Full profile** – *develop* the app |
 |---|---|---|
@@ -350,6 +352,8 @@ Everything an app must do – nothing more:
 | 5 | The frontend calls the backend via **relative URLs** (`/api/...`). Static frontends: `"proxy": {"/api": "${services.backend.url}"}`; dev servers (Vite): proxy `/api` to `process.env.BACKEND_URL` and set `"env": {"BACKEND_URL": "${services.backend.url}"}`. | Same code works in dev, production and in a browser. |
 | 6 | Expose the app's functions to agents as **capabilities** (config, OpenAPI or frontend actions) – see below. | Agents can *use* the app without UI automation. |
 | 7 | The frontend works without OpenShell too: guard SDK usage with `if (window.__OPENSHELL__)`. | Browser mode, tests. |
+| 8 | Keep `"agents": { "enabled": true }` when the app offers functions to agents – the agent layer is **opt-in** (off without it). | Agents, `openshell call` and UI automation need it. |
+| 9 | Declare runtime versions with `"requires"` (`{ "python": ">=3.10" }`); ship runtimes with `openshell runtime add python\|node\|java`. | `openshell doctor` catches version problems; users need not install anything. |
 
 ## Workflow
 
@@ -546,9 +550,11 @@ openshell release workflow   # CI workflow: one tag push builds every platform +
   "capabilities": [ /* see above */ ],
   "tasks": { "test": "pytest", "migrate": "python manage.py migrate" },   // agents: task_run (scope "system")
   "agents": {
+    "enabled": true,                                          // opt-in: without it agents cannot connect
     "permissions": { "development": ["read","ui","actions","services","files","code"], "production": ["read","ui","actions"] },
     "approval_required": ["system"]
   },
+  "runtimes": { "python": "3.12" },                           // optional: ship Python with the app (openshell runtime add)
   "package": { "exclude": ["docs"], "targets": ["nsis"] }
 }
 ```
@@ -716,14 +722,17 @@ While `openshell dev` runs:
 ## 4. Connect an AI agent
 
 Coding agents: every project created with `openshell create` / `openshell init` contains an `AGENTS.md`, and
-`openshell guide` prints the complete guide for building OpenShell apps. To connect an agent to the running app:
+`openshell guide` prints the complete guide for building OpenShell apps. Agents are opt-in: projects from `create`
+and `init` have `"agents": { "enabled": true }`; elsewhere switch them on with `openshell agents enable`. To connect
+an agent to the running app:
 
 ```bash
 claude mcp add my-app-dev -- openshell mcp --project /path/to/my-app              # develop the app
 claude mcp add my-app     -- openshell mcp --app --start --project /path/to/my-app  # use the app
 ```
 
-See [agents.md](agents.md) for other agents, the tool list and permissions.
+See [agents.md](agents.md) for other agents, the tool list and permissions. To give each agent its own token and
+scopes: `openshell agents token claude --scopes read,actions`.
 
 
 ================================================================================
@@ -1049,10 +1058,11 @@ Editor completion: add `"$schema": "https://raw.githubusercontent.com/RobinsSupe
 | `services` | array | Backends, databases, workers, AI servers, … |
 | `databases` | array | Built-in SQLite databases managed by OpenShell. |
 | `runtime` | object | Runtime manager behaviour. |
-| `agents` | object | Agent Interaction Layer: permissions, approvals, providers. |
+| `agents` | object | Agent Interaction Layer: on/off (opt-in), permissions, approvals, providers. |
 | `capabilities` | array | Functions the app exposes to agents (HTTP endpoint, script, task). |
 | `tasks` | object | Named commands (`"test": "pytest"`), runnable by agents with the `system` scope. |
 | `package` | object | Installer settings – see [installers.md](installers.md). |
+| `runtimes` | object | Language runtimes shipped inside the app – see [`runtimes`](#runtimes). |
 
 ## `window`
 
@@ -1122,6 +1132,10 @@ overrides, then `dist`, then the development settings.
 | `platforms` | all | Only run on `desktop`, `android` and/or `server`, e.g. `["desktop", "server"]` for a service that needs a toolchain. See [platforms.md](platforms.md) |
 | `background` | `keep` | Mobile platforms: `pause` stops the service while the app is in the background and starts it again afterwards |
 | `stop_timeout_ms` | `runtime.shutdown_timeout_ms` | Grace period before a forced kill (Unix; Windows terminates the tree immediately) |
+| `requires` | `{}` | Runtime versions the service needs, e.g. `{ "python": ">=3.10", "java": ">=17" }`. Known runtimes: `python`, `node`, `java`, `dotnet`, `go`, `rust`. Checked by `openshell doctor` (error) and when the app starts (warning in the service's log). The frontend has the same field for its dev server (`"requires": { "node": ">=18" }`) |
+
+Version requirements: `>=3.10`, `>3`, `<=21`, `<4`, `=3.12.1`, `3.12` (same as `=3.12`, matches 3.12.x),
+`^1.2` (`>=1.2 <2`), `~1.2` (`>=1.2 <1.3`), combined with commas: `">=3.10, <3.13"`.
 
 Every process also receives `OPENSHELL=1`, `OPENSHELL_MODE`, `OPENSHELL_SERVICE`, `OPENSHELL_PROJECT_ROOT`,
 `OPENSHELL_CONTROL_URL`, `OPENSHELL_DATA_DIR` (writable per-app data directory – per user for installed apps; store
@@ -1183,7 +1197,7 @@ Everything except `enabled` is optional. Full guide: [remote-access.md](remote-a
 
 | Field | Default | Description |
 |---|---|---|
-| `enabled` | `true` | Disable to deny all agent tools |
+| `enabled` | `false` | **Opt-in.** `true` opens the agent layer: MCP endpoints (`/mcp`, `/mcp/app`, `--mcp`), the tools API, the UI bridge and the remote gateway's MCP endpoint. While `false` they refuse every request and the UI bridge is not injected; the app, its frontend SDK and exposed services keep working. `openshell create`, `openshell init` and `openshell add function` write `true`; `openshell agents enable` / `disable` switch it |
 | `permissions` | dev: `read, ui, actions, services, files, code` · prod: `read, ui, actions` | A list for all modes or `{ "development": [...], "production": [...] }` |
 | `approval_required` | `["system"]` | Scopes that need a human decision |
 | `approval_timeout_ms` | 120000 | Unanswered requests are denied |
@@ -1192,6 +1206,36 @@ Everything except `enabled` is optional. Full guide: [remote-access.md](remote-a
 | `detect_local_providers` | `true` | Probe Ollama (11434) and LM Studio (1234) |
 
 Permission scopes: `read`, `ui`, `actions` (alias `write`), `services`, `files`, `code`, `system`.
+
+Agent sessions (`openshell agents token <name> --scopes read,actions`) and paired devices
+(`openshell remote pair <device> --scopes read`) get their own tokens and scopes; they never get more than
+`permissions` grants in the current mode. See [agents.md](agents.md#agent-sessions).
+
+## `runtimes`
+
+Language runtimes shipped inside the app, so the user's machine needs no Python, Node.js or Java:
+
+```json
+"runtimes": {
+  "python": "3.12",
+  "node": { "version": "22", "path": "vendor/node" },
+  "java": "21"
+}
+```
+
+| Runtime | Downloaded from | Default version |
+|---|---|---|
+| `python` | python-build-standalone (`install_only` builds) | `3.12` |
+| `node` | nodejs.org | `22` |
+| `java` | Eclipse Temurin JRE (adoptium.net) | `21` |
+
+A value is a version (`"22"`, `"3.12"`, `"21.0.5"`) or `{ "version", "path" }` (default path `runtimes/<name>`,
+inside the project). `openshell runtime install` downloads every declared runtime for the current system and checks
+its SHA-256; `openshell runtime add <name> [version]` declares and downloads in one step. The runtime's executable
+folders are put in front of `PATH` for every service, setup and build step, function and task, so `python main.py`
+or `npm install` use the bundled copy. `openshell package` ships the folder with the app. A runtime is built for one
+operating system: build installers on each system (the release workflow runs `openshell runtime install` there).
+Downloaded runtimes do not belong in git; `runtime add` adds the folder to `.gitignore`.
 
 ## `capabilities[]`
 
@@ -1278,6 +1322,40 @@ OpenShell runs any executable, so every language works. Compiled languages use a
 Templates: `openshell create my-app -t vanilla-java` and `-t vanilla-cpp`. `openshell init` detects Maven, Gradle,
 Spring Boot, plain `javac` sources, CMake and Makefiles.
 
+## Support levels
+
+`openshell languages` prints this table from the same data the CLI uses:
+
+| Language | Level | Runtime on the target machine | Templates |
+|---|---|---|---|
+| Python | tested | Python, or bundled (`openshell runtime add python`) | `vanilla-python`, `react-python`, `vue-python` |
+| Node.js | tested | Node.js, or bundled (`openshell runtime add node`) | `react-node` |
+| Java / Spring Boot | tested | a JRE, or bundled (`openshell runtime add java`) | `vanilla-java` |
+| C++ (CMake) | tested | none (compiled) | `vanilla-cpp` |
+| Go | less tested | none (`go build`) | `svelte-go` |
+| Rust | less tested | none (`cargo build`) | – |
+| .NET | less tested | .NET runtime, or none when published self-contained | – |
+| anything else | by contract | whatever it needs | – |
+
+*Tested* means CI creates the template, runs it headless on Windows, macOS and Linux, waits until every service is
+healthy, loads the frontend and calls an agent function (`scripts/e2e-templates.py`). *By contract*: any program
+that reads `PORT`, binds `127.0.0.1` and answers `/health` works.
+
+Each language is one unit in the code: an entry in `crates/config/src/runtimes.rs` (runtime, version probe, support
+level, templates) and a detector in `crates/cli/src/languages/` for `openshell init`.
+
+## Versions
+
+Pin what a service needs with `requires` – `openshell doctor` reports a mismatch as an error, the app logs a warning
+when it starts:
+
+```json
+{ "name": "api", "command": ["python", "main.py"], "requires": { "python": ">=3.10, <3.14" } }
+```
+
+Known runtimes: `python`, `node`, `java`, `dotnet`, `go`, `rust`. To not depend on the user's machine at all, bundle
+the runtime (see [installers.md](installers.md#runtimes)).
+
 ## Java
 
 ### Plain JDK (template `vanilla-java`)
@@ -1350,7 +1428,7 @@ use OpenShell for their web front end.
 |---|---|---|
 | Rust | `cargo build --release` | `["target/release/server"]` |
 | Go | `go build -o bin/server .` | `["bin/server"]` (or `go run .` without build) |
-| C# / .NET | `dotnet build -c Release` | `["dotnet", "run", "--no-build", "-c", "Release", "--", "--urls", "http://127.0.0.1:${port}"]` |
+| C# / .NET | `dotnet build -c Release` | `["dotnet", "run", "--no-build", "-c", "Release", "--", "--urls", "http://127.0.0.1:${port}"]` (`openshell init` detects `*.csproj`) |
 | Kotlin (Ktor) | – | `["gradlew", "-q", "run"]` |
 | Python | – (`setup` for `pip install`) | `["python", "main.py"]` |
 | Node.js / Deno / Bun | – | `["node", "server.js"]`, `["deno", "run", "-A", "main.ts"]` |
@@ -1388,6 +1466,12 @@ In the full profile agents can
 all subject to permission scopes, optional human approval and an audit log. OpenShell does not ship or prescribe an
 AI model – it is infrastructure for any agent: Claude Code, Codex, Cursor, OpenAI- or Anthropic-based agents, local
 models via Ollama / LM Studio, or your own agent system.
+
+**The agent layer is opt-in.** An app opens it with `"agents": { "enabled": true }` – `openshell create`,
+`openshell init` and `openshell add function` write that for you, `openshell agents enable` / `disable` switch it.
+While it is off, the MCP endpoints, the tools API, the UI bridge and the remote gateway's MCP endpoint refuse every
+request and no bridge script is injected into the app's pages; the app, its frontend SDK and exposed services keep
+working. `openshell agents` shows what agents get right now.
 
 ## Connecting
 
@@ -1562,6 +1646,40 @@ request; answer with `openshell approve <id>` / `openshell deny <id>`. Unanswere
 Every call – allowed, denied, rejected or failed – is appended to `.openshell/audit.jsonl` with agent name, channel,
 tool, scope, (truncated) arguments, outcome and duration. View it with `openshell audit`.
 
+The runtime panel of the desktop app (title bar right-click → *Runtime panel* → *AI agents*) shows the effective
+permissions: what each scope allows, development vs. production, which scopes ask for approval, and every agent
+session and paired device with what it effectively may do. The same data: `openshell agents`, `GET /v1/agents`.
+
+## Agent sessions
+
+By default every agent connected through `openshell mcp` uses the admin token of `.openshell/runtime.json` and gets
+the app's agent permissions. To tell agents apart and limit each one, give it its own session:
+
+```bash
+openshell agents token claude --scopes read,actions       # app profile: only the app's functions
+openshell agents token builder --full                      # developer tools as well
+openshell agents tokens                                    # list
+openshell agents revoke claude                             # stops working at once, also while the app runs
+```
+
+The token (`osa_…`) is shown once and stored as a SHA-256 hash in `<data>/agent-sessions.json`. Use it with
+`openshell mcp --token osa_…`, the environment variable `OPENSHELL_AGENT_TOKEN` (also for an installed app's
+`--mcp`), or as `Authorization: Bearer` on the control API. A session
+
+- gets at most what `agents.permissions` grants in the current mode, limited to its `--scopes`,
+- with the app profile may only use `/mcp/app`; with `--full` also `/mcp` and `/v1/tools` – never the admin API,
+- is written to the audit log as `session:<name>`.
+
+`openshell agents token` prints a ready MCP client configuration:
+
+```json
+{ "mcpServers": { "claude": { "command": "openshell", "args": ["mcp", "--app", "--project", "/path/to/app"],
+  "env": { "OPENSHELL_AGENT_TOKEN": "osa_…" } } } }
+```
+
+Paired devices on the remote gateway work the same way: `openshell remote pair laptop --scopes read` limits what
+an agent on that device may do.
+
 ## Security
 
 - The control API listens on `127.0.0.1` only and requires a bearer token. The admin token lives in
@@ -1572,7 +1690,9 @@ tool, scope, (truncated) arguments, outcome and duration. View it with `openshel
 - File tools reject absolute paths, `..`, symlink escapes and OpenShell's state directory; `fs_write` also protects `.git`.
 - Agents cannot run arbitrary shell commands; only tasks declared in the config, under the `system` scope.
 - The remote gateway (off by default) exposes only the app profile, uses its own pairing token, rejects browser
-  requests (`Origin`) and audits calls with the channel `remote`.
+  requests (`Origin`) and audits calls with the channel `remote`. Device tokens can carry their own scopes.
+- Agent session tokens (`osa_…`) reach only the MCP endpoints and the tools API, never the admin API.
+- With `agents.enabled: false` (the default) agents cannot connect at all.
 - Limits: the permission layer governs cooperating agents. A local process running as the same user can read the token
   file; OpenShell is not a sandbox against local malware.
 
@@ -1670,10 +1790,22 @@ By default the whole project **except** `.git`, `.openshell`, `node_modules`, `_
 ## Runtimes
 
 The installer contains the shell and your app files. Interpreters and runtimes your services need – Python, Node.js,
-a JRE – must exist on the target machine (or be shipped by you inside the app, e.g. a `jlink` runtime image or an
-embedded Python, referenced by a relative `command`). Compiled services (C++, Rust, Go, GraalVM native images) need
-nothing extra. If a runtime is missing, the loading screen shows the error (`java was not found in PATH`).
-Bundled runtimes are on the [roadmap](../ROADMAP.md).
+a JRE – must exist on the target machine, **or you ship them with the app**:
+
+```bash
+openshell runtime add python 3.12      # declares it in openshell.json and downloads it into runtimes/python
+openshell runtime add node 22
+openshell runtime add java 21          # Temurin JRE
+openshell package                      # the runtime folder is part of the installer
+```
+
+Bundled runtimes come first in `PATH` for every service, setup and build step, function and task, so `python
+main.py` uses them without any change. They are built for one system: the release workflow runs
+`openshell runtime install` on each build machine before `openshell package`. See
+[configuration.md](configuration.md#runtimes). Compiled services (C++, Rust, Go, GraalVM native images, self-contained
+.NET) need nothing extra. Declare the versions a service needs with `requires` (`{ "python": ">=3.10" }`);
+`openshell doctor` checks them and the app logs a warning at start when they are not met. If a runtime is missing,
+the loading screen shows the error (`java was not found in PATH`).
 
 ## Portable app bundle (`.osapp`)
 
@@ -2035,6 +2167,11 @@ binary), `NO_COLOR`, `OPENSHELL_APPS_DIR` (installed bundles), `OPENSHELL_ANDROI
 | `openshell install <file.osapp> [--start]` | Install an app bundle into `~/.openshell/apps/<identifier>` (`OPENSHELL_APPS_DIR`); app data survives updates. |
 | `openshell apps` | List installed app bundles. |
 | `openshell update` | Check `package.update_url` for a newer release and print the download for this system. |
+| `openshell runtime` | Bundled runtimes: declared, installed version, `requires` checks. |
+| `openshell runtime add <python\|node\|java> [version] [--path dir] [--no-install]` | Declare a runtime in `runtimes` and download it into the project (see [configuration.md](configuration.md#runtimes)). |
+| `openshell runtime install [name] [--force]` | Download the declared runtimes for this system (checksums verified; installed ones are skipped). |
+| `openshell runtime remove <name> [--keep-files]` | Remove a runtime from `runtimes` and delete its folder. |
+| `openshell languages` | Backend languages: support level (tested, less tested, by contract), runtime they need, templates. |
 
 ## Running
 
@@ -2055,7 +2192,7 @@ binary), `NO_COLOR`, `OPENSHELL_APPS_DIR` (installed bundles), `OPENSHELL_ANDROI
 | `openshell logs [service] [-f] [-n 100] [--errors] [--grep <text>]` | Logs of all or one service. |
 | `openshell audit [-n 30]` | Recent agent actions. |
 | `openshell remote` | Remote gateway: URLs, MCP endpoint, TLS fingerprint, allowlist, exposed services, paired devices, blocked addresses, shared token and an MCP client configuration (`runtime.remote`). |
-| `openshell remote pair <device> [--no-qr]` | Create a token for one device (shown once) with a QR code / pairing URI and links to exposed services. |
+| `openshell remote pair <device> [--no-qr] [--scopes read,actions]` | Create a token for one device (shown once) with a QR code / pairing URI and links to exposed services. `--scopes` limits what the device may do. |
 | `openshell remote devices` | Paired devices with last use. |
 | `openshell remote revoke <device>` | Revoke one device's token. |
 | `openshell remote unblock <address>` | Lift the block of an address after too many failed logins. |
@@ -2065,7 +2202,11 @@ binary), `NO_COLOR`, `OPENSHELL_APPS_DIR` (installed bundles), `OPENSHELL_ANDROI
 
 | Command | Description |
 |---|---|
-| `openshell mcp [--app] [--start]` | MCP server over stdio. `--app`: only the application's own functions (agents that *use* the app). `--start`: start the app headless if it is not running. |
+| `openshell mcp [--app] [--start] [--token osa_…]` | MCP server over stdio. `--app`: only the application's own functions (agents that *use* the app). `--start`: start the app headless if it is not running. `--token` (or `OPENSHELL_AGENT_TOKEN`): use an agent session's token and scopes instead of the admin token. |
+| `openshell agents` | Agent layer on/off, effective permissions per mode, agent sessions and paired devices. |
+| `openshell agents enable` / `disable` | Set `agents.enabled` in openshell.json (agents are opt-in). |
+| `openshell agents token <name> [--scopes read,actions] [--full]` | Create an agent session with its own token (shown once) and scopes; prints an MCP client configuration. `--full`: developer tools too. |
+| `openshell agents tokens` / `revoke <name>` | List agent sessions / revoke one (takes effect at once, also while the app runs). |
 | `openshell tools [--json]` | Tools with scope and current access (allowed / approval / denied). |
 | `openshell call <tool> ['<json args>']` | Call a tool as agent `cli`, e.g. `openshell call ui_click '{"text":"Save"}'`. |
 | `openshell approvals` | Pending approval requests. |
@@ -2191,6 +2332,11 @@ Every running shell exposes a local HTTP API on `127.0.0.1:<port>`. Its URL and 
 Authenticate with `Authorization: Bearer <token>` (WebSocket: `?token=`). Requests with a foreign `Host` header or a
 non-allow-listed `Origin` are rejected with 403.
 
+Three kinds of token: the **admin** token of `runtime.json`, the **app** token the frontend gets (SDK and UI bridge
+only), and **agent session** tokens (`osa_…`, `openshell agents token`) which reach `/mcp/app` – and with the full
+profile `/mcp` and `/v1/tools` – with the session's scopes. With `agents.enabled: false` (the default) `/mcp`,
+`/mcp/app`, `/v1/tools` and `/v1/ui/bridge` answer 403 for every token.
+
 ## Endpoints
 
 | Method & path | Token | Description |
@@ -2204,16 +2350,18 @@ non-allow-listed `Origin` are rejected with 403.
 | `GET /v1/approvals` | admin | `{ pending: [{ id, agent, tool, permission, summary, args, created_at, expires_at }] }` |
 | `POST /v1/approvals/{id}/{approve\|deny}` | admin | Answer an approval request |
 | `GET /v1/audit?limit=` | admin | Recent audit entries |
-| `GET /v1/tools` | admin | Tools with `permission`, `access` and `input_schema` |
-| `POST /v1/tools/{name}` | admin | Call a tool with the **agent** policy. Header `X-OpenShell-Agent` names the agent. |
-| `POST /mcp` | admin | MCP Streamable HTTP (JSON-RPC, JSON responses, `Mcp-Session-Id`) |
+| `GET /v1/tools` | admin, session (full) | Tools with `permission`, `access` and `input_schema` (access for the caller) |
+| `POST /v1/tools/{name}` | admin, session (full) | Call a tool with the **agent** policy (limited to a session's scopes). Header `X-OpenShell-Agent` names the agent. |
+| `POST /mcp` | admin, session (full) | MCP Streamable HTTP (JSON-RPC, JSON responses, `Mcp-Session-Id`) |
+| `POST /mcp/app` | admin, session | MCP with the app profile (the app's own functions) |
+| `GET /v1/agents` | admin | Effective agent permissions: `enabled`, `granted`, `by_mode`, `approval_required`, `sdk_permissions`, `sessions` and `devices` with their effective scopes |
 | `GET /v1/ui/bridge` | app or admin | WebSocket for `bridge.js` |
 | `GET /v1/sdk/info` | app | App info and SDK permissions |
 | `POST /v1/sdk/call/{tool}` | app | Call a tool with the **SDK** policy |
 | `POST /v1/lifecycle` | admin | App lifecycle from the host: `{ "kind": "foreground" \| "background" \| "low_memory" }`, `{ "kind": "power_save", "enabled": true }`, `{ "kind": "network", "connected": true, "metered": false }` → paused/resumed services and `keep_alive` |
 | `GET /v1/remote` | admin | Remote gateway: `enabled`, `urls`, `mcp_url`, shared `token` (if `shared_token`), `tls_fingerprint`, `allow`, `exposed`, `devices`, `blocked`, `pairing_uri` |
-| `GET /v1/remote/devices` | admin | Paired devices (`name`, `paired_at`, `last_seen`) |
-| `POST /v1/remote/devices` | admin | Pair a device: `{"name":"laptop"}` → its `token` (only in this answer) and `pairing_uri` |
+| `GET /v1/remote/devices` | admin | Paired devices (`name`, `paired_at`, `last_seen`, `scopes`) |
+| `POST /v1/remote/devices` | admin | Pair a device: `{"name":"laptop","scopes":["read"]}` → its `token` (only in this answer) and `pairing_uri` |
 | `POST /v1/remote/devices/{name}/revoke` | admin | Revoke a device's token |
 | `POST /v1/remote/unblock` | admin | `{"address":"192.168.1.7"}` – lift a lockout |
 | `GET /v1/update` | admin | `{configured, update: {current, latest, available, download, page}}` from `package.update_url` |

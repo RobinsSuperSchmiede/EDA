@@ -117,6 +117,58 @@ function subtitle(s) {
   return "Starting services…";
 }
 
+// What each scope lets an agent do (runtime panel, "AI agents").
+const SCOPES = [
+  ["read", "status, logs, configuration, capabilities, read-only databases"],
+  ["ui", "look at and operate the app's interface, notifications"],
+  ["actions", "call the app's functions that change data"],
+  ["services", "start, stop and restart services"],
+  ["files", "read project files"],
+  ["code", "write project files"],
+  ["system", "run declared tasks, evaluate JavaScript"],
+];
+
+function renderAgents(a) {
+  if (!a || !$("#permissions")) return;
+  const on = a.enabled;
+  $("#perm-summary").textContent = on
+    ? "AI agents \u2014 " + (a.granted.length ? a.granted.join(", ") : "nothing granted") + " (" + a.mode + ")"
+    : "AI agents \u2014 off";
+  $("#perm-note").textContent = on
+    ? "What agents may do. Agent sessions and paired devices get at most this, limited to their own scopes."
+    : "Agents cannot connect: MCP, the tools API and the UI bridge are closed. Set \"agents\": { \"enabled\": true } in openshell.json to open them.";
+  $("#connect").hidden = !on;
+  const yes = (list, s) => (list.includes(s) ? "\u2713" : "\u2013");
+  $("#perm-table").hidden = !on;
+  if (on) {
+    $("#perm-table").replaceChildren(
+      el("tr", {}, el("th", {}, "scope"), el("th", {}, "lets an agent \u2026"), el("th", {}, "dev"), el("th", {}, "prod"), el("th", {}, "approval")),
+      ...SCOPES.map(([s, what]) =>
+        el(
+          "tr",
+          { class: a.granted.includes(s) ? "on" : "" },
+          el("td", {}, el("code", {}, s)),
+          el("td", { class: "muted" }, what),
+          el("td", {}, yes(a.by_mode.development, s)),
+          el("td", {}, yes(a.by_mode.production, s)),
+          el("td", {}, (a.approval_scopes || []).includes(s) ? "asks" : ""),
+        ),
+      ),
+    );
+  }
+  const items = [];
+  for (const s of a.sessions || []) {
+    items.push(el("li", {}, el("strong", {}, "session " + s.name), " (" + s.profile + ") \u2014 ", s.effective.length ? s.effective.join(", ") : "nothing"));
+  }
+  for (const d of a.devices || []) {
+    items.push(el("li", {}, el("strong", {}, "device " + d.name), " \u2014 ", d.effective.length ? d.effective.join(", ") : "nothing"));
+  }
+  if (on && !items.length) {
+    items.push(el("li", { class: "muted" }, "No agent sessions: agents use the admin token. Give each its own scopes with `openshell agents token <name>`."));
+  }
+  $("#perm-sessions").replaceChildren(...items);
+}
+
 async function tick() {
   try {
     const s = await invoke("get_state", { since: lastSeq || null });
@@ -141,6 +193,7 @@ async function tick() {
       }
       select.value = s.focus_service;
     }
+    if (isPanel && s.agents) renderAgents(s.agents);
     if (isPanel && s.mcp_commands && $("#mcp-app")) {
       $("#mcp-app").textContent = s.mcp_commands[0];
       $("#mcp-full").textContent = s.mcp_commands[1];

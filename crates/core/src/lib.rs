@@ -18,7 +18,9 @@ pub mod headless;
 pub mod openapi;
 pub mod release;
 pub mod remote;
+pub mod runtimes;
 mod server;
+pub mod sessions;
 pub mod state;
 pub mod stdio;
 
@@ -98,6 +100,8 @@ pub(crate) struct ShellInner {
     pub dbs: db::Databases,
     /// Remote access gateway (`runtime.remote`), if enabled.
     pub remote: Option<Arc<remote::Gateway>>,
+    /// Agent sessions with their own tokens and scopes (`openshell agents token`).
+    pub sessions: sessions::Sessions,
 }
 
 /// A running OpenShell instance: runtime + control API + agent layer.
@@ -174,6 +178,7 @@ impl Shell {
             allowed_origins,
             imported: std::sync::RwLock::new(Vec::new()),
             remote: remote.as_ref().map(|(_, gw)| gw.clone()),
+            sessions: sessions::Sessions::load(&project.data_dir()),
             dbs,
             mode,
             runtime,
@@ -182,10 +187,11 @@ impl Shell {
         let shell = Shell { inner };
 
         shell.inner.runtime.set_extra_env("OPENSHELL_CONTROL_URL", control_url.clone());
+        // the UI bridge (UI automation for agents) is only injected when agents are on
         shell.inner.runtime.set_html_injection(Some(format!(
             "<script>window.__OPENSHELL__ = window.__OPENSHELL__ || {};</script><script>{}</script>",
             shell.client_config("browser"),
-            openshell_agent::BRIDGE_JS
+            shell.bridge_js()
         )));
 
         // forward approval requests to the host (desktop dialog)
@@ -224,6 +230,7 @@ impl Shell {
 
     /// Start services (autostart) and, in development mode, file watchers.
     pub fn start(&self) {
+        self.check_runtimes();
         if self.inner.project.config.runtime.autostart {
             self.inner.runtime.start_all();
         }
@@ -232,6 +239,43 @@ impl Shell {
                 tracing::warn!("file watching disabled: {e:#}");
             }
         }
+    }
+
+    /// Report bundled runtimes that are not installed and unmet `requires` in the services' logs.
+    /// Runs in the background: probing versions starts programs and must not delay the start.
+    fn check_runtimes(&self) {
+        let cfg = &self.inner.project.config;
+        let has_requires = cfg.services.iter().any(|s| !s.requires.is_empty())
+            || cfg.frontend.as_ref().map(|f| !f.requires.is_empty()).unwrap_or(false);
+        if cfg.runtimes.is_empty() && !has_requires {
+            return;
+        }
+        if self.inner.runtime.platform() == openshell_config::Platform::Android {
+            return;
+        }
+        let project = self.inner.project.clone();
+        let logs = self.inner.runtime.logs().clone();
+        tokio::task::spawn_blocking(move || {
+            for b in openshell_runtime::runtimes::bundled(&project) {
+                if !b.installed() {
+                    logs.system(
+                        "runtime",
+                        format!(
+                            "bundled runtime `{}` is declared but not installed in {} – run `openshell runtime install`; using the system's copy",
+                            b.name,
+                            b.dir.display()
+                        ),
+                    );
+                }
+            }
+            for c in openshell_runtime::runtimes::check_requirements(&project) {
+                let line = c.message();
+                logs.system(
+                    &c.owner,
+                    if c.ok { line } else { format!("warning: {line} (`requires` in openshell.json)") },
+                );
+            }
+        });
     }
 
     /// Forward an app lifecycle change from the host (Android: `onStart`/`onStop`,
@@ -383,8 +427,65 @@ impl Shell {
             "window.__OPENSHELL__ = {};\n{}\n{}",
             self.client_config("desktop"),
             WINDOW_JS,
-            openshell_agent::BRIDGE_JS
+            self.bridge_js()
         )
+    }
+
+    /// Whether AI agents may connect (`agents.enabled`).
+    pub fn agents_enabled(&self) -> bool {
+        self.inner.project.config.agents.enabled
+    }
+
+    /// Effective agent permissions for `GET /v1/agents`, `openshell agents` and the runtime panel:
+    /// on/off, what agents get now and per mode, agent sessions and paired devices with the scopes
+    /// they effectively have.
+    pub fn agents_overview(&self) -> serde_json::Value {
+        let i = &self.inner;
+        let cfg = &i.project.config.agents;
+        let policy = &i.agent_policy;
+        let by_mode = |m: Mode| if cfg.enabled { cfg.permissions_for(m) } else { Default::default() };
+        let sessions: Vec<serde_json::Value> = i
+            .sessions
+            .list()
+            .into_iter()
+            .map(|s| {
+                json!({ "name": s.name, "profile": s.profile, "scopes": s.scopes,
+                        "effective": policy.restricted(&s.scopes).granted,
+                        "created_at": s.created_at, "last_seen": s.last_seen })
+            })
+            .collect();
+        let devices: Option<Vec<serde_json::Value>> = i.remote.as_ref().map(|g| {
+            g.devices()
+                .into_iter()
+                .map(|d| {
+                    json!({ "name": d.name, "scopes": d.scopes,
+                            "effective": policy.restricted(&d.scopes).granted,
+                            "paired_at": d.paired_at, "last_seen": d.last_seen })
+                })
+                .collect()
+        });
+        json!({
+            "enabled": cfg.enabled,
+            "mode": i.mode,
+            "granted": policy.granted,
+            "approval_required": policy.approval_required.iter().filter(|p| policy.granted.contains(p)).collect::<Vec<_>>(),
+            "by_mode": { "development": by_mode(Mode::Development), "production": by_mode(Mode::Production) },
+            "approval_scopes": cfg.approval_required(),
+            "sdk_permissions": i.sdk_policy.granted,
+            "sessions": sessions,
+            "remote": i.remote.is_some(),
+            "devices": devices,
+            "pending_approvals": i.approvals.pending().len(),
+        })
+    }
+
+    /// The UI bridge script, or nothing when the agent layer is off.
+    fn bridge_js(&self) -> &'static str {
+        if self.agents_enabled() {
+            openshell_agent::BRIDGE_JS
+        } else {
+            ""
+        }
     }
 }
 

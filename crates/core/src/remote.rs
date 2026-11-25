@@ -215,22 +215,27 @@ fn load_or_create_token(data_dir: &Path) -> Result<String> {
 }
 
 /// Compare without leaking the position of the first difference through timing.
-fn same_token(a: &str, b: &str) -> bool {
+pub(crate) fn same_token(a: &str, b: &str) -> bool {
     a.len() == b.len() && a.bytes().zip(b.bytes()).fold(0u8, |acc, (x, y)| acc | (x ^ y)) == 0
 }
 
 impl Gateway {
     /// Who a token belongs to: `paired-device` for the shared token, else the device name.
     pub fn authenticate(&self, token: &str) -> Option<String> {
+        self.identify(token).map(|(who, _)| who)
+    }
+
+    /// Who a token belongs to and the device's scopes (empty: what the app grants agents).
+    pub fn identify(&self, token: &str) -> Option<(String, Vec<Permission>)> {
         if self.info.shared_token && !token.is_empty() && same_token(token, &self.info.token) {
-            return Some("paired-device".into());
+            return Some(("paired-device".into(), vec![]));
         }
-        self.devices.verify(token).map(|d| format!("device:{d}"))
+        self.devices.verify(token).map(|(d, scopes)| (format!("device:{d}"), scopes))
     }
 
     /// Pair a device and return its token (shown once).
-    pub fn pair(&self, name: &str) -> Result<String> {
-        self.devices.pair(name)
+    pub fn pair(&self, name: &str, scopes: Vec<Permission>) -> Result<String> {
+        self.devices.pair(name, scopes)
     }
     pub fn revoke(&self, name: &str) -> Result<bool> {
         self.devices.revoke(name)
@@ -391,8 +396,9 @@ async fn guard(
             .unwrap_or("")
             .trim()
             .to_string();
-        match gw.authenticate(&given) {
-            Some(who) => {
+        match gw.identify(&given) {
+            Some((who, scopes)) => {
+                req.extensions_mut().insert(DeviceScopes(scopes));
                 gw.access.logged_in(peer.ip());
                 // the identity in the audit log is the device, not what the client claims
                 let agent = match req.headers().get("x-openshell-agent").and_then(|h| h.to_str().ok()) {
@@ -434,8 +440,21 @@ async fn info(State(shell): State<Shell>) -> Json<Value> {
     }))
 }
 
-async fn mcp(State(shell): State<Shell>, headers: HeaderMap, Json(msg): Json<Value>) -> Response {
-    mcp_with(shell, headers, msg, McpProfile::Remote).await
+/// Scopes of the paired device that made a request (empty: what the app grants agents).
+#[derive(Clone)]
+struct DeviceScopes(Vec<Permission>);
+
+async fn mcp(
+    State(shell): State<Shell>,
+    Extension(DeviceScopes(scopes)): Extension<DeviceScopes>,
+    headers: HeaderMap,
+    Json(msg): Json<Value>,
+) -> Response {
+    if !shell.inner.project.config.agents.enabled {
+        return deny(StatusCode::FORBIDDEN, crate::server::AGENTS_OFF);
+    }
+    let policy = shell.inner.agent_policy.restricted(&scopes);
+    mcp_with(shell, headers, msg, McpProfile::Remote, policy, None).await
 }
 
 async fn not_allowed() -> StatusCode {

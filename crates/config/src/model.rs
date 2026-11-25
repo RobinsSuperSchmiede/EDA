@@ -97,6 +97,49 @@ pub struct Config {
     /// (`OPENSHELL_DB_<NAME>`, `DATABASE_URL`), to the frontend SDK and – if allowed – to agents.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub databases: Vec<DatabaseConfig>,
+    /// Language runtimes shipped inside the app (`python`, `node`, `java`). `openshell runtime install`
+    /// downloads them into the project; services then use them instead of a runtime on the user's
+    /// machine. Example: `{ "python": "3.12", "node": { "version": "22", "path": "runtimes/node" } }`.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub runtimes: BTreeMap<String, RuntimeEntry>,
+}
+
+/// A bundled language runtime: a version (`"3.12"`) or a version with an own folder.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(untagged)]
+pub enum RuntimeEntry {
+    /// Version to download: a major (`"22"`), major.minor (`"3.12"`) or exact version.
+    Version(String),
+    Detailed(RuntimeSpec),
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RuntimeSpec {
+    /// Version to download: a major (`"22"`), major.minor (`"3.12"`) or exact version.
+    /// Default: the runtime's recommended version.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    /// Folder of the runtime, relative to the project root. Default: `runtimes/<name>`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
+}
+
+impl RuntimeEntry {
+    pub fn version(&self) -> Option<&str> {
+        match self {
+            RuntimeEntry::Version(v) => Some(v.as_str()),
+            RuntimeEntry::Detailed(s) => s.version.as_deref(),
+        }
+    }
+
+    /// Folder of the runtime relative to the project root.
+    pub fn path(&self, name: &str) -> String {
+        match self {
+            RuntimeEntry::Detailed(RuntimeSpec { path: Some(p), .. }) => p.clone(),
+            _ => format!("runtimes/{name}"),
+        }
+    }
 }
 
 fn default_version() -> u32 {
@@ -436,6 +479,11 @@ pub struct ServiceConfig {
     /// Grace period between the stop signal and a forced kill.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub stop_timeout_ms: Option<u64>,
+    /// Runtime versions this service needs, e.g. `{ "python": ">=3.10", "java": ">=17" }`.
+    /// Checked by `openshell doctor` and when the app starts. Known runtimes: `python`, `node`,
+    /// `java`, `dotnet`, `go`, `rust`.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub requires: BTreeMap<String, String>,
 }
 
 fn default_max_restarts() -> u32 {
@@ -469,6 +517,7 @@ impl ServiceConfig {
             platforms: None,
             background: None,
             stop_timeout_ms: None,
+            requires: BTreeMap::new(),
         }
     }
 
@@ -525,6 +574,9 @@ pub struct FrontendConfig {
     /// Overrides used in production mode.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub production: Option<FrontendOverride>,
+    /// Runtime versions the frontend's dev server needs, e.g. `{ "node": ">=18" }`.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub requires: BTreeMap<String, String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
@@ -920,8 +972,10 @@ pub enum PermissionSpec {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct AgentsConfig {
-    /// Enable the Agent Interaction Layer (tools, MCP, UI bridge).
-    #[serde(default = "default_true")]
+    /// Enable the Agent Interaction Layer: MCP endpoints, agent tools, the UI bridge and the remote
+    /// gateway's MCP endpoint. Off by default – agents can only connect when an app opts in.
+    /// `openshell create`, `openshell init` and `openshell add function` switch it on.
+    #[serde(default)]
     pub enabled: bool,
     /// Scopes granted to agents.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -946,7 +1000,7 @@ pub struct AgentsConfig {
 impl Default for AgentsConfig {
     fn default() -> Self {
         Self {
-            enabled: true,
+            enabled: false,
             permissions: None,
             approval_required: None,
             approval_timeout_ms: default_approval_timeout(),
@@ -1127,6 +1181,7 @@ impl Config {
             tasks: BTreeMap::new(),
             package: PackageConfig::default(),
             databases: vec![],
+            runtimes: BTreeMap::new(),
         }
     }
 

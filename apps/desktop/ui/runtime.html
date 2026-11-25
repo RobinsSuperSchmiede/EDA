@@ -14,7 +14,13 @@
       <section id="error" class="error" hidden></section>
       <section id="approvals" hidden></section>
       <ul id="services" class="services"></ul>
-      <details class="agents">
+      <details class="agents" id="permissions">
+        <summary id="perm-summary">AI agents</summary>
+        <p class="muted" id="perm-note"></p>
+        <table class="perm" id="perm-table"></table>
+        <ul class="perm-list" id="perm-sessions"></ul>
+      </details>
+      <details class="agents" id="connect">
         <summary>Connect AI agents (MCP)</summary>
         <p class="muted">Use the app through its own functions (no UI automation):</p>
         <code id="mcp-app"></code>

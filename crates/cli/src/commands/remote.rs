@@ -9,7 +9,7 @@ use std::path::Path;
 
 pub enum Action {
     Show,
-    Pair { device: String, qr: bool },
+    Pair { device: String, qr: bool, scopes: Vec<String> },
     Devices,
     Revoke { device: String },
     Unblock { address: String },
@@ -32,8 +32,10 @@ pub async fn run(dir: &Path, action: Action) -> Result<()> {
     }
     match action {
         Action::Show => show(&r),
-        Action::Pair { device, qr } => {
-            let p = client.post("/v1/remote/devices", &json!({ "name": device })).await?;
+        Action::Pair { device, qr, scopes } => {
+            let scopes: Vec<String> =
+                scopes.into_iter().map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect();
+            let p = client.post("/v1/remote/devices", &json!({ "name": device, "scopes": scopes })).await?;
             pair(&p, qr)
         }
         Action::Devices => {
@@ -131,9 +133,16 @@ fn devices(d: &Value) {
             dim("device:  "),
             dev["name"].as_str().unwrap_or("?"),
             dim(&format!(
-                "paired {} · last seen {}",
+                "paired {} · last seen {} · scopes: {}",
                 dev["paired_at"].as_str().and_then(|s| s.get(..16)).unwrap_or("?"),
-                dev["last_seen"].as_str().and_then(|s| s.get(..16)).unwrap_or("never")
+                dev["last_seen"].as_str().and_then(|s| s.get(..16)).unwrap_or("never"),
+                match dev["scopes"]
+                    .as_array()
+                    .map(|a| a.iter().filter_map(|x| x.as_str()).collect::<Vec<_>>())
+                {
+                    Some(l) if !l.is_empty() => l.join(", "),
+                    _ => "all granted".to_string(),
+                }
             ))
         );
     }

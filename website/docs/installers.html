@@ -84,10 +84,18 @@ icon</strong> (<code>app.icon</code>, PNG – OpenShell's icon if unset). No com
 <span class="tk">"package"</span>: { <span class="tk">"exclude"</span>: [<span class="ts">"frontend/src"</span>, <span class="ts">"frontend/public"</span>] }             <span class="tc">// ship only frontend/dist</span></code></pre></div>
 <h2 id="runtimes">Runtimes<a class="anchor" href="#runtimes" aria-label="Link to this section">#</a></h2>
 <p>The installer contains the shell and your app files. Interpreters and runtimes your services need – Python, Node.js,
-a JRE – must exist on the target machine (or be shipped by you inside the app, e.g. a <code>jlink</code> runtime image or an
-embedded Python, referenced by a relative <code>command</code>). Compiled services (C++, Rust, Go, GraalVM native images) need
-nothing extra. If a runtime is missing, the loading screen shows the error (<code>java was not found in PATH</code>).
-Bundled runtimes are on the <a href="roadmap.html">roadmap</a>.</p>
+a JRE – must exist on the target machine, <strong>or you ship them with the app</strong>:</p>
+<div class="codeblock" data-lang="bash"><pre><code>openshell runtime add python 3.12      <span class="tc"># declares it in openshell.json and downloads it into runtimes/python</span>
+openshell runtime add node 22
+openshell runtime add java 21          <span class="tc"># Temurin JRE</span>
+openshell package                      <span class="tc"># the runtime folder is part of the installer</span></code></pre></div>
+<p>Bundled runtimes come first in <code>PATH</code> for every service, setup and build step, function and task, so `python
+main.py` uses them without any change. They are built for one system: the release workflow runs
+<code>openshell runtime install</code> on each build machine before <code>openshell package</code>. See
+<a href="configuration.html#runtimes">Configuration</a>. Compiled services (C++, Rust, Go, GraalVM native images, self-contained
+.NET) need nothing extra. Declare the versions a service needs with <code>requires</code> (<code>{ "python": "&gt;=3.10" }</code>);
+<code>openshell doctor</code> checks them and the app logs a warning at start when they are not met. If a runtime is missing,
+the loading screen shows the error (<code>java was not found in PATH</code>).</p>
 <h2 id="portable-app-bundle-osapp">Portable app bundle (<code>.osapp</code>)<a class="anchor" href="#portable-app-bundle-osapp" aria-label="Link to this section">#</a></h2>
 <div class="codeblock" data-lang="bash"><pre><code>openshell package --target bundle        <span class="tc"># dist/my-app-1.2.0.osapp – works on every platform, also in Termux</span></code></pre></div>
 <p>A bundle is a zip with the shipped files (same <code>include</code> / <code>exclude</code> rules) and
@@ -134,7 +142,7 @@ not part of OpenShell – you need your own.</p>
         <div class="foot-grid">
           <div class="foot-brand">
             <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
-            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+            <p>The app runtime that turns a web app and its backend into one desktop app. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
           </div>
           <div>
             <h4>Product</h4>

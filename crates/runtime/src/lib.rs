@@ -24,6 +24,7 @@ mod metrics;
 mod plan;
 pub mod platform;
 pub mod process;
+pub mod runtimes;
 mod static_server;
 mod supervisor;
 mod watch;
@@ -343,6 +344,12 @@ impl Runtime {
         let data_dir = project.data_dir();
         let _ = std::fs::create_dir_all(&data_dir);
         inner.extra_env.write().unwrap().insert("OPENSHELL_DATA_DIR".into(), data_dir.display().to_string());
+        // bundled language runtimes (`runtimes`) come first in PATH for everything the app starts
+        if inner.adapter.platform() != Platform::Android {
+            if let Some(path) = runtimes::path_with_bundled(project) {
+                inner.extra_env.write().unwrap().insert("PATH".into(), path);
+            }
+        }
         if inner.slots.iter().any(|s| matches!(s.def.kind, DefKind::Process { .. })) {
             handle.spawn(metrics::sample(Arc::downgrade(&inner)));
         }

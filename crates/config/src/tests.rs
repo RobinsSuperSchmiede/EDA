@@ -282,3 +282,50 @@ fn default_remote_config_is_not_serialized() {
     let json = serde_json::to_string(&cfg).unwrap();
     assert!(!json.contains("remote"), "{json}");
 }
+
+#[test]
+fn runtimes_and_requirements_are_validated() {
+    let cfg = parse_json(
+        r#"{ "version": 1, "app": { "name": "x" },
+             "runtimes": { "python": "3.12", "node": { "version": "22", "path": "vendor/node" },
+                           "go": "1.22", "ruby": "3", "java": { "version": "latest", "path": "../jre" } },
+             "services": [
+               { "name": "api", "command": ["python", "main.py"], "requires": { "python": ">=3.10", "perl": "5" } },
+               { "name": "worker", "command": ["java", "-jar", "w.jar"], "requires": { "java": "seventeen" } }
+             ] }"#,
+    )
+    .unwrap();
+    let issues = validate(&cfg);
+    let has = |path: &str| issues.iter().any(|i| i.path == path && i.error);
+    assert!(!issues.iter().any(|i| i.path.starts_with("runtimes.python")), "{issues:?}");
+    assert!(!issues.iter().any(|i| i.path.starts_with("runtimes.node")), "{issues:?}");
+    assert!(has("runtimes.go"), "not bundleable: {issues:?}");
+    assert!(has("runtimes.ruby"), "unknown");
+    assert!(has("runtimes.java.version"));
+    assert!(has("runtimes.java.path"));
+    assert!(has("services[0].requires.perl"));
+    assert!(!has("services[0].requires.python"));
+    assert!(has("services[1].requires.java"));
+    assert_eq!(cfg.runtimes["node"].path("node"), "vendor/node");
+    assert_eq!(cfg.runtimes["python"].path("python"), "runtimes/python");
+    assert_eq!(cfg.runtimes["python"].version(), Some("3.12"));
+}
+
+#[test]
+fn agents_are_opt_in() {
+    let off = parse_json(r#"{ "version": 1, "app": { "name": "x" } }"#).unwrap();
+    assert!(!off.agents.enabled);
+    let legacy = parse_json(
+        r#"{ "version": 1, "app": { "name": "x" }, "frontend": { "url": "http://localhost:3000" },
+             "agents": { "permissions": ["read"] } }"#,
+    )
+    .unwrap();
+    assert!(validate(&legacy).iter().any(|i| i.path == "agents.enabled" && !i.error));
+    let on = parse_json(
+        r#"{ "version": 1, "app": { "name": "x" }, "frontend": { "url": "http://localhost:3000" },
+             "agents": { "enabled": true, "permissions": ["read"] } }"#,
+    )
+    .unwrap();
+    assert!(on.agents.enabled);
+    assert!(!validate(&on).iter().any(|i| i.path == "agents.enabled"));
+}

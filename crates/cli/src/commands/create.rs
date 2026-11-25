@@ -285,12 +285,50 @@ fn composed_readme(app_name: &str, project: &str, blocks: &[&Block]) -> String {
     )
 }
 
+/// `openshell languages`: every backend language with its support level and templates.
+pub fn print_languages() {
+    use openshell_core::config::runtimes::LANGUAGES;
+    for l in LANGUAGES {
+        let templates = if l.templates.is_empty() { "-".to_string() } else { l.templates.join(", ") };
+        println!(
+            "  {:<20} {:<12} {}",
+            bold(l.title),
+            l.support.label(),
+            dim(&format!("runtime: {} · templates: {templates}", l.runtime.unwrap_or("none (compiled)")))
+        );
+        let detected = crate::languages::DETECTORS.iter().any(|d| d.language == l.id);
+        println!(
+            "  {:<20} {}",
+            "",
+            dim(&format!("{}{}", l.note, if detected { " · detected by `openshell init`" } else { "" }))
+        );
+    }
+    println!(
+        "
+  {}",
+        dim("anything else works if it reads PORT, binds 127.0.0.1 and answers /health (\"by contract\")")
+    );
+}
+
 pub fn run(name: &str, template: &str, list: bool) -> Result<()> {
     let templates = template_names();
     if list {
         for (t, d) in &templates {
-            println!("  {:<16} {}", bold(t), dim(d));
+            let lang = openshell_core::config::runtimes::language_of_template(t)
+                .map(|l| format!("{} · {}", l.title, l.support.label()))
+                .unwrap_or_default();
+            println!(
+                "  {:<16} {} {}",
+                bold(t),
+                dim(d),
+                dim(&if lang.is_empty() { lang } else { format!("[{lang}]") })
+            );
         }
+        println!(
+            "
+  {}",
+            dim("languages and how well they are tested: openshell languages")
+        );
         return Ok(());
     }
     let Some(dir) = TEMPLATES.get_dir(template) else {

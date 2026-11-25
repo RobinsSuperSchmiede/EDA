@@ -129,7 +129,7 @@
               </tbody>
             </table>
           </div>
-          <p class="sub reveal">Interpreters your services need (Python, Node.js, a JRE) must exist on the target machine, or you ship them inside the app. Compiled services need nothing. Bundled runtimes are on the <a href="docs/roadmap.html">roadmap</a>.</p>
+          <p class="sub reveal">Interpreters your services need (Python, Node.js, a JRE) either exist on the target machine or ship with the app: <span class="mono">openshell runtime add python|node|java</span> downloads them into the project and the installer carries them. Compiled services need nothing. <span class="mono">requires</span> pins versions. See <a href="docs/installers.html#runtimes">runtimes</a>.</p>
         </div>
       </section>
 
@@ -142,6 +142,8 @@
             <table>
               <thead><tr><th>Control</th><th>What it does</th><th>Setting</th></tr></thead>
               <tbody>
+                <tr><td>Opt-in</td><td>Agents are off until the app sets <code>agents.enabled</code>. Off means: no MCP, no tools API, no UI bridge, no gateway MCP.</td><td><code>agents.enabled</code></td></tr>
+                <tr><td>Agent sessions</td><td>Each agent gets its own token (stored hashed) and scopes, never more than the app grants; audited by name, revocable at once.</td><td><code>openshell agents token</code></td></tr>
                 <tr><td>Permission scopes</td><td>Every agent tool needs exactly one of seven scopes: <code>read</code>, <code>ui</code>, <code>actions</code>, <code>services</code>, <code>files</code>, <code>code</code>, <code>system</code>. Production grants fewer than development.</td><td><code>agents.permissions</code></td></tr>
                 <tr><td>Human approval</td><td>Scopes you list need a decision. The app shows a dialog; unanswered requests are denied.</td><td><code>agents.approval_required</code></td></tr>
                 <tr><td>Audit log</td><td>Every call, allowed, denied or failed, with agent name, channel, tool, scope, arguments and duration, as lines of JSON.</td><td><code>.openshell/audit.jsonl</code></td></tr>
@@ -171,7 +173,7 @@
               <ul class="ticks">
                 <li><span><b>Internal tools</b> and dashboards that deserve a real desktop presence</span></li>
                 <li><span><b>Local-first apps</b> with the built-in SQLite database</span></li>
-                <li><span><b>Existing web apps</b> in any frontend framework and backend language</span></li>
+                <li><span><b>Existing web apps</b> with any frontend framework and a backend that follows the app contract</span></li>
                 <li><span><b>Tools your AI assistants should use</b>, with limits and an audit trail</span></li>
                 <li><span><b>Mixed teams</b> on Windows, macOS and Linux</span></li>
               </ul>
@@ -179,9 +181,9 @@
             <div class="list reveal">
               <h3>Plan around</h3>
               <ul class="ticks plan">
-                <li><span><b>Bundled runtimes</b> are not here yet; Python, Node.js or a JRE must exist on the machine</span></li>
+                <li><span><b>Bundled runtimes</b> are built per system: build installers on each OS (the release workflow does)</span></li>
                 <li><span><b>Automatic installation</b> of updates is planned; today you get the check and the download</span></li>
-                <li><span><b>Agent identities</b>: sessions with their own tokens and per-device permissions are planned</span></li>
+                <li><span><b>Agent sessions</b> and device scopes are new: on main, part of the next release</span></li>
                 <li><span><b>Phones</b>: the Android app is not in the Play Store and has not been verified on a device</span></li>
                 <li><span><b>Alpha status</b>: the config format may change before 1.0</span></li>
               </ul>
@@ -204,7 +206,8 @@
                 <tr><td>Release workflow, bundles, signing, update check</td><td><span class="pill wip">on main</span></td><td>Implemented and documented; part of the next release. You need your own signing certificates.</td></tr>
                 <tr><td>Remote access with tokens, allowlist, TLS</td><td><span class="pill wip">on main</span></td><td>Implemented with tests; part of the next release.</td></tr>
                 <tr><td>Android app</td><td><span class="pill wip">in progress</span></td><td>Kotlin host and JNI bridge build in CI. Not yet run on a device, not in the Play Store.</td></tr>
-                <tr><td>Bundled runtimes, auto-install updates, agent sessions</td><td><span class="pill plan">planned</span></td><td>See the <a href="docs/roadmap.html">roadmap</a>.</td></tr>
+                <tr><td>Bundled runtimes, version requirements, agent sessions, device scopes, agents opt-in</td><td><span class="pill wip">on main</span></td><td>Implemented with tests; part of the next release.</td></tr>
+                <tr><td>Auto-install updates, screenshot fallback, runtimes inside the Android app</td><td><span class="pill plan">planned</span></td><td>See the <a href="docs/roadmap.html">roadmap</a>.</td></tr>
               </tbody>
             </table>
           </div>
@@ -244,7 +247,7 @@
         <div class="foot-grid">
           <div class="foot-brand">
             <a class="brand" href="index.html"><img src="assets/logo.png" alt="" />OpenShell</a>
-            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+            <p>The app runtime that turns a web app and its backend into one desktop app. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
           </div>
           <div>
             <h4>Product</h4>

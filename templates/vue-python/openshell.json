@@ -33,5 +33,6 @@
     { "name": "add_todo", "description": "Create a todo", "permission": "actions",
       "input_schema": { "type": "object", "properties": { "title": { "type": "string" } }, "required": ["title"] },
       "http": { "service": "backend", "method": "POST", "path": "/api/todos" } }
-  ]
+  ],
+  "agents": { "enabled": true }
 }

@@ -46,6 +46,58 @@ fn hint(adapter: &dyn RuntimeAdapter, command: &CommandSpec) -> String {
         .unwrap_or_default()
 }
 
+/// Bundled runtimes (`runtimes`) and version requirements (`requires`).
+fn runtimes_section(p: &Project, r: &mut Report) {
+    let bundled = openshell_core::runtime::runtimes::bundled(p);
+    let checks = openshell_core::runtime::runtimes::check_requirements(p);
+    if bundled.is_empty() && checks.is_empty() {
+        return;
+    }
+    println!("\n{}", bold("Runtimes"));
+    for b in &bundled {
+        match openshell_core::runtimes::installed(&b.dir) {
+            Some(i) if i.os != std::env::consts::OS || i.arch != std::env::consts::ARCH => r.err(&format!(
+                "bundled {} was installed for {}/{} – run `openshell runtime install --force`",
+                b.name, i.os, i.arch
+            )),
+            Some(i) => r.ok(&format!("bundled {} {} ({})", b.name, i.version, i.source)),
+            None if b.installed() => r.ok(&format!("bundled {} in {}", b.name, b.dir.display())),
+            None => r.err(&format!("bundled {} is not installed – run `openshell runtime install`", b.name)),
+        }
+    }
+    for c in checks {
+        let line = format!("{:<10} {}", c.owner, c.message());
+        if c.ok {
+            r.ok(&line);
+        } else {
+            r.err(&line);
+        }
+    }
+}
+
+/// Whether agents can connect and what they get.
+fn agents_section(p: &Project, r: &mut Report) {
+    println!("\n{}", bold("AI agents"));
+    let a = &p.config.agents;
+    if !a.enabled {
+        println!("  {} {}", dim("·"), dim("off – agents cannot connect (opt-in: `openshell agents enable`)"));
+        return;
+    }
+    let list = |m: Mode| a.permissions_for(m).iter().map(|x| x.as_str()).collect::<Vec<_>>().join(", ");
+    r.ok(&format!("on · development: {} · production: {}", list(Mode::Development), list(Mode::Production)));
+    let sessions = openshell_core::sessions::Sessions::load(&p.data_dir()).list();
+    if sessions.is_empty() {
+        println!(
+            "    {}",
+            dim(
+                "agents share the admin token; give each its own scopes with `openshell agents token <name>`"
+            )
+        );
+    } else {
+        println!("    {}", dim(&format!("{} agent session(s) – `openshell agents`", sessions.len())));
+    }
+}
+
 pub async fn run(dir: &Path) -> Result<()> {
     let mut r = Report { errors: 0, warnings: 0 };
     let adapter = openshell_core::runtime::default_adapter();
@@ -90,6 +142,10 @@ pub async fn run(dir: &Path) -> Result<()> {
     };
 
     if let Some(p) = &project {
+        // bundled runtimes come first, as they do for the app's services
+        if let Some(path) = openshell_core::runtime::runtimes::path_with_bundled(p) {
+            std::env::set_var("PATH", path);
+        }
         let running = ControlClient::connect(&p.state_dir()).await.ok();
         println!("\n{}", bold("Services (development mode)"));
         match build_plan(p, Mode::Development) {
@@ -207,6 +263,9 @@ pub async fn run(dir: &Path) -> Result<()> {
             }
         }
 
+        runtimes_section(p, &mut r);
+        agents_section(p, &mut r);
+
         println!("\n{}", bold("Runtime"));
         match running {
             Some(c) => r.ok(&format!("running: {} mode, pid {}, {}", c.info.mode, c.info.pid, c.info.url)),
@@ -241,13 +300,12 @@ pub async fn run(dir: &Path) -> Result<()> {
     }
 
     println!("\n{}", bold("Toolchain"));
-    for (cmd, arg) in [
-        ("node", "--version"),
-        ("npm", "--version"),
-        ("python", "--version"),
+    // runtimes from the language table, then build tools
+    let mut tools: Vec<(&str, &str)> =
+        openshell_core::config::runtimes::RUNTIMES.iter().map(|r| (r.program(), r.version_args[0])).collect();
+    tools.extend([
         ("python3", "--version"),
-        ("go", "version"),
-        ("java", "-version"),
+        ("npm", "--version"),
         ("javac", "-version"),
         ("mvn", "-v"),
         ("gradle", "-v"),
@@ -255,7 +313,8 @@ pub async fn run(dir: &Path) -> Result<()> {
         ("g++", "--version"),
         ("clang++", "--version"),
         ("cargo", "--version"),
-    ] {
+    ]);
+    for (cmd, arg) in tools {
         match tool_version(cmd, arg) {
             Some(v) => println!("  {} {cmd:<8} {}", green("✔"), dim(&v)),
             None => match adapter.install_hint(cmd) {

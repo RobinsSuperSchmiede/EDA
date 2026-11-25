@@ -23,6 +23,11 @@ binary), `NO_COLOR`, `OPENSHELL_APPS_DIR` (installed bundles), `OPENSHELL_ANDROI
 | `openshell install <file.osapp> [--start]` | Install an app bundle into `~/.openshell/apps/<identifier>` (`OPENSHELL_APPS_DIR`); app data survives updates. |
 | `openshell apps` | List installed app bundles. |
 | `openshell update` | Check `package.update_url` for a newer release and print the download for this system. |
+| `openshell runtime` | Bundled runtimes: declared, installed version, `requires` checks. |
+| `openshell runtime add <python\|node\|java> [version] [--path dir] [--no-install]` | Declare a runtime in `runtimes` and download it into the project (see [configuration.md](configuration.md#runtimes)). |
+| `openshell runtime install [name] [--force]` | Download the declared runtimes for this system (checksums verified; installed ones are skipped). |
+| `openshell runtime remove <name> [--keep-files]` | Remove a runtime from `runtimes` and delete its folder. |
+| `openshell languages` | Backend languages: support level (tested, less tested, by contract), runtime they need, templates. |
 
 ## Running
 
@@ -43,7 +48,7 @@ binary), `NO_COLOR`, `OPENSHELL_APPS_DIR` (installed bundles), `OPENSHELL_ANDROI
 | `openshell logs [service] [-f] [-n 100] [--errors] [--grep <text>]` | Logs of all or one service. |
 | `openshell audit [-n 30]` | Recent agent actions. |
 | `openshell remote` | Remote gateway: URLs, MCP endpoint, TLS fingerprint, allowlist, exposed services, paired devices, blocked addresses, shared token and an MCP client configuration (`runtime.remote`). |
-| `openshell remote pair <device> [--no-qr]` | Create a token for one device (shown once) with a QR code / pairing URI and links to exposed services. |
+| `openshell remote pair <device> [--no-qr] [--scopes read,actions]` | Create a token for one device (shown once) with a QR code / pairing URI and links to exposed services. `--scopes` limits what the device may do. |
 | `openshell remote devices` | Paired devices with last use. |
 | `openshell remote revoke <device>` | Revoke one device's token. |
 | `openshell remote unblock <address>` | Lift the block of an address after too many failed logins. |
@@ -53,7 +58,11 @@ binary), `NO_COLOR`, `OPENSHELL_APPS_DIR` (installed bundles), `OPENSHELL_ANDROI
 
 | Command | Description |
 |---|---|
-| `openshell mcp [--app] [--start]` | MCP server over stdio. `--app`: only the application's own functions (agents that *use* the app). `--start`: start the app headless if it is not running. |
+| `openshell mcp [--app] [--start] [--token osa_…]` | MCP server over stdio. `--app`: only the application's own functions (agents that *use* the app). `--start`: start the app headless if it is not running. `--token` (or `OPENSHELL_AGENT_TOKEN`): use an agent session's token and scopes instead of the admin token. |
+| `openshell agents` | Agent layer on/off, effective permissions per mode, agent sessions and paired devices. |
+| `openshell agents enable` / `disable` | Set `agents.enabled` in openshell.json (agents are opt-in). |
+| `openshell agents token <name> [--scopes read,actions] [--full]` | Create an agent session with its own token (shown once) and scopes; prints an MCP client configuration. `--full`: developer tools too. |
+| `openshell agents tokens` / `revoke <name>` | List agent sessions / revoke one (takes effect at once, also while the app runs). |
 | `openshell tools [--json]` | Tools with scope and current access (allowed / approval / denied). |
 | `openshell call <tool> ['<json args>']` | Call a tool as agent `cli`, e.g. `openshell call ui_click '{"text":"Save"}'`. |
 | `openshell approvals` | Pending approval requests. |

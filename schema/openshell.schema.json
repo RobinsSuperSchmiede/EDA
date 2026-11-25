@@ -70,7 +70,7 @@
       "description": "Agent Interaction Layer settings (permissions, approvals, providers).",
       "$ref": "#/$defs/AgentsConfig",
       "default": {
-        "enabled": true,
+        "enabled": false,
         "approval_timeout_ms": 120000,
         "detect_local_providers": true
       }
@@ -101,6 +101,13 @@
       "type": "array",
       "items": {
         "$ref": "#/$defs/DatabaseConfig"
+      }
+    },
+    "runtimes": {
+      "description": "Language runtimes shipped inside the app (`python`, `node`, `java`). `openshell runtime install`\ndownloads them into the project; services then use them instead of a runtime on the user's\nmachine. Example: `{ \"python\": \"3.12\", \"node\": { \"version\": \"22\", \"path\": \"runtimes/node\" } }`.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/RuntimeEntry"
       }
     }
   },
@@ -341,6 +348,13 @@
               "type": "null"
             }
           ]
+        },
+        "requires": {
+          "description": "Runtime versions the frontend's dev server needs, e.g. `{ \"node\": \">=18\" }`.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       },
       "additionalProperties": false
@@ -677,6 +691,13 @@
           ],
           "format": "uint64",
           "minimum": 0
+        },
+        "requires": {
+          "description": "Runtime versions this service needs, e.g. `{ \"python\": \">=3.10\", \"java\": \">=17\" }`.\nChecked by `openshell doctor` and when the app starts. Known runtimes: `python`, `node`,\n`java`, `dotnet`, `go`, `rust`.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       },
       "additionalProperties": false,
@@ -1073,9 +1094,9 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "description": "Enable the Agent Interaction Layer (tools, MCP, UI bridge).",
+          "description": "Enable the Agent Interaction Layer: MCP endpoints, agent tools, the UI bridge and the remote\ngateway's MCP endpoint. Off by default – agents can only connect when an app opts in.\n`openshell create`, `openshell init` and `openshell add function` switch it on.",
           "type": "boolean",
-          "default": true
+          "default": false
         },
         "permissions": {
           "description": "Scopes granted to agents.",
@@ -1648,6 +1669,38 @@
           "const": "write"
         }
       ]
+    },
+    "RuntimeEntry": {
+      "description": "A bundled language runtime: a version (`\"3.12\"`) or a version with an own folder.",
+      "anyOf": [
+        {
+          "description": "Version to download: a major (`\"22\"`), major.minor (`\"3.12\"`) or exact version.",
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/RuntimeSpec"
+        }
+      ]
+    },
+    "RuntimeSpec": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "description": "Version to download: a major (`\"22\"`), major.minor (`\"3.12\"`) or exact version.\nDefault: the runtime's recommended version.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "path": {
+          "description": "Folder of the runtime, relative to the project root. Default: `runtimes/<name>`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

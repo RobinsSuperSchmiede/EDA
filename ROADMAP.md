@@ -35,7 +35,9 @@ Legend: ✅ done · 🚧 partial · ⏳ planned
 - ✅ Portable app bundles (`.osapp`), `openshell install`, release workflow for every platform with
   `downloads.json` and a download page (`openshell release`)
 - 🚧 Updates: update check (`package.update_url`, `GET /v1/update`, `openshell update`); automatic install ⏳
-- ⏳ Bundled runtimes (JRE via jlink, embedded Python/Node)
+- ✅ Bundled runtimes: Python, Node.js, Java JRE downloaded into the app (`runtimes`, `openshell runtime`),
+  version requirements (`requires`) checked by `openshell doctor` and at start
+- ✅ Template end-to-end tests on Windows, macOS and Linux in CI
 - ⏳ Single-instance handling, deep links
 
 ## Phase 5 – Agent Interaction Layer 🚧
@@ -46,7 +48,8 @@ Legend: ✅ done · 🚧 partial · ⏳ planned
 - ✅ Permission scopes per mode, approvals (dialog/CLI/API), audit log
 - ✅ Local provider discovery (Ollama, LM Studio) and configured providers
 - ⏳ Screenshot / vision fallback for canvas-heavy UIs
-- ⏳ Agent sessions with individual permissions and tokens (instead of one agent policy)
+- ✅ Agent sessions with individual permissions and tokens (`openshell agents token`), effective permissions in the
+  runtime panel, agent layer opt-in (`agents.enabled`)
 - ⏳ Agent runner integration (hand tasks to a configured agent, stream progress into the UI)
 - ✅ MCP resources (status, config, logs, capabilities, database schemas) and `tools/list_changed` notifications
 

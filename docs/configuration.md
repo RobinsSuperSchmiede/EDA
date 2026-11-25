@@ -16,10 +16,11 @@ Editor completion: add `"$schema": "https://raw.githubusercontent.com/RobinsSupe
 | `services` | array | Backends, databases, workers, AI servers, … |
 | `databases` | array | Built-in SQLite databases managed by OpenShell. |
 | `runtime` | object | Runtime manager behaviour. |
-| `agents` | object | Agent Interaction Layer: permissions, approvals, providers. |
+| `agents` | object | Agent Interaction Layer: on/off (opt-in), permissions, approvals, providers. |
 | `capabilities` | array | Functions the app exposes to agents (HTTP endpoint, script, task). |
 | `tasks` | object | Named commands (`"test": "pytest"`), runnable by agents with the `system` scope. |
 | `package` | object | Installer settings – see [installers.md](installers.md). |
+| `runtimes` | object | Language runtimes shipped inside the app – see [`runtimes`](#runtimes). |
 
 ## `window`
 
@@ -89,6 +90,10 @@ overrides, then `dist`, then the development settings.
 | `platforms` | all | Only run on `desktop`, `android` and/or `server`, e.g. `["desktop", "server"]` for a service that needs a toolchain. See [platforms.md](platforms.md) |
 | `background` | `keep` | Mobile platforms: `pause` stops the service while the app is in the background and starts it again afterwards |
 | `stop_timeout_ms` | `runtime.shutdown_timeout_ms` | Grace period before a forced kill (Unix; Windows terminates the tree immediately) |
+| `requires` | `{}` | Runtime versions the service needs, e.g. `{ "python": ">=3.10", "java": ">=17" }`. Known runtimes: `python`, `node`, `java`, `dotnet`, `go`, `rust`. Checked by `openshell doctor` (error) and when the app starts (warning in the service's log). The frontend has the same field for its dev server (`"requires": { "node": ">=18" }`) |
+
+Version requirements: `>=3.10`, `>3`, `<=21`, `<4`, `=3.12.1`, `3.12` (same as `=3.12`, matches 3.12.x),
+`^1.2` (`>=1.2 <2`), `~1.2` (`>=1.2 <1.3`), combined with commas: `">=3.10, <3.13"`.
 
 Every process also receives `OPENSHELL=1`, `OPENSHELL_MODE`, `OPENSHELL_SERVICE`, `OPENSHELL_PROJECT_ROOT`,
 `OPENSHELL_CONTROL_URL`, `OPENSHELL_DATA_DIR` (writable per-app data directory – per user for installed apps; store
@@ -150,7 +155,7 @@ Everything except `enabled` is optional. Full guide: [remote-access.md](remote-a
 
 | Field | Default | Description |
 |---|---|---|
-| `enabled` | `true` | Disable to deny all agent tools |
+| `enabled` | `false` | **Opt-in.** `true` opens the agent layer: MCP endpoints (`/mcp`, `/mcp/app`, `--mcp`), the tools API, the UI bridge and the remote gateway's MCP endpoint. While `false` they refuse every request and the UI bridge is not injected; the app, its frontend SDK and exposed services keep working. `openshell create`, `openshell init` and `openshell add function` write `true`; `openshell agents enable` / `disable` switch it |
 | `permissions` | dev: `read, ui, actions, services, files, code` · prod: `read, ui, actions` | A list for all modes or `{ "development": [...], "production": [...] }` |
 | `approval_required` | `["system"]` | Scopes that need a human decision |
 | `approval_timeout_ms` | 120000 | Unanswered requests are denied |
@@ -159,6 +164,36 @@ Everything except `enabled` is optional. Full guide: [remote-access.md](remote-a
 | `detect_local_providers` | `true` | Probe Ollama (11434) and LM Studio (1234) |
 
 Permission scopes: `read`, `ui`, `actions` (alias `write`), `services`, `files`, `code`, `system`.
+
+Agent sessions (`openshell agents token <name> --scopes read,actions`) and paired devices
+(`openshell remote pair <device> --scopes read`) get their own tokens and scopes; they never get more than
+`permissions` grants in the current mode. See [agents.md](agents.md#agent-sessions).
+
+## `runtimes`
+
+Language runtimes shipped inside the app, so the user's machine needs no Python, Node.js or Java:
+
+```json
+"runtimes": {
+  "python": "3.12",
+  "node": { "version": "22", "path": "vendor/node" },
+  "java": "21"
+}
+```
+
+| Runtime | Downloaded from | Default version |
+|---|---|---|
+| `python` | python-build-standalone (`install_only` builds) | `3.12` |
+| `node` | nodejs.org | `22` |
+| `java` | Eclipse Temurin JRE (adoptium.net) | `21` |
+
+A value is a version (`"22"`, `"3.12"`, `"21.0.5"`) or `{ "version", "path" }` (default path `runtimes/<name>`,
+inside the project). `openshell runtime install` downloads every declared runtime for the current system and checks
+its SHA-256; `openshell runtime add <name> [version]` declares and downloads in one step. The runtime's executable
+folders are put in front of `PATH` for every service, setup and build step, function and task, so `python main.py`
+or `npm install` use the bundled copy. `openshell package` ships the folder with the app. A runtime is built for one
+operating system: build installers on each system (the release workflow runs `openshell runtime install` there).
+Downloaded runtimes do not belong in git; `runtime add` adds the folder to `.gitignore`.
 
 ## `capabilities[]`
 

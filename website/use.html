@@ -151,7 +151,7 @@ openshell apps                                  <span class="tc"># list installe
             </div>
           </div>
 
-          <div class="callout mt-m reveal"><b>Does the app need anything else?</b> Apps written in Python, Node.js or Java need that runtime on your computer; the publisher's page says so. Apps compiled to a single program need nothing extra. If something is missing, the app's loading screen tells you what.</div>
+          <div class="callout mt-m reveal"><b>Does the app need anything else?</b> Apps written in Python, Node.js or Java need that runtime on your computer unless the publisher ships it with the app; the publisher's page says so. Apps compiled to a single program need nothing extra. If something is missing, the app's loading screen tells you what.</div>
         </div>
       </section>
 
@@ -215,7 +215,7 @@ openshell apps                                  <span class="tc"># list installe
             <table>
               <thead><tr><th>Question</th><th>Answer</th></tr></thead>
               <tbody>
-                <tr><td>What can an assistant do?</td><td>Only what the app's publisher declared as functions. By default it can read, operate the app's interface and call functions that change the app's own data.</td></tr>
+                <tr><td>What can an assistant do?</td><td>Nothing, unless the publisher switched agent access on. Then only what the publisher declared as functions. By default it can read, operate the app's interface and call functions that change the app's own data.</td></tr>
                 <tr><td>What can it never do?</td><td>Run arbitrary commands, read or write files outside the app, or restart services, unless the publisher has switched that on for the installed app.</td></tr>
                 <tr><td>Can I approve each step?</td><td>Yes. Critical actions show a dialog and are denied if nobody answers.</td></tr>
                 <tr><td>Can I see what happened?</td><td>Every call is written to an audit log: who, what, when and whether it worked. <span class="mono">openshell audit</span> shows it.</td></tr>
@@ -294,7 +294,7 @@ openshell apps                                  <span class="tc"># list installe
         <div class="foot-grid">
           <div class="foot-brand">
             <a class="brand" href="index.html"><img src="assets/logo.png" alt="" />OpenShell</a>
-            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+            <p>The app runtime that turns a web app and its backend into one desktop app. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
           </div>
           <div>
             <h4>Product</h4>

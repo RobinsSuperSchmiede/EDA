@@ -428,7 +428,7 @@ FOOTER = """<!-- chrome:footer -->
         <div class="foot-grid">
           <div class="foot-brand">
             <a class="brand" href="{root}index.html"><img src="{root}assets/logo.png" alt="" />OpenShell</a>
-            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v{version}.</p>
+            <p>The app runtime that turns a web app and its backend into one desktop app. Free and open source under the MIT licence. Alpha, v{version}.</p>
           </div>
           <div>
             <h4>Product</h4>

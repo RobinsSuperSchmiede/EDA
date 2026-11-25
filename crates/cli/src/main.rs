@@ -1,6 +1,7 @@
 //! `openshell` – command line interface of OpenShell.
 
 mod commands;
+mod languages;
 mod output;
 
 use clap::{Parser, Subcommand};
@@ -129,7 +130,23 @@ enum Command {
         /// Start the app in the background if it is not running
         #[arg(long)]
         start: bool,
+        /// Agent session token (`openshell agents token`) instead of the admin token; also read
+        /// from OPENSHELL_AGENT_TOKEN
+        #[arg(long, env = "OPENSHELL_AGENT_TOKEN", hide_env_values = true)]
+        token: Option<String>,
     },
+    /// AI agents: the agent layer on/off, effective permissions, session tokens with own scopes
+    Agents {
+        #[command(subcommand)]
+        action: Option<AgentsAction>,
+    },
+    /// Language runtimes shipped inside the app: list, add (download), install, remove
+    Runtime {
+        #[command(subcommand)]
+        action: Option<RuntimeAction>,
+    },
+    /// Backend languages: support level, runtime they need, templates
+    Languages,
     /// List agent tools and whether agents may use them
     Tools {
         #[arg(long)]
@@ -213,6 +230,9 @@ enum RemoteAction {
         /// Do not print a QR code
         #[arg(long)]
         no_qr: bool,
+        /// What the device may do, e.g. `read,actions` (default: everything the app grants agents)
+        #[arg(long, value_delimiter = ',')]
+        scopes: Vec<String>,
     },
     /// List paired devices
     Devices,
@@ -220,6 +240,65 @@ enum RemoteAction {
     Revoke { device: String },
     /// Lift the block of an address after too many failed logins
     Unblock { address: String },
+}
+
+#[derive(Subcommand)]
+enum AgentsAction {
+    /// Effective permissions per mode, agent sessions and paired devices (default)
+    Show,
+    /// Let AI agents connect (`agents.enabled: true`)
+    Enable,
+    /// Close the agent layer: MCP, tools API, UI bridge and the gateway's MCP endpoint
+    Disable,
+    /// Create an agent session with its own token (shown once) and scopes
+    Token {
+        /// Session name, e.g. `claude` or `ci`
+        name: String,
+        /// Scopes, e.g. `read,actions` (default: everything the app grants agents)
+        #[arg(long, value_delimiter = ',')]
+        scopes: Vec<String>,
+        /// Developer profile: all tools (`/mcp`), not only the app's functions (`/mcp/app`)
+        #[arg(long)]
+        full: bool,
+    },
+    /// List agent sessions
+    Tokens,
+    /// Revoke an agent session's token
+    Revoke { name: String },
+}
+
+#[derive(Subcommand)]
+enum RuntimeAction {
+    /// Declared runtimes, installed versions and `requires` checks (default)
+    List,
+    /// Declare a runtime in openshell.json and download it into the project
+    Add {
+        /// python, node or java
+        name: String,
+        /// Version: major (`22`), major.minor (`3.12`) or exact
+        version: Option<String>,
+        /// Folder inside the project (default: runtimes/<name>)
+        #[arg(long)]
+        path: Option<String>,
+        /// Only declare it; download later with `openshell runtime install`
+        #[arg(long)]
+        no_install: bool,
+    },
+    /// Download the declared runtimes for this system (skips installed ones)
+    Install {
+        /// Only this runtime
+        name: Option<String>,
+        /// Download again even if installed
+        #[arg(long)]
+        force: bool,
+    },
+    /// Remove a runtime from openshell.json and delete its folder
+    Remove {
+        name: String,
+        /// Keep the folder
+        #[arg(long)]
+        keep_files: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -268,6 +347,8 @@ fn main() {
     rt.shutdown_timeout(std::time::Duration::from_millis(200));
 }
 
+pub(crate) use AgentsAction as AgentsCmd;
 pub(crate) use Command as Cmd;
 pub(crate) use ReleaseAction as ReleaseCmd;
 pub(crate) use RemoteAction as RemoteCmd;
+pub(crate) use RuntimeAction as RuntimeCmd;

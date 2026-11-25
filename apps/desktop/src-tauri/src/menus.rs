@@ -140,6 +140,11 @@ fn append_services(app: &AppHandle, menu: &dyn MenuLike) -> tauri::Result<()> {
     menu.add(&MenuItem::with_id(app, "rt:logs-folder", "Open logs folder", true, None::<&str>)?)?;
 
     let agents = Submenu::new(app, "AI agents", true)?;
+    if !shell.agents_enabled() {
+        agents.append(&info(app, "Off \u{2014} agents cannot connect (agents.enabled)".to_string())?)?;
+        menu.add(&agents)?;
+        return Ok(());
+    }
     let pending = shell.approvals().pending().len();
     agents.append(&info(
         app,

@@ -25,6 +25,8 @@ Everything an app must do – nothing more:
 | 5 | The frontend calls the backend via **relative URLs** (`/api/...`). Static frontends: `"proxy": {"/api": "${services.backend.url}"}`; dev servers (Vite): proxy `/api` to `process.env.BACKEND_URL` and set `"env": {"BACKEND_URL": "${services.backend.url}"}`. | Same code works in dev, production and in a browser. |
 | 6 | Expose the app's functions to agents as **capabilities** (config, OpenAPI or frontend actions) – see below. | Agents can *use* the app without UI automation. |
 | 7 | The frontend works without OpenShell too: guard SDK usage with `if (window.__OPENSHELL__)`. | Browser mode, tests. |
+| 8 | Keep `"agents": { "enabled": true }` when the app offers functions to agents – the agent layer is **opt-in** (off without it). | Agents, `openshell call` and UI automation need it. |
+| 9 | Declare runtime versions with `"requires"` (`{ "python": ">=3.10" }`); ship runtimes with `openshell runtime add python\|node\|java`. | `openshell doctor` catches version problems; users need not install anything. |
 
 ## Workflow
 
@@ -221,9 +223,11 @@ openshell release workflow   # CI workflow: one tag push builds every platform +
   "capabilities": [ /* see above */ ],
   "tasks": { "test": "pytest", "migrate": "python manage.py migrate" },   // agents: task_run (scope "system")
   "agents": {
+    "enabled": true,                                          // opt-in: without it agents cannot connect
     "permissions": { "development": ["read","ui","actions","services","files","code"], "production": ["read","ui","actions"] },
     "approval_required": ["system"]
   },
+  "runtimes": { "python": "3.12" },                           // optional: ship Python with the app (openshell runtime add)
   "package": { "exclude": ["docs"], "targets": ["nsis"] }
 }
 ```

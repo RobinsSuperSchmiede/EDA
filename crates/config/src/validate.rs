@@ -379,6 +379,92 @@ pub fn validate(config: &Config) -> Vec<Issue> {
         ));
     }
 
+    // --- runtimes and version requirements ----------------------------------
+    for (name, entry) in &config.runtimes {
+        let p = format!("runtimes.{name}");
+        match crate::runtimes::runtime(name) {
+            None => issues.push(Issue::error(
+                p.clone(),
+                format!(
+                    "unknown runtime `{name}` (bundled runtimes: {})",
+                    crate::runtimes::RUNTIMES
+                        .iter()
+                        .filter(|r| r.bundle.is_some())
+                        .map(|r| r.name)
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ),
+            )),
+            Some(r) if r.bundle.is_none() => issues.push(Issue::error(
+                p.clone(),
+                format!(
+                    "{} cannot be bundled by OpenShell; compile to a self-contained program instead",
+                    r.title
+                ),
+            )),
+            Some(_) => {}
+        }
+        if let Some(v) = entry.version() {
+            if crate::runtimes::Version::parse(v).is_none() {
+                issues.push(Issue::error(
+                    format!("{p}.version"),
+                    format!("`{v}` is not a version (examples: `22`, `3.12`, `21.0.5`)"),
+                ));
+            }
+        }
+        let path = entry.path(name);
+        if path.trim().is_empty()
+            || std::path::Path::new(&path).is_absolute()
+            || path.split(['/', '\\']).any(|c| c == "..")
+        {
+            issues.push(Issue::error(format!("{p}.path"), "must be a folder inside the project"));
+        }
+    }
+    let mut check_requires = |requires: &BTreeMap<String, String>, p: String| {
+        for (name, req) in requires {
+            if crate::runtimes::runtime(name).is_none() {
+                issues.push(Issue::error(
+                    format!("{p}.requires.{name}"),
+                    format!(
+                        "unknown runtime `{name}` (known: {})",
+                        crate::runtimes::RUNTIMES.iter().map(|r| r.name).collect::<Vec<_>>().join(", ")
+                    ),
+                ));
+            }
+            if let Err(e) = crate::runtimes::VersionReq::parse(req) {
+                issues.push(Issue::error(format!("{p}.requires.{name}"), e));
+            }
+        }
+    };
+    for (i, s) in config.services.iter().enumerate() {
+        check_requires(&s.requires, format!("services[{i}]"));
+    }
+    if let Some(fe) = &config.frontend {
+        check_requires(&fe.requires, "frontend".into());
+    }
+
+    // --- agents (opt-in) ----------------------------------------------------
+    if !config.agents.enabled {
+        let a = &config.agents;
+        if a.permissions.is_some() || a.approval_required.is_some() || !a.providers.is_empty() {
+            issues.push(Issue::warning(
+                "agents.enabled",
+                "agent settings are present, but agents are off – they are opt-in since 0.3; add `\"enabled\": true` to use them",
+            ));
+        } else if !config.capabilities.is_empty() {
+            issues.push(Issue::warning(
+                "agents.enabled",
+                "capabilities are offered to AI agents only with `agents.enabled: true` (the frontend SDK can still call them)",
+            ));
+        }
+        if config.runtime.remote.enabled {
+            issues.push(Issue::warning(
+                "runtime.remote",
+                "the gateway's MCP endpoint needs `agents.enabled: true`; exposed services work without it",
+            ));
+        }
+    }
+
     // --- tasks --------------------------------------------------------------
     for (name, t) in &config.tasks {
         if !valid_name(name) {

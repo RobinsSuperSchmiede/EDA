@@ -10,6 +10,11 @@ Every running shell exposes a local HTTP API on `127.0.0.1:<port>`. Its URL and 
 Authenticate with `Authorization: Bearer <token>` (WebSocket: `?token=`). Requests with a foreign `Host` header or a
 non-allow-listed `Origin` are rejected with 403.
 
+Three kinds of token: the **admin** token of `runtime.json`, the **app** token the frontend gets (SDK and UI bridge
+only), and **agent session** tokens (`osa_…`, `openshell agents token`) which reach `/mcp/app` – and with the full
+profile `/mcp` and `/v1/tools` – with the session's scopes. With `agents.enabled: false` (the default) `/mcp`,
+`/mcp/app`, `/v1/tools` and `/v1/ui/bridge` answer 403 for every token.
+
 ## Endpoints
 
 | Method & path | Token | Description |
@@ -23,16 +28,18 @@ non-allow-listed `Origin` are rejected with 403.
 | `GET /v1/approvals` | admin | `{ pending: [{ id, agent, tool, permission, summary, args, created_at, expires_at }] }` |
 | `POST /v1/approvals/{id}/{approve\|deny}` | admin | Answer an approval request |
 | `GET /v1/audit?limit=` | admin | Recent audit entries |
-| `GET /v1/tools` | admin | Tools with `permission`, `access` and `input_schema` |
-| `POST /v1/tools/{name}` | admin | Call a tool with the **agent** policy. Header `X-OpenShell-Agent` names the agent. |
-| `POST /mcp` | admin | MCP Streamable HTTP (JSON-RPC, JSON responses, `Mcp-Session-Id`) |
+| `GET /v1/tools` | admin, session (full) | Tools with `permission`, `access` and `input_schema` (access for the caller) |
+| `POST /v1/tools/{name}` | admin, session (full) | Call a tool with the **agent** policy (limited to a session's scopes). Header `X-OpenShell-Agent` names the agent. |
+| `POST /mcp` | admin, session (full) | MCP Streamable HTTP (JSON-RPC, JSON responses, `Mcp-Session-Id`) |
+| `POST /mcp/app` | admin, session | MCP with the app profile (the app's own functions) |
+| `GET /v1/agents` | admin | Effective agent permissions: `enabled`, `granted`, `by_mode`, `approval_required`, `sdk_permissions`, `sessions` and `devices` with their effective scopes |
 | `GET /v1/ui/bridge` | app or admin | WebSocket for `bridge.js` |
 | `GET /v1/sdk/info` | app | App info and SDK permissions |
 | `POST /v1/sdk/call/{tool}` | app | Call a tool with the **SDK** policy |
 | `POST /v1/lifecycle` | admin | App lifecycle from the host: `{ "kind": "foreground" \| "background" \| "low_memory" }`, `{ "kind": "power_save", "enabled": true }`, `{ "kind": "network", "connected": true, "metered": false }` → paused/resumed services and `keep_alive` |
 | `GET /v1/remote` | admin | Remote gateway: `enabled`, `urls`, `mcp_url`, shared `token` (if `shared_token`), `tls_fingerprint`, `allow`, `exposed`, `devices`, `blocked`, `pairing_uri` |
-| `GET /v1/remote/devices` | admin | Paired devices (`name`, `paired_at`, `last_seen`) |
-| `POST /v1/remote/devices` | admin | Pair a device: `{"name":"laptop"}` → its `token` (only in this answer) and `pairing_uri` |
+| `GET /v1/remote/devices` | admin | Paired devices (`name`, `paired_at`, `last_seen`, `scopes`) |
+| `POST /v1/remote/devices` | admin | Pair a device: `{"name":"laptop","scopes":["read"]}` → its `token` (only in this answer) and `pairing_uri` |
 | `POST /v1/remote/devices/{name}/revoke` | admin | Revoke a device's token |
 | `POST /v1/remote/unblock` | admin | `{"address":"192.168.1.7"}` – lift a lockout |
 | `GET /v1/update` | admin | `{configured, update: {current, latest, available, download, page}}` from `package.update_url` |

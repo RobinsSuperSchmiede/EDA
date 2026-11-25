@@ -222,7 +222,9 @@ openshell call ui_click '{"text":"Save"}'</code></pre></div>
           <h2 class="reveal">Allowed, asked,<br /><span class="soft">or denied</span></h2>
           <div class="cols cols--wide mt-m">
             <ul class="ticks reveal">
-              <li><span><b>Scopes per mode.</b> Development is broad, production narrow. <span class="mono">openshell tools</span> shows what each tool needs and what is currently allowed.</span></li>
+              <li><span><b>Opt-in.</b> The agent layer is closed until the app sets <span class="mono">"agents": { "enabled": true }</span>. Templates and <span class="mono">init</span> do; <span class="mono">openshell agents disable</span> closes it.</span></li>
+              <li><span><b>Scopes per mode.</b> Development is broad, production narrow. <span class="mono">openshell tools</span> shows what each tool needs and what is currently allowed; the runtime panel shows the effective permissions.</span></li>
+              <li><span><b>One token per agent.</b> <span class="mono">openshell agents token claude --scopes read,actions</span> gives an agent its own token and scopes, audited as <span class="mono">session:claude</span> and revocable at once. Paired devices get scopes the same way.</span></li>
               <li><span><b>Approvals.</b> Scopes in <span class="mono">approval_required</span> (default <span class="mono">system</span>) wait for a person. The desktop app shows a dialog; headless mode prints a request. Unanswered requests are denied.</span></li>
               <li><span><b>Audit.</b> Every call, allowed or not, is appended to <span class="mono">.openshell/audit.jsonl</span> with the agent's name, channel, tool, scope and outcome.</span></li>
               <li><span><b>Fenced files.</b> Absolute paths, <span class="mono">..</span> and symlink escapes are rejected. There is no way to run arbitrary shell commands.</span></li>
@@ -311,7 +313,7 @@ openshell call ui_click '{"text":"Save"}'</code></pre></div>
         <div class="foot-grid">
           <div class="foot-brand">
             <a class="brand" href="index.html"><img src="assets/logo.png" alt="" />OpenShell</a>
-            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+            <p>The app runtime that turns a web app and its backend into one desktop app. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
           </div>
           <div>
             <h4>Product</h4>

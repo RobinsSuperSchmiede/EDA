@@ -42,8 +42,34 @@
 <p>All notable changes to this project are documented here. The format follows
 <a href="https://keepachangelog.com/en/1.1.0/" rel="noopener">Keep a Changelog</a> and the project uses <a href="https://semver.org/" rel="noopener">Semantic Versioning</a>.</p>
 <h2 id="unreleased"><a href="https://github.com/RobinsSuperSchmiede/EDA/compare/v0.2.1...HEAD" rel="noopener">Unreleased</a><a class="anchor" href="#unreleased" aria-label="Link to this section">#</a></h2>
+<h3 id="changed-breaking">Changed (breaking)<a class="anchor" href="#changed-breaking" aria-label="Link to this section">#</a></h3>
+<ul><li><strong>AI agents are opt-in.</strong> <code>agents.enabled</code> defaults to <code>false</code>. While it is off, <code>/mcp</code>, <code>/mcp/app</code>, the tools
+API, the UI bridge and the remote gateway's MCP endpoint refuse every request and no bridge script is injected;
+the app, the frontend SDK and exposed services keep working. Templates, <code>openshell create</code>, <code>openshell init</code> and
+<code>openshell add function</code> write <code>"enabled": true</code>; <code>openshell agents enable</code> / <code>disable</code> switch it. Existing apps
+that use agents need <code>"agents": { "enabled": true }</code> – <code>openshell doctor</code> warns when agent settings are present
+without it.</li></ul>
 <h3 id="added">Added<a class="anchor" href="#added" aria-label="Link to this section">#</a></h3>
-<ul><li><strong>Building blocks</strong>: frontend, backend, database and agent functions are independent and freely combinable.
+<ul><li><strong>Bundled runtimes</strong> (<code>runtimes</code> in openshell.json): ship Python (python-build-standalone), Node.js (nodejs.org)
+or a Java JRE (Eclipse Temurin) inside the app. <code>openshell runtime add|install|remove</code> downloads them into the
+project with SHA-256 verification; their executable folders come first in <code>PATH</code> for every service, setup and
+build step, function and task, and <code>openshell package</code> ships them. The app release workflow installs them on
+every build machine.</li><li><strong>Version requirements</strong> (<code>services[].requires</code>, <code>frontend.requires</code>): <code>{ "python": "&gt;=3.10, &lt;3.14" }</code> for
+<code>python</code>, <code>node</code>, <code>java</code>, <code>dotnet</code>, <code>go</code>, <code>rust</code>. <code>openshell doctor</code> reports mismatches as errors (bundled runtimes
+included), the app logs them as warnings when it starts. <code>openshell init</code> proposes <code>requires</code> from the version it
+finds.</li><li><strong>Languages as data</strong>: one entry per runtime and language (programs, version probe, bundle layout, support level,
+templates) in <code>openshell_config::runtimes</code>, one detector per language in <code>crates/cli/src/languages/</code>. New:
+<code>openshell languages</code>, <code>openshell create --list</code> shows language and support level, <code>openshell init</code> detects .NET
+(<code>*.csproj</code>, ASP.NET Core, Swashbuckle OpenAPI). <code>openshell doctor</code> lists runtimes from the same table.</li><li><strong>Agent sessions</strong> with their own tokens and scopes: `openshell agents token &lt;name&gt; [--scopes read,actions]
+[--full]<code>,</code>openshell agents tokens<code>,</code>openshell agents revoke &lt;name&gt;<code>. Tokens (</code>osa_…`) are stored hashed, reach
+only <code>/mcp/app</code> (or with <code>--full</code> also <code>/mcp</code> and <code>/v1/tools</code>), never get more than <code>agents.permissions</code> grants,
+are audited as <code>session:&lt;name&gt;</code> and stop working at once when revoked. <code>openshell mcp --token</code> /
+<code>OPENSHELL_AGENT_TOKEN</code> (also for installed apps' <code>--mcp</code>).</li><li><strong>Permissions per device</strong>: <code>openshell remote pair &lt;device&gt; --scopes read</code> (also <code>scopes</code> in
+<code>POST /v1/remote/devices</code>).</li><li><strong>Effective permissions</strong>: <code>openshell agents</code>, <code>GET /v1/agents</code> and a new <em>AI agents</em> section in the desktop
+runtime panel (scopes per mode, approvals, sessions and devices with what they effectively may do); the title-bar
+menu shows when agents are off. Denials name the session's or device's scopes.</li><li><strong>Template end-to-end tests</strong>: <code>scripts/e2e-templates.py</code> creates every template, runs it headless, waits for
+healthy services, loads the frontend and calls an agent function; CI runs it on Windows, macOS and Linux (job
+<code>templates</code>). CI also checks that the generated website is up to date.</li><li><strong>Building blocks</strong>: frontend, backend, database and agent functions are independent and freely combinable.
 <code>openshell add frontend | backend [--lang] | database [name] | function &lt;name&gt;</code> adds a block to an app;
 <code>openshell create &lt;name&gt; --with frontend,database,…</code> composes a new one (interactive selection in a terminal).</li><li><strong>Built-in databases</strong> (<code>databases</code> in openshell.json): SQLite files in the app's data directory, migrations,
 <code>OPENSHELL_DB_&lt;NAME&gt;</code> / <code>DATABASE_URL</code> for services, <code>OpenShell.db.query/execute/schema/list</code> for the frontend,
@@ -101,7 +127,7 @@ discovery.</li><li>CLI: <code>init</code>, <code>create</code>, <code>dev</code>
 (<code>openshell guide</code>) and a Claude Code skill; every new project gets its own <code>AGENTS.md</code>.</li><li>Release workflow with prebuilt binaries for Windows, macOS (arm64, x86_64) and Linux, plus install scripts.</li></ul>
         <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/CHANGELOG.md" rel="noopener">View this page on GitHub</a></div>
       </article>
-      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#unreleased">[Unreleased]</a><a class="l3" href="#added">Added</a><a class="l2" href="#021---2026-11-19">[0.2.1] - 2026-11-19</a><a class="l3" href="#fixed">Fixed</a><a class="l2" href="#020---2026-11-19">[0.2.0] - 2026-11-19</a><a class="l3" href="#added-1">Added</a><a class="l2" href="#010---2026-11-17">[0.1.0] - 2026-11-17</a><a class="l3" href="#added-2">Added</a></aside>
+      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#unreleased">[Unreleased]</a><a class="l3" href="#changed-breaking">Changed (breaking)</a><a class="l3" href="#added">Added</a><a class="l2" href="#021---2026-11-19">[0.2.1] - 2026-11-19</a><a class="l3" href="#fixed">Fixed</a><a class="l2" href="#020---2026-11-19">[0.2.0] - 2026-11-19</a><a class="l3" href="#added-1">Added</a><a class="l2" href="#010---2026-11-17">[0.1.0] - 2026-11-17</a><a class="l3" href="#added-2">Added</a></aside>
     </main>
 
     <!-- chrome:footer -->
@@ -110,7 +136,7 @@ discovery.</li><li>CLI: <code>init</code>, <code>create</code>, <code>dev</code>
         <div class="foot-grid">
           <div class="foot-brand">
             <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
-            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+            <p>The app runtime that turns a web app and its backend into one desktop app. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
           </div>
           <div>
             <h4>Product</h4>

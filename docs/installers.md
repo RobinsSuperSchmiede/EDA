@@ -80,10 +80,22 @@ By default the whole project **except** `.git`, `.openshell`, `node_modules`, `_
 ## Runtimes
 
 The installer contains the shell and your app files. Interpreters and runtimes your services need – Python, Node.js,
-a JRE – must exist on the target machine (or be shipped by you inside the app, e.g. a `jlink` runtime image or an
-embedded Python, referenced by a relative `command`). Compiled services (C++, Rust, Go, GraalVM native images) need
-nothing extra. If a runtime is missing, the loading screen shows the error (`java was not found in PATH`).
-Bundled runtimes are on the [roadmap](../ROADMAP.md).
+a JRE – must exist on the target machine, **or you ship them with the app**:
+
+```bash
+openshell runtime add python 3.12      # declares it in openshell.json and downloads it into runtimes/python
+openshell runtime add node 22
+openshell runtime add java 21          # Temurin JRE
+openshell package                      # the runtime folder is part of the installer
+```
+
+Bundled runtimes come first in `PATH` for every service, setup and build step, function and task, so `python
+main.py` uses them without any change. They are built for one system: the release workflow runs
+`openshell runtime install` on each build machine before `openshell package`. See
+[configuration.md](configuration.md#runtimes). Compiled services (C++, Rust, Go, GraalVM native images, self-contained
+.NET) need nothing extra. Declare the versions a service needs with `requires` (`{ "python": ">=3.10" }`);
+`openshell doctor` checks them and the app logs a warning at start when they are not met. If a runtime is missing,
+the loading screen shows the error (`java was not found in PATH`).
 
 ## Portable app bundle (`.osapp`)
 

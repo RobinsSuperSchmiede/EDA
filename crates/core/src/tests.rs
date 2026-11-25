@@ -12,13 +12,19 @@ fn sleep_cmd() -> &'static str {
     }
 }
 
+/// The tests exercise the agent layer, which is opt-in (`agents.enabled`).
+fn with_agents(mut config: openshell_config::Config) -> openshell_config::Config {
+    config.agents.enabled = true;
+    config
+}
+
 async fn launch(extra: &str, mode: Mode) -> (tempfile::TempDir, Shell, ControlClient) {
     let dir = tempfile::tempdir().unwrap();
     let json = format!(
         r#"{{"app":{{"name":"Test App"}},"services":[{{"name":"api","command":"{}"}}]{extra}}}"#,
         sleep_cmd()
     );
-    let config = parse_json(&json).unwrap();
+    let config = with_agents(parse_json(&json).unwrap());
     let project = Project {
         root: dir.path().to_path_buf(),
         config_path: dir.path().join("openshell.json"),
@@ -260,7 +266,7 @@ async fn openapi_import_and_app_profile() {
         ]{extra}"#,
         sleep_cmd()
     );
-    let config = parse_json(&json).unwrap();
+    let config = with_agents(parse_json(&json).unwrap());
     let project = Project {
         root: dir.path().to_path_buf(),
         config_path: dir.path().join("openshell.json"),
@@ -346,7 +352,7 @@ async fn database_and_functions_without_services() {
     let project = Project {
         root: dir.path().to_path_buf(),
         config_path: dir.path().join("openshell.json"),
-        config: parse_json(&cfg.to_string()).unwrap(),
+        config: with_agents(parse_json(&cfg.to_string()).unwrap()),
         state_dir_override: None,
     };
     let shell = Shell::launch(project, Mode::Production, Arc::new(HeadlessHost::default())).await.unwrap();
@@ -407,7 +413,7 @@ async fn database_agent_access_is_enforced() {
     let project = Project {
         root: dir.path().to_path_buf(),
         config_path: dir.path().join("openshell.json"),
-        config: parse_json(&cfg.to_string()).unwrap(),
+        config: with_agents(parse_json(&cfg.to_string()).unwrap()),
         state_dir_override: None,
     };
     let shell = Shell::launch(project, Mode::Development, Arc::new(HeadlessHost::default())).await.unwrap();
@@ -599,7 +605,7 @@ async fn remote_devices_exposed_services_and_lockout() {
     // `launch` adds its own services list; build the project by hand instead
     let dir = tempfile::tempdir().unwrap();
     let json = format!(r#"{{"app":{{"name":"Mesh App"}}{extra}}}"#);
-    let config = parse_json(&json).unwrap();
+    let config = with_agents(parse_json(&json).unwrap());
     let issues = openshell_config::validate(&config);
     assert!(issues.iter().all(|i| !i.is_error()), "{issues:?}");
     let project = Project {
@@ -696,5 +702,80 @@ async fn remote_gateway_over_tls_with_shared_token_off() {
     assert_eq!(r.status(), 200);
     // plain HTTP on the TLS port does not work
     assert!(reqwest::get(format!("http://127.0.0.1:{port}/v1/health")).await.is_err());
+    shell.shutdown().await;
+}
+
+#[tokio::test]
+async fn agents_off_closes_the_agent_layer() {
+    let dir = tempfile::tempdir().unwrap();
+    let json =
+        format!(r#"{{"app":{{"name":"Quiet"}},"services":[{{"name":"api","command":"{}"}}]}}"#, sleep_cmd());
+    let project = Project {
+        root: dir.path().to_path_buf(),
+        config_path: dir.path().join("openshell.json"),
+        config: parse_json(&json).unwrap(),
+        state_dir_override: None,
+    };
+    let shell = Shell::launch(project, Mode::Development, Arc::new(HeadlessHost::default())).await.unwrap();
+    assert!(!shell.agents_enabled());
+    assert!(!shell.webview_init_script().contains("__OPENSHELL_ACTIONS__"), "no UI bridge");
+    let client = ControlClient::connect(&dir.path().join(".openshell")).await.unwrap();
+    for path in ["/mcp", "/mcp/app", "/v1/tools/runtime_status"] {
+        let err = client.post(path, &json!({})).await.unwrap_err().to_string();
+        assert!(err.contains("agent layer is off"), "{path}: {err}");
+    }
+    assert!(client.get("/v1/tools").await.is_err());
+    // the app itself keeps working
+    assert_eq!(client.get("/v1/status").await.unwrap()["app"], "Quiet");
+    let agents = client.get("/v1/agents").await.unwrap();
+    assert_eq!(agents["enabled"], false);
+    assert_eq!(agents["granted"], json!([]));
+    shell.shutdown().await;
+}
+
+#[tokio::test]
+async fn agent_sessions_have_their_own_scopes() {
+    let (_dir, shell, admin) = launch("", Mode::Development).await;
+    let sessions = &shell.inner.sessions;
+    let app_token = sessions.create("assistant", crate::sessions::SessionProfile::App, vec![]).unwrap();
+    let dev_token = sessions
+        .create("reader", crate::sessions::SessionProfile::Full, vec![openshell_config::Permission::Read])
+        .unwrap();
+    let assistant = admin.clone().with_token(&app_token).with_agent("claude");
+    let reader = admin.clone().with_token(&dev_token);
+
+    // app profile: /mcp/app only
+    let list =
+        assistant.post("/mcp/app", &json!({"jsonrpc":"2.0","id":1,"method":"tools/list"})).await.unwrap();
+    assert!(list["result"]["tools"].as_array().unwrap().iter().any(|t| t["name"] == "app_status"));
+    assert!(assistant.post("/mcp", &json!({"jsonrpc":"2.0","id":1,"method":"tools/list"})).await.is_err());
+    assert!(assistant.get("/v1/status").await.is_err(), "admin API is closed to sessions");
+
+    // full profile, but only `read`: reading works, writing files is denied
+    let r = reader.post("/v1/tools/runtime_status", &json!({ "service": "api" })).await.unwrap();
+    assert_eq!(r["ok"], true, "{r}");
+    let r = reader.post("/v1/tools/fs_write", &json!({ "path": "x.txt", "content": "x" })).await.unwrap();
+    assert_eq!(r["ok"], false);
+    let tools = reader.get("/v1/tools").await.unwrap();
+    let access = |name: &str| {
+        tools["tools"].as_array().unwrap().iter().find(|t| t["name"] == name).unwrap()["access"].clone()
+    };
+    assert_eq!(access("fs_write"), "denied");
+    assert_eq!(access("logs_read"), "allowed");
+
+    // audited under the session's name
+    let audit = admin.get("/v1/audit?limit=5").await.unwrap();
+    assert!(audit["entries"].as_array().unwrap().iter().any(|e| e["agent"] == "session:reader"), "{audit}");
+
+    // effective permissions for the runtime panel
+    let agents = admin.get("/v1/agents").await.unwrap();
+    assert_eq!(agents["enabled"], true);
+    let reader_info =
+        agents["sessions"].as_array().unwrap().iter().find(|s| s["name"] == "reader").unwrap().clone();
+    assert_eq!(reader_info["effective"], json!(["read"]));
+
+    // revoked tokens stop working at once
+    assert!(sessions.revoke("reader").unwrap());
+    assert!(reader.get("/v1/tools").await.is_err());
     shell.shutdown().await;
 }

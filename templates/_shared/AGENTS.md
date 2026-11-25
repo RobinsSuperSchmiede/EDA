@@ -41,6 +41,10 @@ openshell package --target bundle       # portable .osapp (Android app, Termux, 
    runtime works.
 10. Services stay on `127.0.0.1`. To make one reachable from other devices, add it to `runtime.remote.expose`
     (token login, allowlist, TLS) instead of binding it to `0.0.0.0`.
+11. The agent layer is opt-in: `"agents": { "enabled": true }` must stay in `openshell.json` for MCP, `openshell
+    call` and the UI bridge to work (`openshell agents` shows what agents may do).
+12. Pin runtime versions a service needs with `"requires": { "python": ">=3.10" }`; to ship Python, Node.js or a
+    JRE with the app, use `openshell runtime add python|node|java` instead of asking users to install them.
 
 ## Verify a change
 

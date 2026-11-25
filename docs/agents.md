@@ -24,6 +24,12 @@ all subject to permission scopes, optional human approval and an audit log. Open
 AI model – it is infrastructure for any agent: Claude Code, Codex, Cursor, OpenAI- or Anthropic-based agents, local
 models via Ollama / LM Studio, or your own agent system.
 
+**The agent layer is opt-in.** An app opens it with `"agents": { "enabled": true }` – `openshell create`,
+`openshell init` and `openshell add function` write that for you, `openshell agents enable` / `disable` switch it.
+While it is off, the MCP endpoints, the tools API, the UI bridge and the remote gateway's MCP endpoint refuse every
+request and no bridge script is injected into the app's pages; the app, its frontend SDK and exposed services keep
+working. `openshell agents` shows what agents get right now.
+
 ## Connecting
 
 ### Using an installed app
@@ -197,6 +203,40 @@ request; answer with `openshell approve <id>` / `openshell deny <id>`. Unanswere
 Every call – allowed, denied, rejected or failed – is appended to `.openshell/audit.jsonl` with agent name, channel,
 tool, scope, (truncated) arguments, outcome and duration. View it with `openshell audit`.
 
+The runtime panel of the desktop app (title bar right-click → *Runtime panel* → *AI agents*) shows the effective
+permissions: what each scope allows, development vs. production, which scopes ask for approval, and every agent
+session and paired device with what it effectively may do. The same data: `openshell agents`, `GET /v1/agents`.
+
+## Agent sessions
+
+By default every agent connected through `openshell mcp` uses the admin token of `.openshell/runtime.json` and gets
+the app's agent permissions. To tell agents apart and limit each one, give it its own session:
+
+```bash
+openshell agents token claude --scopes read,actions       # app profile: only the app's functions
+openshell agents token builder --full                      # developer tools as well
+openshell agents tokens                                    # list
+openshell agents revoke claude                             # stops working at once, also while the app runs
+```
+
+The token (`osa_…`) is shown once and stored as a SHA-256 hash in `<data>/agent-sessions.json`. Use it with
+`openshell mcp --token osa_…`, the environment variable `OPENSHELL_AGENT_TOKEN` (also for an installed app's
+`--mcp`), or as `Authorization: Bearer` on the control API. A session
+
+- gets at most what `agents.permissions` grants in the current mode, limited to its `--scopes`,
+- with the app profile may only use `/mcp/app`; with `--full` also `/mcp` and `/v1/tools` – never the admin API,
+- is written to the audit log as `session:<name>`.
+
+`openshell agents token` prints a ready MCP client configuration:
+
+```json
+{ "mcpServers": { "claude": { "command": "openshell", "args": ["mcp", "--app", "--project", "/path/to/app"],
+  "env": { "OPENSHELL_AGENT_TOKEN": "osa_…" } } } }
+```
+
+Paired devices on the remote gateway work the same way: `openshell remote pair laptop --scopes read` limits what
+an agent on that device may do.
+
 ## Security
 
 - The control API listens on `127.0.0.1` only and requires a bearer token. The admin token lives in
@@ -207,7 +247,9 @@ tool, scope, (truncated) arguments, outcome and duration. View it with `openshel
 - File tools reject absolute paths, `..`, symlink escapes and OpenShell's state directory; `fs_write` also protects `.git`.
 - Agents cannot run arbitrary shell commands; only tasks declared in the config, under the `system` scope.
 - The remote gateway (off by default) exposes only the app profile, uses its own pairing token, rejects browser
-  requests (`Origin`) and audits calls with the channel `remote`.
+  requests (`Origin`) and audits calls with the channel `remote`. Device tokens can carry their own scopes.
+- Agent session tokens (`osa_…`) reach only the MCP endpoints and the tools API, never the admin API.
+- With `agents.enabled: false` (the default) agents cannot connect at all.
 - Limits: the permission layer governs cooperating agents. A local process running as the same user can read the token
   file; OpenShell is not a sandbox against local malware.
 

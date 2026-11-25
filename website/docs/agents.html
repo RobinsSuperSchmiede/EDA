@@ -49,6 +49,11 @@ for the full profile.</p>
 <p>all subject to permission scopes, optional human approval and an audit log. OpenShell does not ship or prescribe an
 AI model – it is infrastructure for any agent: Claude Code, Codex, Cursor, OpenAI- or Anthropic-based agents, local
 models via Ollama / LM Studio, or your own agent system.</p>
+<p><strong>The agent layer is opt-in.</strong> An app opens it with <code>"agents": { "enabled": true }</code> – <code>openshell create</code>,
+<code>openshell init</code> and <code>openshell add function</code> write that for you, <code>openshell agents enable</code> / <code>disable</code> switch it.
+While it is off, the MCP endpoints, the tools API, the UI bridge and the remote gateway's MCP endpoint refuse every
+request and no bridge script is injected into the app's pages; the app, its frontend SDK and exposed services keep
+working. <code>openshell agents</code> shows what agents get right now.</p>
 <h2 id="connecting">Connecting<a class="anchor" href="#connecting" aria-label="Link to this section">#</a></h2>
 <h3 id="using-an-installed-app">Using an installed app<a class="anchor" href="#using-an-installed-app" aria-label="Link to this section">#</a></h3>
 <p>Installed apps (see <a href="installers.html">Installers and releases</a>) are MCP servers themselves:</p>
@@ -129,16 +134,35 @@ request; answer with <code>openshell approve &lt;id&gt;</code> / <code>openshell
 <code>approval_timeout_ms</code>.</p>
 <p>Every call – allowed, denied, rejected or failed – is appended to <code>.openshell/audit.jsonl</code> with agent name, channel,
 tool, scope, (truncated) arguments, outcome and duration. View it with <code>openshell audit</code>.</p>
+<p>The runtime panel of the desktop app (title bar right-click → <em>Runtime panel</em> → <em>AI agents</em>) shows the effective
+permissions: what each scope allows, development vs. production, which scopes ask for approval, and every agent
+session and paired device with what it effectively may do. The same data: <code>openshell agents</code>, <code>GET /v1/agents</code>.</p>
+<h2 id="agent-sessions">Agent sessions<a class="anchor" href="#agent-sessions" aria-label="Link to this section">#</a></h2>
+<p>By default every agent connected through <code>openshell mcp</code> uses the admin token of <code>.openshell/runtime.json</code> and gets
+the app's agent permissions. To tell agents apart and limit each one, give it its own session:</p>
+<div class="codeblock" data-lang="bash"><pre><code>openshell agents token claude --scopes read,actions       <span class="tc"># app profile: only the app's functions</span>
+openshell agents token builder --full                      <span class="tc"># developer tools as well</span>
+openshell agents tokens                                    <span class="tc"># list</span>
+openshell agents revoke claude                             <span class="tc"># stops working at once, also while the app runs</span></code></pre></div>
+<p>The token (<code>osa_…</code>) is shown once and stored as a SHA-256 hash in <code>&lt;data&gt;/agent-sessions.json</code>. Use it with
+<code>openshell mcp --token osa_…</code>, the environment variable <code>OPENSHELL_AGENT_TOKEN</code> (also for an installed app's
+<code>--mcp</code>), or as <code>Authorization: Bearer</code> on the control API. A session</p>
+<ul><li>gets at most what <code>agents.permissions</code> grants in the current mode, limited to its <code>--scopes</code>,</li><li>with the app profile may only use <code>/mcp/app</code>; with <code>--full</code> also <code>/mcp</code> and <code>/v1/tools</code> – never the admin API,</li><li>is written to the audit log as <code>session:&lt;name&gt;</code>.</li></ul>
+<p><code>openshell agents token</code> prints a ready MCP client configuration:</p>
+<div class="codeblock" data-lang="json"><pre><code>{ <span class="tk">"mcpServers"</span>: { <span class="tk">"claude"</span>: { <span class="tk">"command"</span>: <span class="ts">"openshell"</span>, <span class="tk">"args"</span>: [<span class="ts">"mcp"</span>, <span class="ts">"--app"</span>, <span class="ts">"--project"</span>, <span class="ts">"/path/to/app"</span>],
+  <span class="tk">"env"</span>: { <span class="tk">"OPENSHELL_AGENT_TOKEN"</span>: <span class="ts">"osa_…"</span> } } } }</code></pre></div>
+<p>Paired devices on the remote gateway work the same way: <code>openshell remote pair laptop --scopes read</code> limits what
+an agent on that device may do.</p>
 <h2 id="security">Security<a class="anchor" href="#security" aria-label="Link to this section">#</a></h2>
 <ul><li>The control API listens on <code>127.0.0.1</code> only and requires a bearer token. The admin token lives in
 <code>.openshell/runtime.json</code> (mode 0600 on Unix, ignored by git).</li><li>Requests with a foreign <code>Host</code> header (DNS rebinding) or a non-allow-listed <code>Origin</code> (other websites) are rejected.</li><li>The frontend gets a separate app token limited to <code>/v1/sdk/*</code> and the bridge, with <code>agents.sdk_permissions</code>.</li><li>Application frontends loaded from http(s) URLs get no Tauri IPC access.</li><li>File tools reject absolute paths, <code>..</code>, symlink escapes and OpenShell's state directory; <code>fs_write</code> also protects <code>.git</code>.</li><li>Agents cannot run arbitrary shell commands; only tasks declared in the config, under the <code>system</code> scope.</li><li>The remote gateway (off by default) exposes only the app profile, uses its own pairing token, rejects browser
-requests (<code>Origin</code>) and audits calls with the channel <code>remote</code>.</li><li>Limits: the permission layer governs cooperating agents. A local process running as the same user can read the token
+requests (<code>Origin</code>) and audits calls with the channel <code>remote</code>. Device tokens can carry their own scopes.</li><li>Agent session tokens (<code>osa_…</code>) reach only the MCP endpoints and the tools API, never the admin API.</li><li>With <code>agents.enabled: false</code> (the default) agents cannot connect at all.</li><li>Limits: the permission layer governs cooperating agents. A local process running as the same user can read the token
 file; OpenShell is not a sandbox against local malware.</li></ul>
 <h2 id="a-typical-agent-loop">A typical agent loop<a class="anchor" href="#a-typical-agent-loop" aria-label="Link to this section">#</a></h2>
 <ol><li><code>app_info</code> → understand the app, its services and capabilities.</li><li>Edit code with the agent's own file tools (or <code>fs_write</code>).</li><li>Services with <code>watch</code> restart automatically; otherwise <code>service_restart</code>. Check <code>runtime_status</code> / <code>logs_read {"errors_only": true}</code>.</li><li><code>ui_reload</code> (static frontends reload automatically), then <code>ui_snapshot</code> and <code>ui_click</code> / <code>ui_fill</code> to verify the feature like a user would.</li></ol>
         <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/agents.md" rel="noopener">View this page on GitHub</a></div>
       </article>
-      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#connecting">Connecting</a><a class="l3" href="#using-an-installed-app">Using an installed app</a><a class="l3" href="#using-a-project-from-the-cli">Using a project from the CLI</a><a class="l3" href="#developing-mcp-over-stdio-recommended">Developing: MCP over stdio (recommended)</a><a class="l3" href="#mcp-over-http">MCP over HTTP</a><a class="l3" href="#from-another-device-remote-gateway">From another device (remote gateway)</a><a class="l3" href="#plain-http--json">Plain HTTP / JSON</a><a class="l2" href="#tools">Tools</a><a class="l2" href="#resources-and-notifications">Resources and notifications</a><a class="l2" href="#ui-automation">UI automation</a><a class="l2" href="#capabilities-the-applications-own-functions">Capabilities: the application&#x27;s own functions</a><a class="l2" href="#permissions-and-approvals">Permissions and approvals</a><a class="l2" href="#security">Security</a><a class="l2" href="#a-typical-agent-loop">A typical agent loop</a></aside>
+      <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#connecting">Connecting</a><a class="l3" href="#using-an-installed-app">Using an installed app</a><a class="l3" href="#using-a-project-from-the-cli">Using a project from the CLI</a><a class="l3" href="#developing-mcp-over-stdio-recommended">Developing: MCP over stdio (recommended)</a><a class="l3" href="#mcp-over-http">MCP over HTTP</a><a class="l3" href="#from-another-device-remote-gateway">From another device (remote gateway)</a><a class="l3" href="#plain-http--json">Plain HTTP / JSON</a><a class="l2" href="#tools">Tools</a><a class="l2" href="#resources-and-notifications">Resources and notifications</a><a class="l2" href="#ui-automation">UI automation</a><a class="l2" href="#capabilities-the-applications-own-functions">Capabilities: the application&#x27;s own functions</a><a class="l2" href="#permissions-and-approvals">Permissions and approvals</a><a class="l2" href="#agent-sessions">Agent sessions</a><a class="l2" href="#security">Security</a><a class="l2" href="#a-typical-agent-loop">A typical agent loop</a></aside>
     </main>
 
     <!-- chrome:footer -->
@@ -147,7 +171,7 @@ file; OpenShell is not a sandbox against local malware.</li></ul>
         <div class="foot-grid">
           <div class="foot-brand">
             <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
-            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+            <p>The app runtime that turns a web app and its backend into one desktop app. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
           </div>
           <div>
             <h4>Product</h4>

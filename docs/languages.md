@@ -17,6 +17,40 @@ OpenShell runs any executable, so every language works. Compiled languages use a
 Templates: `openshell create my-app -t vanilla-java` and `-t vanilla-cpp`. `openshell init` detects Maven, Gradle,
 Spring Boot, plain `javac` sources, CMake and Makefiles.
 
+## Support levels
+
+`openshell languages` prints this table from the same data the CLI uses:
+
+| Language | Level | Runtime on the target machine | Templates |
+|---|---|---|---|
+| Python | tested | Python, or bundled (`openshell runtime add python`) | `vanilla-python`, `react-python`, `vue-python` |
+| Node.js | tested | Node.js, or bundled (`openshell runtime add node`) | `react-node` |
+| Java / Spring Boot | tested | a JRE, or bundled (`openshell runtime add java`) | `vanilla-java` |
+| C++ (CMake) | tested | none (compiled) | `vanilla-cpp` |
+| Go | less tested | none (`go build`) | `svelte-go` |
+| Rust | less tested | none (`cargo build`) | – |
+| .NET | less tested | .NET runtime, or none when published self-contained | – |
+| anything else | by contract | whatever it needs | – |
+
+*Tested* means CI creates the template, runs it headless on Windows, macOS and Linux, waits until every service is
+healthy, loads the frontend and calls an agent function (`scripts/e2e-templates.py`). *By contract*: any program
+that reads `PORT`, binds `127.0.0.1` and answers `/health` works.
+
+Each language is one unit in the code: an entry in `crates/config/src/runtimes.rs` (runtime, version probe, support
+level, templates) and a detector in `crates/cli/src/languages/` for `openshell init`.
+
+## Versions
+
+Pin what a service needs with `requires` – `openshell doctor` reports a mismatch as an error, the app logs a warning
+when it starts:
+
+```json
+{ "name": "api", "command": ["python", "main.py"], "requires": { "python": ">=3.10, <3.14" } }
+```
+
+Known runtimes: `python`, `node`, `java`, `dotnet`, `go`, `rust`. To not depend on the user's machine at all, bundle
+the runtime (see [installers.md](installers.md#runtimes)).
+
 ## Java
 
 ### Plain JDK (template `vanilla-java`)
@@ -89,7 +123,7 @@ use OpenShell for their web front end.
 |---|---|---|
 | Rust | `cargo build --release` | `["target/release/server"]` |
 | Go | `go build -o bin/server .` | `["bin/server"]` (or `go run .` without build) |
-| C# / .NET | `dotnet build -c Release` | `["dotnet", "run", "--no-build", "-c", "Release", "--", "--urls", "http://127.0.0.1:${port}"]` |
+| C# / .NET | `dotnet build -c Release` | `["dotnet", "run", "--no-build", "-c", "Release", "--", "--urls", "http://127.0.0.1:${port}"]` (`openshell init` detects `*.csproj`) |
 | Kotlin (Ktor) | – | `["gradlew", "-q", "run"]` |
 | Python | – (`setup` for `pip install`) | `["python", "main.py"]` |
 | Node.js / Deno / Bun | – | `["node", "server.js"]`, `["deno", "run", "-A", "main.ts"]` |

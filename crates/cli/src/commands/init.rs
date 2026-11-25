@@ -18,171 +18,9 @@ struct Frontend {
     framework: String,
 }
 
-struct Backend {
-    dir: String,
-    command: Value,
-    port: u16,
-    language: String,
-    build: Option<Value>,
-    healthcheck: Option<String>,
-    openapi: Option<String>,
-    watch: Option<String>,
-    note: Option<String>,
-}
+use super::rel_path as rel;
 
-impl Backend {
-    fn simple(dir: String, command: Value, port: u16, language: &str) -> Self {
-        Backend {
-            dir,
-            command,
-            port,
-            language: language.into(),
-            build: None,
-            healthcheck: None,
-            openapi: None,
-            watch: None,
-            note: None,
-        }
-    }
-}
-
-/// First `<tag>value</tag>` outside of `<parent>` / `<dependencies>` / `<build>` blocks.
-fn pom_value(pom: &str, tag: &str) -> Option<String> {
-    let mut text = pom.to_string();
-    for block in ["parent", "dependencies", "build", "dependencyManagement", "profiles"] {
-        let (open, close) = (format!("<{block}>"), format!("</{block}>"));
-        while let (Some(a), Some(b)) = (text.find(&open), text.find(&close)) {
-            if b < a {
-                break;
-            }
-            text.replace_range(a..b + close.len(), "");
-        }
-    }
-    let start = text.find(&format!("<{tag}>"))? + tag.len() + 2;
-    let end = text[start..].find('<')? + start;
-    Some(text[start..end].trim().to_string())
-}
-
-fn detect_java(dir: &Path, rel_dir: String) -> Option<Backend> {
-    if let Ok(pom) = std::fs::read_to_string(dir.join("pom.xml")) {
-        let mvn = if dir.join("mvnw").exists() || dir.join("mvnw.cmd").exists() { "mvnw" } else { "mvn" };
-        if pom.contains("spring-boot") {
-            let mut b = Backend::simple(
-                rel_dir,
-                json!([mvn, "-q", "spring-boot:run", "-Dspring-boot.run.arguments=--server.port=${port}"]),
-                8080,
-                "Java (Spring Boot, Maven)",
-            );
-            b.healthcheck =
-                pom.contains("actuator").then(|| "http://127.0.0.1:${port}/actuator/health".into());
-            b.openapi = pom.contains("springdoc").then(|| "/v3/api-docs".into());
-            b.watch = Some("src".into());
-            return Some(b);
-        }
-        let artifact = pom_value(&pom, "artifactId").unwrap_or_else(|| "app".into());
-        let version = pom_value(&pom, "version").unwrap_or_else(|| "1.0-SNAPSHOT".into());
-        let mut b = Backend::simple(
-            rel_dir,
-            json!(["java", "-jar", format!("target/{artifact}-{version}.jar")]),
-            8080,
-            "Java (Maven)",
-        );
-        b.build = Some(json!([mvn, "-q", "-DskipTests", "package"]));
-        b.watch = Some("src".into());
-        b.note = Some("check that the jar name in `command` matches your build output".into());
-        return Some(b);
-    }
-    for gradle in ["build.gradle", "build.gradle.kts"] {
-        if let Ok(text) = std::fs::read_to_string(dir.join(gradle)) {
-            let g = if dir.join("gradlew").exists() || dir.join("gradlew.bat").exists() {
-                "gradlew"
-            } else {
-                "gradle"
-            };
-            let spring = text.contains("org.springframework.boot");
-            let mut b = Backend::simple(
-                rel_dir,
-                if spring {
-                    json!([g, "-q", "bootRun", "--args=--server.port=${port}"])
-                } else {
-                    json!([g, "-q", "run"])
-                },
-                8080,
-                if spring { "Java (Spring Boot, Gradle)" } else { "Java (Gradle)" },
-            );
-            b.openapi = (spring && text.contains("springdoc")).then(|| "/v3/api-docs".into());
-            b.watch = Some("src".into());
-            return Some(b);
-        }
-    }
-    // plain sources: compile with javac
-    for main in ["src/Main.java", "Main.java"] {
-        if dir.join(main).is_file() {
-            let mut b = Backend::simple(
-                rel_dir,
-                json!(["java", "-cp", "build/classes", "Main"]),
-                8000,
-                "Java (javac)",
-            );
-            b.build = Some(json!(["javac", "-d", "build/classes", main]));
-            b.watch = Some(if main.starts_with("src") { "src".into() } else { main.into() });
-            return Some(b);
-        }
-    }
-    None
-}
-
-fn detect_cpp(dir: &Path, rel_dir: String) -> Option<Backend> {
-    if let Ok(cmake) = std::fs::read_to_string(dir.join("CMakeLists.txt")) {
-        let target = cmake
-            .find("add_executable(")
-            .map(|i| &cmake[i + 15..])
-            .and_then(|r| r.split(|c: char| c.is_whitespace() || c == ')').find(|s| !s.is_empty()))
-            .unwrap_or("app")
-            .to_string();
-        let mut b = Backend::simple(rel_dir, json!([format!("build/{target}")]), 8080, "C++ (CMake)");
-        b.build = Some(json!(
-            "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release"
-        ));
-        b.watch = Some("src".into());
-        b.note = Some(format!(
-            "multi-config generators (Visual Studio) put `{target}` into build/Release/ - adjust `command` or set CMAKE_RUNTIME_OUTPUT_DIRECTORY"
-        ));
-        return Some(b);
-    }
-    if dir.join("Makefile").is_file() && (dir.join("main.cpp").exists() || dir.join("src").is_dir()) {
-        let mut b = Backend::simple(rel_dir, json!(["./app"]), 8080, "C/C++ (Make)");
-        b.build = Some(json!("make"));
-        b.note = Some("set `command` to the binary your Makefile produces".into());
-        return Some(b);
-    }
-    None
-}
-
-fn rel(root: &Path, p: &Path) -> String {
-    let r = p.strip_prefix(root).unwrap_or(p).to_string_lossy().replace('\\', "/");
-    if r.is_empty() {
-        ".".into()
-    } else {
-        r
-    }
-}
-
-fn read_json(p: &Path) -> Option<Value> {
-    serde_json::from_str(&std::fs::read_to_string(p).ok()?).ok()
-}
-
-fn package_manager(dir: &Path) -> &'static str {
-    if dir.join("pnpm-lock.yaml").exists() {
-        "pnpm"
-    } else if dir.join("yarn.lock").exists() {
-        "yarn"
-    } else if dir.join("bun.lockb").exists() || dir.join("bun.lock").exists() {
-        "bun"
-    } else {
-        "npm"
-    }
-}
+use crate::languages::{package_manager, read_json};
 
 fn has_dep(pkg: &Value, name: &str) -> bool {
     ["dependencies", "devDependencies"].iter().any(|k| pkg[k].get(name).is_some())
@@ -264,53 +102,6 @@ fn detect_frontend(root: &Path) -> Option<Frontend> {
     None
 }
 
-fn detect_backend(root: &Path, frontend_dir: Option<&str>) -> Option<Backend> {
-    for d in ["backend", "server", "api", "."] {
-        let dir = root.join(d);
-        if !dir.is_dir() {
-            continue;
-        }
-        let rel_dir = rel(root, &dir);
-        if let Some(b) = detect_java(&dir, rel_dir.clone()).or_else(|| detect_cpp(&dir, rel_dir.clone())) {
-            return Some(b);
-        }
-        for f in ["main.py", "app.py", "server.py"] {
-            if dir.join(f).is_file() {
-                return Some(Backend::simple(rel_dir, json!(["python", f]), 8000, "Python"));
-            }
-        }
-        if dir.join("go.mod").is_file() {
-            return Some(Backend::simple(rel_dir, json!("go run ."), 8080, "Go"));
-        }
-        if dir.join("Cargo.toml").is_file() && d != "." {
-            let mut b = Backend::simple(rel_dir, json!("cargo run --release"), 8080, "Rust");
-            b.watch = Some("src".into());
-            return Some(b);
-        }
-        if Some(rel_dir.as_str()) != frontend_dir {
-            if let Some(pkg) = read_json(&dir.join("package.json")) {
-                let pm = package_manager(&dir);
-                let cmd = if pkg["scripts"].get("dev").is_some() {
-                    Some(format!("{pm} run dev"))
-                } else if pkg["scripts"].get("start").is_some() {
-                    Some(format!("{pm} start"))
-                } else {
-                    None
-                };
-                if let Some(cmd) = cmd {
-                    return Some(Backend::simple(rel_dir, json!(cmd), 3001, "Node.js"));
-                }
-            }
-            for f in ["server.js", "index.js", "server.mjs"] {
-                if dir.join(f).is_file() && d != "." {
-                    return Some(Backend::simple(rel_dir, json!(["node", f]), 3001, "Node.js"));
-                }
-            }
-        }
-    }
-    None
-}
-
 fn title_case(s: &str) -> String {
     s.split(['-', '_', ' '])
         .filter(|w| !w.is_empty())
@@ -337,10 +128,10 @@ pub fn generate(root: &Path, name: Option<String>) -> (Value, Vec<String>) {
     cfg.insert("window".into(), json!({ "width": 1280, "height": 800 }));
 
     let fe = detect_frontend(root);
-    let be = detect_backend(root, fe.as_ref().map(|f| f.dir.as_str()));
+    let be = crate::languages::detect_backend(root, fe.as_ref().map(|f| f.dir.as_str()));
     let mut services = vec![];
     if let Some(b) = &be {
-        notes.push(format!("backend: {} in `{}` (port {})", b.language, b.dir, b.port));
+        notes.push(crate::languages::describe(b));
         let mut svc = json!({
             "name": "backend",
             "kind": "backend",
@@ -353,6 +144,9 @@ pub fn generate(root: &Path, name: Option<String>) -> (Value, Vec<String>) {
         }
         if let Some(h) = &b.healthcheck {
             svc["healthcheck"] = json!(h);
+        }
+        if let Some((rt, req)) = crate::languages::suggested_requires(b, &root.join(&b.dir)) {
+            svc["requires"] = json!({ rt: req });
         }
         if let Some(o) = &b.openapi {
             svc["openapi"] = json!(o);
@@ -412,6 +206,7 @@ pub fn generate(root: &Path, name: Option<String>) -> (Value, Vec<String>) {
     cfg.insert(
         "agents".into(),
         json!({
+            "enabled": true,
             "permissions": {
                 "development": ["read", "ui", "actions", "services", "files", "code"],
                 "production": ["read", "ui", "actions"]

@@ -116,6 +116,14 @@ select { font: inherit; }
 }
 .svc { grid-template-columns: 12px 120px 90px 1fr auto; }
 
+/* runtime panel: effective agent permissions */
+.perm { width: 100%; margin: 6px 0 8px; border-collapse: collapse; font-size: 12px; }
+.perm th { text-align: left; font-weight: normal; color: var(--muted); padding: 2px 8px 4px 0; }
+.perm td { padding: 3px 8px 3px 0; border-top: 1px solid var(--code); }
+.perm tr.on td:first-child code { font-weight: 600; }
+.agents .perm code { display: inline; margin: 0; padding: 0; background: none; user-select: text; }
+.perm-list { margin: 4px 0 0; padding-left: 18px; font-size: 12px; }
+
 /* Title bar of OpenShell's own pages when the app draws its own (`window.title_bar: "overlay"`). */
 .titlebar {
   position: fixed;

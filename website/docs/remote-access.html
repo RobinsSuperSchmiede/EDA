@@ -89,8 +89,9 @@ reuses it. Browsers warn about self-signed certificates; compare the fingerprint
 <h2 id="limits">Limits<a class="anchor" href="#limits" aria-label="Link to this section">#</a></h2>
 <ul><li>Exposed HTTP ports check the token on the <strong>first request of a connection</strong>; later requests on the
 same keep-alive connection are trusted. After revoking a device, its open connections end when the
-client closes them (restart the app to cut them immediately).</li><li><code>tcp</code> ports have no login – use <code>allow</code>, a VPN, or the service's own authentication.</li><li>Rate limits and blocks are kept in memory and reset when the app restarts.</li><li>The tokens give access to the app profile and exposed services only. Per-device <em>permissions</em>
-(different functions per device) are planned.</li></ul>
+client closes them (restart the app to cut them immediately).</li><li><code>tcp</code> ports have no login – use <code>allow</code>, a VPN, or the service's own authentication.</li><li>Rate limits and blocks are kept in memory and reset when the app restarts.</li><li>The tokens give access to the app profile and exposed services only. Give a device its own scopes
+with <code>openshell remote pair &lt;device&gt; --scopes read</code> (default: what the app grants agents); scopes limit
+the app's functions, not exposed services. The gateway's MCP endpoint needs <code>agents.enabled: true</code>.</li></ul>
         <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/remote-access.md" rel="noopener">View this page on GitHub</a></div>
       </article>
       <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#what-other-devices-can-reach">What other devices can reach</a><a class="l2" href="#security-layers">Security layers</a><a class="l2" href="#pair-a-device">Pair a device</a><a class="l2" href="#tls">TLS</a><a class="l2" href="#typical-setups">Typical setups</a><a class="l2" href="#limits">Limits</a></aside>
@@ -102,7 +103,7 @@ client closes them (restart the app to cut them immediately).</li><li><code>tcp<
         <div class="foot-grid">
           <div class="foot-brand">
             <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
-            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+            <p>The app runtime that turns a web app and its backend into one desktop app. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
           </div>
           <div>
             <h4>Product</h4>

@@ -188,6 +188,15 @@ fn grant_sdk_actions(cfg: &mut ConfigFile) {
     }
 }
 
+/// Functions are for AI agents: switch the (opt-in) agent layer on unless the app turned it off.
+fn enable_agents(cfg: &mut ConfigFile) {
+    let agents = cfg.obj().entry("agents").or_insert_with(|| json!({}));
+    if !agents.is_object() {
+        *agents = json!({});
+    }
+    agents.as_object_mut().unwrap().entry("enabled").or_insert(json!(true));
+}
+
 /// Connect a static frontend to the backend (`/api` proxy, start order).
 fn link_frontend_backend(cfg: &mut ConfigFile) {
     if !(cfg.has_frontend() && cfg.has_service("backend")) {
@@ -303,6 +312,7 @@ pub fn apply(cfg: &mut ConfigFile, block: &Block) -> Result<Vec<String>> {
                 Lang::Node => ("function-node", json!(["node", format!("tools/{name}.mjs")])),
             };
             copy_block(block, &root, &app, name, &mut files)?;
+            enable_agents(cfg);
             cfg.array("capabilities").push(json!({
                 "name": name,
                 "description": format!("Greets someone by name (example function `{name}` – describe what it does)"),

@@ -10,7 +10,11 @@ use openshell_core::config::Mode;
 use openshell_core::stdio::{serve, Autostart, McpProfile};
 use std::path::Path;
 
-pub async fn run(dir: &Path, app: bool, start: bool) -> Result<()> {
+pub async fn run(dir: &Path, app: bool, start: bool, token: Option<String>) -> Result<()> {
+    // an agent session token limits this connection to the session's scopes
+    if let Some(t) = token {
+        std::env::set_var("OPENSHELL_AGENT_TOKEN", t);
+    }
     let project = load_project(dir).ok();
     if project.is_none() {
         eprintln!("openshell mcp: no openshell.json found from {}", dir.display());

@@ -3,6 +3,7 @@
 
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
+use openshell_config::Permission;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
@@ -18,6 +19,9 @@ pub struct Device {
     pub paired_at: DateTime<Utc>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_seen: Option<DateTime<Utc>>,
+    /// Scopes of this device; empty = everything the app grants agents.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub scopes: Vec<Permission>,
 }
 
 /// What the admin API shows (never the hash).
@@ -26,6 +30,7 @@ pub struct DeviceInfo {
     pub name: String,
     pub paired_at: DateTime<Utc>,
     pub last_seen: Option<DateTime<Utc>>,
+    pub scopes: Vec<Permission>,
 }
 
 pub struct Devices {
@@ -68,8 +73,8 @@ impl Devices {
     }
 
     /// Pair a device: returns its new token (shown once). Pairing an existing name replaces
-    /// its token.
-    pub fn pair(&self, name: &str) -> Result<String> {
+    /// its token. `scopes` limit what the device may do (empty: what the app grants agents).
+    pub fn pair(&self, name: &str, scopes: Vec<Permission>) -> Result<String> {
         if !valid_device_name(name) {
             bail!("`{name}` is not a valid device name (letters, digits, `-`, `_`, `.`)");
         }
@@ -81,6 +86,7 @@ impl Devices {
             token_sha256: sha256_hex(token.as_bytes()),
             paired_at: Utc::now(),
             last_seen: None,
+            scopes,
         });
         self.save(&list)?;
         Ok(token)
@@ -103,12 +109,17 @@ impl Devices {
             .read()
             .unwrap()
             .iter()
-            .map(|d| DeviceInfo { name: d.name.clone(), paired_at: d.paired_at, last_seen: d.last_seen })
+            .map(|d| DeviceInfo {
+                name: d.name.clone(),
+                paired_at: d.paired_at,
+                last_seen: d.last_seen,
+                scopes: d.scopes.clone(),
+            })
             .collect()
     }
 
-    /// The device a token belongs to (updates `last_seen` in memory).
-    pub fn verify(&self, token: &str) -> Option<String> {
+    /// The device a token belongs to and its scopes (updates `last_seen` in memory).
+    pub fn verify(&self, token: &str) -> Option<(String, Vec<Permission>)> {
         if token.is_empty() {
             return None;
         }
@@ -116,7 +127,7 @@ impl Devices {
         let mut list = self.list.write().unwrap();
         let d = list.iter_mut().find(|d| super::same_token(&d.token_sha256, &hash))?;
         d.last_seen = Some(Utc::now());
-        Some(d.name.clone())
+        Some((d.name.clone(), d.scopes.clone()))
     }
 }
 
@@ -128,11 +139,11 @@ mod tests {
     fn pair_verify_revoke() {
         let dir = tempfile::tempdir().unwrap();
         let devices = Devices::load(dir.path());
-        let laptop = devices.pair("laptop").unwrap();
-        let phone = devices.pair("phone").unwrap();
+        let laptop = devices.pair("laptop", vec![]).unwrap();
+        let phone = devices.pair("phone", vec![Permission::Read]).unwrap();
         assert!(laptop.starts_with("osd_") && laptop.len() > 60);
-        assert_eq!(devices.verify(&laptop).as_deref(), Some("laptop"));
-        assert_eq!(devices.verify(&phone).as_deref(), Some("phone"));
+        assert_eq!(devices.verify(&laptop).map(|d| d.0).as_deref(), Some("laptop"));
+        assert_eq!(devices.verify(&phone), Some(("phone".to_string(), vec![Permission::Read])));
         assert_eq!(devices.verify("osd_wrong"), None);
         assert_eq!(devices.verify(""), None);
 
@@ -140,16 +151,16 @@ mod tests {
         let stored = std::fs::read_to_string(dir.path().join(DEVICES_FILE)).unwrap();
         assert!(!stored.contains(&laptop));
         let reloaded = Devices::load(dir.path());
-        assert_eq!(reloaded.verify(&laptop).as_deref(), Some("laptop"));
+        assert_eq!(reloaded.verify(&laptop).map(|d| d.0).as_deref(), Some("laptop"));
 
         // re-pairing replaces the token, revoking removes the device
-        let laptop2 = reloaded.pair("laptop").unwrap();
+        let laptop2 = reloaded.pair("laptop", vec![]).unwrap();
         assert_eq!(reloaded.verify(&laptop), None);
-        assert_eq!(reloaded.verify(&laptop2).as_deref(), Some("laptop"));
+        assert_eq!(reloaded.verify(&laptop2).map(|d| d.0).as_deref(), Some("laptop"));
         assert!(reloaded.revoke("phone").unwrap());
         assert!(!reloaded.revoke("phone").unwrap());
         assert_eq!(reloaded.verify(&phone), None);
         assert_eq!(reloaded.list().len(), 1);
-        assert!(reloaded.pair("bad name!").is_err());
+        assert!(reloaded.pair("bad name!", vec![]).is_err());
     }
 }

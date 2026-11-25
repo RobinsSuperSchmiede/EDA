@@ -100,10 +100,13 @@ A typical configuration:</p>
 <ul><li>edit backend files → the backend restarts (<code>watch</code>),</li><li>edit frontend files → the dev server hot-reloads, or OpenShell reloads the window for static frontends,</li><li>a crashing service is restarted with backoff; after 5 crashes per minute it is marked <code>failed</code>,</li><li><code>openshell build</code> + <code>openshell start</code> runs the production build.</li></ul>
 <h2 id="4-connect-an-ai-agent">4. Connect an AI agent<a class="anchor" href="#4-connect-an-ai-agent" aria-label="Link to this section">#</a></h2>
 <p>Coding agents: every project created with <code>openshell create</code> / <code>openshell init</code> contains an <code>AGENTS.md</code>, and
-<code>openshell guide</code> prints the complete guide for building OpenShell apps. To connect an agent to the running app:</p>
+<code>openshell guide</code> prints the complete guide for building OpenShell apps. Agents are opt-in: projects from <code>create</code>
+and <code>init</code> have <code>"agents": { "enabled": true }</code>; elsewhere switch them on with <code>openshell agents enable</code>. To connect
+an agent to the running app:</p>
 <div class="codeblock" data-lang="bash"><pre><code>claude mcp add my-app-dev -- openshell mcp --project /path/to/my-app              <span class="tc"># develop the app</span>
 claude mcp add my-app     -- openshell mcp --app --start --project /path/to/my-app  <span class="tc"># use the app</span></code></pre></div>
-<p>See <a href="agents.html">Agent Interaction Layer</a> for other agents, the tool list and permissions.</p>
+<p>See <a href="agents.html">Agent Interaction Layer</a> for other agents, the tool list and permissions. To give each agent its own token and
+scopes: <code>openshell agents token claude --scopes read,actions</code>.</p>
         <div class="edit"><a href="https://github.com/RobinsSuperSchmiede/EDA/blob/main/docs/getting-started.md" rel="noopener">View this page on GitHub</a></div>
       </article>
       <aside class="docs-toc"><h4>On this page</h4><a class="l2" href="#1-install">1. Install</a><a class="l2" href="#2a-new-project">2a. New project</a><a class="l2" href="#2b-existing-project">2b. Existing project</a><a class="l2" href="#3-run">3. Run</a><a class="l2" href="#4-connect-an-ai-agent">4. Connect an AI agent</a></aside>
@@ -115,7 +118,7 @@ claude mcp add my-app     -- openshell mcp --app --start --project /path/to/my-a
         <div class="foot-grid">
           <div class="foot-brand">
             <a class="brand" href="../index.html"><img src="../assets/logo.png" alt="" />OpenShell</a>
-            <p>Any web app, a native desktop app, agents included. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
+            <p>The app runtime that turns a web app and its backend into one desktop app. Free and open source under the MIT licence. Alpha, v0.2.1.</p>
           </div>
           <div>
             <h4>Product</h4>
